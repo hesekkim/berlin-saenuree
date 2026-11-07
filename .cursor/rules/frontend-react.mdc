@@ -31,6 +31,15 @@ alwaysApply: true
 - Admin 페이지 트리: `pages/Admin/adminNav.ts`의 `adminPageTree` — backend `page_catalog.PAGE_TREE`와 맞춘다
 - CMS 계정 페이지 할당 UI는 **main(최상위)만**. sub는 main 권한 상속 (`expandPageAccess`)
 
+## Legacy frontend migration
+
+- `legacy-frontend/`를 기존 페이지 구성과 콘텐츠의 기준으로 삼는다. 페이지와 데이터를 유지하면서 이 프로젝트의 React 프론트엔드와 FastAPI 백엔드에 맞게 구현한다.
+- `reference-frontend/`는 폰트, 색상, 스타일 등 시각 디자인만 참고한다. 페이지나 콘텐츠를 이관하지 않는다.
+- 다크모드 동작을 이관하거나 다크모드 전환 기능을 추가하지 않는다.
+- 한국어만 지원한다고 가정하지 말고 기존 사이트 설정과 CMS에 등록된 언어를 지원한다. 프론트엔드 번역 맵을 하드코딩하지 않는다.
+- Navbar, Footer 등 공용 컴포넌트를 먼저 구현한다. 페이지 이관은 페이지별 개별 티켓으로 진행하고 공용 컴포넌트를 재사용한다.
+- 기존 API 계층과 페이지 구현 규칙을 사용한다. 별도의 데이터 소스나 백엔드를 추가하지 않는다.
+
 ## Unit test
 
 - 위치: `frontend/tests/unit/`
