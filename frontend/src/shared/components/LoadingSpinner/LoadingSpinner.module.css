@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  min-height: 200px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--color-primary);
+}
+
+.spinner.small {
+  font-size: 1.5rem;
+}
+
+.spinner.medium {
+  font-size: 2.5rem;
+}
+
+.spinner.large {
+  font-size: 4rem;
+}
+
+.text {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: var(--color-text);
+  opacity: 0.7;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media screen and (max-width: 640px) {
+  .container {
+    padding: 2rem 1.5rem;
+    min-height: 150px;
+  }
+
+  .spinner.small {
+    font-size: 1.25rem;
+  }
+
+  .spinner.medium {
+    font-size: 2rem;
+  }
+
+  .spinner.large {
+    font-size: 3rem;
+  }
+
+  .text {
+    font-size: 0.9rem;
+  }
+}
+

@@ -1,0 +1,106 @@
+.root {
+  position: relative;
+}
+
+.attachmentNode {
+  display: inline-block;
+  width: min(100%, 30rem);
+  vertical-align: middle;
+  cursor: text;
+}
+
+.mediaItem {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--cms-border, #d6d6d6);
+  border-radius: 8px;
+  background: var(--cms-surface, #fff);
+}
+
+.mediaMeta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.mediaName {
+  overflow: hidden;
+  color: var(--cms-text, #424242);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaSize,
+.mediaError {
+  color: var(--cms-muted-text, #777);
+  font-size: 0.8rem;
+}
+
+.mediaError {
+  color: var(--cms-danger, #b42318);
+}
+
+.mediaActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+}
+
+.surface :global(.rich-text-media-image) {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+  cursor: text;
+}
+
+.imageNode {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/*
+ * Driven by the `selected` NodeView prop, not `.ProseMirror-selectednode`:
+ * ReactNodeViewRenderer puts that class on its own outer wrapper element,
+ * one level above the `.imageNode` span this component renders, so a
+ * `.imageNode.ProseMirror-selectednode` selector never matches.
+ */
+.imageNodeSelected {
+  outline: 2px solid var(--cms-focus, var(--cf-focus-color));
+  outline-offset: 2px;
+}
+
+.imageNode :global(.rich-text-media-image) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.imageResizeHandle {
+  position: absolute;
+  right: -0.35rem;
+  bottom: -0.35rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  padding: 0;
+  border: 1px solid var(--cms-focus, var(--cf-focus-color));
+  border-radius: 2px;
+  background: var(--cms-surface, #fff);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.status {
+  margin: 0.35rem 0 0;
+  color: var(--cms-danger, #b42318);
+  font-size: 0.8rem;
+}

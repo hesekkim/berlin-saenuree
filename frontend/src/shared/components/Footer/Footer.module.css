@@ -1,0 +1,130 @@
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-style: italic;
+}
+
+h1 {
+  margin-bottom: 0;
+}
+
+h2 {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.container {
+  /* Size */
+  --size-text: 0.9rem;
+  /* Styles */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-grey);
+}
+
+.title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 2rem;
+  font-size: var(--size-text);
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.maker {
+  margin-right: auto;
+  margin-left: 0;
+  padding-left: 0.2rem;
+  font-size: var(--size-text);
+}
+
+.info,
+.channels {
+  margin: 0 2rem;
+  font-size: var(--size-text);
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.info-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.info-contents {
+  margin: 0.1rem 0;
+}
+
+.icon {
+  margin: 0 0.2rem;
+  font-size: 2rem;
+  color: var(--color-text);
+  transition: all 150ms ease-out;
+}
+
+.icon:hover {
+  color: var(--color-accent);
+  filter: brightness(125%);
+  transform: scale(1.1);
+}
+
+@media screen and (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .title-container {
+    flex-direction: row;
+    margin-top: 0.5rem;
+  }
+
+  .title {
+    margin-right: auto;
+  }
+
+  .maker {
+    margin-top: auto;
+    margin-bottom: 0.2rem;
+    padding-left: 0.5rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .info-container {
+    flex-direction: column;
+  }
+
+  .info {
+    margin: 0.4rem auto 0.4rem 0;
+  }
+
+  .channels {
+    margin: 0.4rem auto 0 0;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .container {
+    /* Size */
+    --size-text: 0.8rem;
+    /* Styles */
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .title-container {
+    flex-direction: column;
+  }
+
+  .maker {
+    padding-left: 0.2rem;
+  }
+}

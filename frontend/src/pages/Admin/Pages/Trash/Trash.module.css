@@ -1,0 +1,45 @@
+.page {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: var(--cf-space-24);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.tabs {
+  display: flex;
+  gap: var(--cf-space-8);
+  margin-bottom: var(--cf-space-24);
+  border-bottom: 1px solid var(--cms-border, var(--cf-neutral-200));
+}
+
+.tab {
+  padding: var(--cf-space-8) var(--cf-space-16);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.tabActive {
+  border-bottom-color: var(--cms-primary, var(--cf-blue-63));
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.panel {
+  min-height: 12rem;
+}

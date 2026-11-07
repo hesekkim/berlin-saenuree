@@ -1,0 +1,317 @@
+.page {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: var(--cf-space-24);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cf-space-8);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.total {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.subtitle {
+  margin: var(--cf-space-8) 0 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.6;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-8);
+}
+
+.headerAction {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.toolbar {
+  display: grid;
+  gap: var(--cf-space-8);
+  margin-bottom: var(--cf-space-16);
+}
+
+.toolbarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.filterFields {
+  display: grid;
+  gap: var(--cf-space-12);
+}
+
+.filterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: var(--cf-space-8);
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--cf-blue-13);
+  color: var(--cf-blue-75);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.filterFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--cf-space-8);
+}
+
+.viewToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-4);
+  flex-shrink: 0;
+}
+.viewButton,
+.viewButtonActive {
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cf-neutral-700);
+  cursor: pointer;
+  appearance: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-radius 0.15s ease;
+}
+.viewButton:hover,
+.viewButton:focus-visible {
+  background: var(--cf-blue-13);
+  color: var(--cf-blue-75);
+}
+
+.viewButton:focus-visible,
+.viewButtonActive:focus-visible {
+  outline: 2px solid var(--cf-focus-color);
+  outline-offset: var(--cf-focus-offset);
+}
+
+.viewButtonActive {
+  background: var(--cf-blue-13);
+  color: var(--cf-blue-75);
+}
+.viewButtonActive:hover,
+.viewButtonActive:focus-visible {
+  background: var(--cf-blue-25);
+  color: var(--cf-blue-75);
+}
+
+:global(body[data-cms-theme='dark']) .viewButton {
+  background: transparent;
+  color: var(--cms-text, #f3f4f6);
+}
+
+:global(body[data-cms-theme='dark']) .viewButton:hover,
+:global(body[data-cms-theme='dark']) .viewButton:focus-visible {
+  background: var(--cms-primary-soft-hover, #315f8f);
+  color: var(--cms-text-on-primary, #ffffff);
+}
+
+:global(body[data-cms-theme='dark']) .viewButtonActive {
+  background: var(--cms-primary-soft, #264f78);
+  color: var(--cms-text-on-primary, #ffffff);
+}
+
+:global(body[data-cms-theme='dark']) .viewButtonActive:hover,
+:global(body[data-cms-theme='dark']) .viewButtonActive:focus-visible {
+  background: var(--cms-primary-soft-hover, #315f8f);
+  color: var(--cms-text-on-primary, #ffffff);
+}
+.viewButton svg,
+.viewButtonActive svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.emptyState {
+  display: flex;
+  min-height: clamp(15rem, 42vh, 28rem);
+  align-items: center;
+  justify-content: center;
+  padding: var(--cf-space-32) var(--cf-space-16);
+  text-align: center;
+}
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-8);
+  min-width: 0;
+}
+
+.emptyMessage {
+  margin: 0;
+  max-width: 36rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.loadingState {
+  display: flex;
+  min-height: clamp(15rem, 42vh, 28rem);
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 639px) {
+  .emptyState {
+    min-height: clamp(12rem, 34vh, 18rem);
+    padding-inline: var(--cf-space-12);
+  }
+
+  .loadingState {
+    min-height: clamp(12rem, 34vh, 18rem);
+  }
+
+  .emptyMessage {
+    font-size: 1rem;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cf-space-12);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: none;
+  border-radius: var(--cf-radius-4, 4px);
+  overflow: hidden;
+  background: var(--cms-surface-muted, var(--cf-neutral-100));
+  cursor: pointer;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--cms-primary, var(--cf-blue-75));
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.tileDisabled .thumb {
+  opacity: 0.45;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.pinIcon,
+.multiIcon {
+  position: absolute;
+  top: var(--cf-space-8);
+  width: 1rem;
+  height: 1rem;
+  color: var(--cf-white);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+
+.pinIcon {
+  left: var(--cf-space-8);
+}
+
+.multiIcon {
+  right: var(--cf-space-8);
+}
+
+.disabledBadge {
+  position: absolute;
+  left: var(--cf-space-8);
+  bottom: var(--cf-space-8);
+  pointer-events: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.paginationLabel {
+  min-width: 5rem;
+  text-align: center;
+  color: var(--cms-text-secondary, #6b7280);
+}
+
+.loadMoreSentinel {
+  display: flex;
+  min-height: 4rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cms-border, #d5d7db);
+  border-radius: var(--cf-radius-8, 8px);
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .listPhotoCount {
+    display: none;
+  }
+}

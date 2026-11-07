@@ -1,0 +1,28 @@
+.root {
+  color: var(--cms-text, #424242);
+  line-height: 1.5;
+}
+
+.root :global(p),
+.root :global(ul),
+.root :global(ol) {
+  margin: 0 0 0.75rem;
+}
+
+.root :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.root :global(a[data-media-kind='attachment']) {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--cms-border, #d6d6d6);
+  border-radius: 8px;
+  overflow: hidden;
+  color: var(--cms-text, #424242);
+  text-decoration: none;
+}

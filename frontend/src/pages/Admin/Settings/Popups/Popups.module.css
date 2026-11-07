@@ -1,0 +1,242 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8, 0.5rem);
+}
+
+.listHint {
+  margin: 0 0 var(--cf-space-8, 0.5rem);
+  font-size: 0.8125rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-12, 0.75rem);
+  padding: var(--cf-space-12, 0.75rem) var(--cf-space-16, 1rem);
+  border: 1px solid var(--cms-border, var(--cf-neutral-200));
+  border-radius: var(--cf-radius-input, 8px);
+  background: var(--cms-surface, var(--cf-white));
+}
+
+.itemDragging {
+  opacity: 0.55;
+  border-style: dashed;
+  pointer-events: none;
+}
+
+.itemDisabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.dragHandle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  cursor: grab;
+  font-size: 1.25rem;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dragHandle:focus {
+  outline: none;
+}
+
+.dragHandle:focus:not(:focus-visible) {
+  outline: none;
+  background: transparent;
+}
+
+.dragHandleActive {
+  cursor: grabbing;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.dragHandle:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.dragHandle:focus-visible {
+  outline: 2px solid var(--cf-focus-color, #2563eb);
+  outline-offset: 2px;
+}
+
+.meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.name {
+  font-size: 0.95rem;
+  color: var(--cms-text, var(--cf-neutral-700));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.actions {
+  display: flex;
+  gap: var(--cf-space-8, 0.5rem);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .item {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    grid-template-areas:
+      'handle meta'
+      'actions actions';
+    align-items: center;
+    gap: 0.45rem 0.5rem;
+    padding: 0.6rem 0.65rem;
+  }
+
+  .dragHandle {
+    grid-area: handle;
+    width: 1.5rem;
+    height: 1.75rem;
+    font-size: 1.05rem;
+  }
+
+  .meta {
+    grid-area: meta;
+  }
+
+  .actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .actions > * {
+    width: 100%;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16, 1rem);
+}
+
+.richTextField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.richTextLabel {
+  font-size: 0.875rem;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.checkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cf-space-8, 0.5rem);
+  font-size: 0.875rem;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.enabledBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.visibilityWarn {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--cms-warning, #b45309);
+}
+
+.imageBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8, 0.5rem);
+}
+
+.imageLabel {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-12, 0.75rem);
+  font-size: 0.875rem;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.colorLabel {
+  min-width: 5rem;
+}
+
+.colorInput {
+  width: 2.5rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--cms-border, var(--cf-neutral-300));
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.colorValue {
+  font-size: 0.8125rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-variant-numeric: tabular-nums;
+}
+
+.scheduleHint {
+  margin: -0.25rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.error {
+  margin: 0;
+  color: var(--cms-danger, var(--cf-red-63));
+  font-size: 0.875rem;
+}

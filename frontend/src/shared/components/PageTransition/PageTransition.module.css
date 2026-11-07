@@ -1,0 +1,29 @@
+.transition {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(
+    0.16,
+    1,
+    0.3,
+    1
+  );
+  animation-fill-mode: forwards;
+  will-change: opacity, transform;
+}
+
+.fadeIn {
+  animation-name: fadeIn;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px); /* Smaller motion */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

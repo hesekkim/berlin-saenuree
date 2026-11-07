@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+.next/
+.venv/
+*.log
+backend/test/unit/__pycahe_/

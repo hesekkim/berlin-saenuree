@@ -1,0 +1,320 @@
+.item {
+  border-bottom: 1px solid var(--cms-border, var(--cf-neutral-200));
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.rowWithSelection {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: stretch;
+  background: var(--cms-surface, var(--cf-white));
+}
+
+.columnHeader {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 3.5rem;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--cms-border, var(--cf-neutral-200));
+  background: var(--cms-surface-muted, var(--cf-neutral-50, #f8f9fa));
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.headerSelection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  gap: var(--cf-space-16);
+  padding: var(--cf-space-12) var(--cf-space-16);
+}
+
+.columnHeaderWithThumbnail .headerRow {
+  grid-template-columns: 3rem minmax(0, 1fr);
+}
+
+.headerThumbnail {
+  display: block;
+  grid-column: 1;
+}
+
+.headerContent {
+  display: grid;
+  grid-template-areas: 'title author date metadata status';
+  grid-template-columns:
+    minmax(0, 1.5fr)
+    minmax(0, 1.1fr)
+    minmax(0, 0.9fr)
+    6rem
+    6rem;
+  align-items: center;
+  min-width: 0;
+  column-gap: var(--cf-space-16);
+}
+
+.headerContentWithoutMetadata {
+  grid-template-areas: 'title author date status';
+  grid-template-columns:
+    minmax(0, 1.5fr)
+    minmax(0, 1.1fr)
+    minmax(0, 0.9fr)
+    6rem;
+}
+
+.columnHeaderWithThumbnail .headerContent {
+  grid-column: 2;
+}
+
+.headerTitle {
+  grid-area: title;
+}
+
+.headerAuthor {
+  grid-area: author;
+}
+
+.headerDate {
+  grid-area: date;
+}
+
+.headerMetadata {
+  grid-area: metadata;
+}
+
+.headerStatus {
+  grid-area: status;
+}
+
+.selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item:nth-child(odd) .rowWithSelection,
+.item:nth-child(odd) .row {
+  background: color-mix(
+    in srgb,
+    var(--cms-text, var(--cf-neutral-700)) 4%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+.item .row:hover {
+  background: color-mix(
+    in srgb,
+    var(--cms-text, var(--cf-neutral-700)) 8%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+.item .rowWithSelection .row {
+  background: transparent;
+}
+
+.item .rowWithSelection:hover {
+  background: color-mix(
+    in srgb,
+    var(--cms-text, var(--cf-neutral-700)) 8%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+.item .rowWithSelection .row:hover {
+  background: transparent;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-height: 4.5rem;
+  gap: var(--cf-space-12);
+  padding: var(--cf-space-12) var(--cf-space-16);
+  border: 0;
+  box-sizing: border-box;
+  background: var(--cms-surface, var(--cf-white));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--cms-primary, var(--cf-blue-75));
+  outline-offset: -2px;
+}
+
+.withThumbnail {
+  grid-template-columns: 3rem minmax(0, 1fr);
+}
+
+.content {
+  display: grid;
+  grid-template-areas:
+    'title title'
+    'author badges'
+    'date badges'
+    'metadata badges';
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--cf-space-4);
+  min-width: 0;
+}
+
+.contentWithoutMetadata {
+  grid-template-areas:
+    'title title'
+    'author badges'
+    'date badges';
+}
+
+.withThumbnail .content {
+  grid-column: 2;
+}
+
+.thumbnail {
+  display: block;
+  grid-column: 1;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--cf-radius-tag, 4px);
+  object-fit: cover;
+}
+
+.title,
+.author,
+.date,
+.metadata,
+.badges {
+  min-width: 0;
+}
+
+.title {
+  grid-area: title;
+  color: var(--cms-text, var(--cf-neutral-700));
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author {
+  grid-area: author;
+}
+
+.date {
+  grid-area: date;
+}
+
+.author,
+.date {
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadata {
+  grid-area: metadata;
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-8);
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+}
+
+.badges {
+  grid-area: badges;
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-4);
+}
+
+.draftRow {
+  background: color-mix(
+    in srgb,
+    var(--cms-primary, var(--cf-blue-75)) 8%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+@media (min-width: 701px) {
+  .row {
+    column-gap: var(--cf-space-16);
+    row-gap: 0;
+  }
+
+  .content {
+    grid-template-areas: 'title author date metadata badges';
+    grid-template-columns:
+      minmax(0, 1.5fr)
+      minmax(0, 1.1fr)
+      minmax(0, 0.9fr)
+      6rem
+      6rem;
+    column-gap: var(--cf-space-16);
+    row-gap: 0;
+    align-items: center;
+  }
+
+  .contentWithoutMetadata {
+    grid-template-areas: 'title author date badges';
+    grid-template-columns:
+      minmax(0, 1.5fr)
+      minmax(0, 1.1fr)
+      minmax(0, 0.9fr)
+      6rem;
+  }
+
+  .withThumbnail {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .columnHeader {
+    display: none;
+  }
+
+  .rowWithSelection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .selection {
+    display: none;
+  }
+
+  .row {
+    align-items: start;
+    padding-block: var(--cf-space-12);
+  }
+
+  .withThumbnail {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    column-gap: var(--cf-space-12);
+  }
+
+  .thumbnail {
+    margin-top: 2px;
+  }
+
+  .badges {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}

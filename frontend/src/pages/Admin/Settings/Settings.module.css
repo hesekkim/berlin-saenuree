@@ -1,0 +1,290 @@
+.page {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: var(--cf-space-32);
+}
+
+.title {
+  margin: 0 0 var(--cf-space-8);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.6;
+}
+
+.section {
+  margin-bottom: var(--cf-space-32);
+  padding-bottom: var(--cf-space-24);
+  border-bottom: 1px solid var(--cms-border, var(--cf-neutral-300));
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.titleRow .title {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+  margin-bottom: var(--cf-space-8);
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+.sectionHeaderAction {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 var(--cf-space-8);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.sectionDesc {
+  margin: 0 0 var(--cf-space-16);
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.errorMessage {
+  margin: 0;
+  color: var(--cms-danger, var(--cf-red-63, #e03232));
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.control {
+  max-width: 20rem;
+}
+
+.control + .control {
+  margin-top: var(--cf-space-16);
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-8);
+  margin-top: var(--cf-space-16);
+}
+
+.confirmMessage {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.5;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.userList {
+  border: 1px solid var(--cms-border, var(--cf-neutral-300));
+  border-radius: var(--cf-radius-8, 8px);
+  overflow: hidden;
+}
+
+.userListBody {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.userRow {
+  display: grid;
+  grid-template-areas:
+    'header'
+    'details';
+  gap: var(--cf-space-8);
+  padding: var(--cf-space-16);
+  background-color: var(--cms-surface, var(--cf-white));
+}
+
+.userRow:nth-child(even) {
+  background-color: color-mix(
+    in srgb,
+    var(--cms-text, var(--cf-neutral-700)) 6%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+.userRowTop {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-12);
+  min-width: 0;
+}
+
+.userExpandToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-8);
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.userExpandChevron {
+  flex-shrink: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+}
+
+.userNameDesktop {
+  display: none;
+}
+
+.userDetails {
+  grid-area: details;
+  display: none;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+  padding-left: var(--cf-space-4, 4px);
+}
+
+.userRowExpanded .userDetails {
+  display: flex;
+}
+
+.userRole {
+  display: none;
+}
+
+.userCell {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.userCell::before {
+  content: attr(data-label);
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.userName {
+  font-weight: 600;
+  color: var(--cms-text, var(--cf-neutral-700));
+  word-break: break-word;
+}
+
+.userMeta {
+  font-size: 0.875rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  word-break: break-word;
+}
+
+.userActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-8);
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+@media (min-width: 768px) {
+  .userRow {
+    grid-template-areas: 'name email role pages actions';
+    grid-template-columns:
+      minmax(6rem, 1.1fr)
+      minmax(8rem, 1.4fr)
+      minmax(5.5rem, 0.9fr)
+      minmax(6rem, 1.2fr)
+      minmax(7.5rem, auto);
+    column-gap: var(--cf-space-16);
+    align-items: center;
+    gap: 0;
+  }
+
+  .userRowTop,
+  .userDetails,
+  .userRowExpanded .userDetails {
+    display: contents;
+  }
+
+  .userExpandToggle {
+    display: none;
+  }
+
+  .userNameDesktop {
+    display: block;
+    grid-area: name;
+  }
+
+  .userEmail {
+    grid-area: email;
+  }
+
+  .userRole {
+    display: block;
+    grid-area: role;
+  }
+
+  .userPages {
+    grid-area: pages;
+  }
+
+  .userActions {
+    grid-area: actions;
+  }
+
+  .userCell::before {
+    display: none;
+  }
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--cms-danger, #b42318);
+  font-size: 0.875rem;
+}

@@ -1,0 +1,51 @@
+.dialog {
+  /* Shell chrome comes from shared Dialog; keep login-only content styles here. */
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.field {
+  margin-bottom: var(--cf-space-20, 1.25rem);
+}
+
+.hint {
+  margin: var(--cf-space-8, 0.5rem) 0 0;
+  font-size: 0.75rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+}
+
+.error,
+.success,
+.warning {
+  padding: var(--cf-space-12, 0.75rem) var(--cf-space-16, 1rem);
+  border-radius: var(--cf-radius-input, 8px);
+  font-size: 0.875rem;
+  margin-bottom: var(--cf-space-20, 1.25rem);
+}
+
+.error {
+  background-color: var(--cf-red-13);
+  border: 1px solid var(--cf-red-50);
+  color: var(--cf-red-63);
+}
+
+.success {
+  background-color: var(--cf-green-13);
+  border: 1px solid var(--cf-green-50);
+  color: var(--cf-green-75);
+}
+
+.warning {
+  background-color: var(--cf-yellow-13);
+  border: 1px solid var(--cf-yellow-38);
+  color: var(--cf-yellow-63);
+}
+
+.footer {
+  display: flex;
+  gap: var(--cf-space-12, 0.75rem);
+  justify-content: flex-end;
+}

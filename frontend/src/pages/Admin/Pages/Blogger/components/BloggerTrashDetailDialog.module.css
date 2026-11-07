@@ -1,0 +1,33 @@
+.title {
+  margin: 0 0 12px;
+  color: var(--cms-text, var(--cf-neutral-700));
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.body {
+  max-height: 50vh;
+  overflow-y: auto;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .metaRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer {
+    justify-content: stretch;
+  }
+
+  .footer button {
+    flex: 1 1 auto;
+  }
+}

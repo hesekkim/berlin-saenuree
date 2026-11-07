@@ -1,0 +1,53 @@
+---
+description: FastAPI backend 구조와 unit test 범위
+applyTo: 'backend/**/*.py'
+---
+
+# FastAPI
+
+- 라우터(`api/`)는 HTTP 입출력만 담당한다. 비즈니스 로직은 `services/`에 둔다
+- request/response contract는 Pydantic model로 명시한다 (`models/`)
+- endpoint에서 SMTP·파일 I/O를 직접 호출하지 않는다. `services/`를 통한다
+- 설정값은 `core/config.py`(`APP_` prefix)를 통하고, 코드에 비밀값을 넣지 않는다
+
+## Admin API
+
+- site admin 전용 endpoint는 `Depends(get_current_site_admin)`으로 가드한다
+- `get_current_cms_user`는 Site Admin 또는 파일 CMS 계정(`page_admin` | `page_manager`). `get_current_site_admin`은 role=`site_admin`(`APP_ADMIN_EMAILS`)만
+- 로그인(`send-code` / `verify-code`)은 허용 이메일(site admin 또는, `APP_PAGE_ADMIN_ENABLED`일 때 `cms_users.json`)만 성공한다. 허용 여부는 응답(200/401)으로 드러내지 않고, 이메일별 쿨다운·발송 상한(429)을 건다 (SECURITY.md)
+- `PUT /pages/{slug}`는 `require_page_editor` (site_admin 전체 / page_admin·page_manager는 할당·하위 slug)
+- `/me` role: `site_admin` | `page_admin` | `page_manager` (`cms_users`의 name·role; site_admin은 env만·name 없음)
+- CMS 권한이 없는 요청은 401/403으로 거절하고, endpoint 본문에서 권한을 다시 검사하지 않는다
+
+예시:
+
+```python
+from api.v1.endpoints.auth import get_current_site_admin
+
+@router.get("/something")
+async def site_admin_only(email: str = Depends(get_current_site_admin)):
+	...
+```
+
+## CMS 페이지 콘텐츠
+
+- 언어별 페이지 문구는 `data/pages/{slug}.json` + `page_content_service`로 저장한다 (코드/seed에 브랜드 문구 금지)
+- 사이트 설정(`availableLanguages`, `adminLanguage`)은 `data/site_settings.json` — `pages/`에 넣지 않는다
+- CMS 사용자 목록은 `data/cms_users.json` (main page slug만 할당, sub는 expand로 상속)
+- `GET /pages/{slug}`·`GET /site-settings`는 공개
+- 새 페이지: `services/page_catalog.py` **와** `frontend/.../adminNav.ts`를 같은 트리로 함께 수정
+- 파일 없으면 `{}`, 언어 제거 시 page JSON에서 cascade 삭제
+
+## Unit test
+
+- 위치: `backend/tests/unit/`
+- 실행 전 저장소 루트에서 `Set-Location .\backend`로 이동한다.
+- backend 테스트는 `backend/.venv` 가상환경 Python으로 실행한다.
+- 저장소 루트 PowerShell: `Set-Location .\backend; .\.venv\Scripts\python.exe -m pytest`
+- `backend` 디렉터리: `.\.venv\Scripts\python.exe -m pytest`
+- 특정 테스트: `Set-Location .\backend; .\.venv\Scripts\python.exe -m pytest tests\unit\test_blogger_trash_service.py`
+- 도구: pytest. SMTP·파일 등 외부 의존성은 mock/`tmp_path`로 대체한다
+- 테스트 대상: auth service(코드 검증, JWT), validator, 권한/검증 규칙
+- 테스트하지 않는 것: 실제 SMTP 발송, 단순 라우터 래퍼
+
+자세한 범위는 `testing-strategy.mdc`를 따른다

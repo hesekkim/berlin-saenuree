@@ -1,0 +1,332 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+  width: 100%;
+}
+
+.formError {
+  margin: 0;
+  padding: var(--cf-space-12);
+  border-radius: var(--cf-radius-card, 8px);
+  background: var(--cms-danger-bg, #fef2f2);
+  color: var(--cms-danger, #b91c1c);
+  font-size: 0.875rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.5;
+}
+
+.orderStage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+  align-items: center;
+  width: 100%;
+}
+
+.orderMain {
+  position: relative;
+  width: min(100%, 22rem, 48svh);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--cms-surface-muted, var(--cf-neutral-100));
+  border: 1px solid var(--cms-border, var(--cf-neutral-300));
+}
+
+.orderTrack {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  /* Selection jumps must stay instant — smooth is only via scrollTo options. */
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.orderTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.orderSlide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: center;
+}
+
+.orderMainImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.orderMainRemove {
+  position: absolute;
+  top: var(--cf-space-8);
+  right: var(--cf-space-8);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--cf-white);
+  cursor: pointer;
+}
+
+.orderMainRemove:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.orderMainRemove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.orderList {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: var(--cf-space-8);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--cf-space-4);
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: calc(100% - 3.25rem - var(--cf-space-8));
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.orderList::-webkit-scrollbar {
+  height: 6px;
+}
+
+.orderList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--cms-border, var(--cf-neutral-300));
+}
+
+.orderStripRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cf-space-8);
+  width: 100%;
+}
+
+.orderAddWrap {
+  flex: 0 0 3.25rem;
+  width: 3.25rem;
+  padding: 0 0 var(--cf-space-4);
+}
+
+.orderItem {
+  flex: 0 0 3.25rem;
+  width: 3.25rem;
+  /* Allow horizontal strip scroll until long-press arms a drag. */
+  touch-action: pan-x;
+}
+
+.orderItemSelected .orderHandle {
+  border-color: var(--cms-primary, var(--cf-blue-63));
+  box-shadow: 0 0 0 1px var(--cms-primary, var(--cf-blue-63));
+}
+
+/* Source slot stays as a placeholder while the preview follows the pointer. */
+.orderItemDragging .orderHandle {
+  border-style: dashed;
+  border-color: var(--cms-primary, var(--cf-blue-63));
+}
+
+.orderItemDragging .orderThumb {
+  opacity: 0.3;
+}
+
+.dragPreview {
+  position: fixed;
+  z-index: 10000;
+  width: 3.25rem;
+  height: 3.25rem;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border: 2px solid var(--cms-primary, var(--cf-blue-63));
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  user-select: none;
+}
+
+.orderItemDisabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.orderHandle {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 2px solid var(--cms-border, var(--cf-neutral-300));
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--cms-surface-muted, var(--cf-neutral-100));
+  cursor: grab;
+}
+
+.orderHandle:active {
+  cursor: grabbing;
+}
+
+.orderHandle:focus-visible {
+  outline: 2px solid var(--cf-focus-color);
+  outline-offset: var(--cf-focus-offset);
+}
+
+.orderThumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.orderAdd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 2px dashed var(--cms-border, var(--cf-neutral-300));
+  border-radius: 4px;
+  background: var(--cms-surface-muted, var(--cf-neutral-50));
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.orderAdd:hover:not(:disabled) {
+  border-color: var(--cms-primary, var(--cf-blue-63));
+  color: var(--cms-primary, var(--cf-blue-63));
+}
+
+.orderAdd:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.confirmMessage {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.captionFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+}
+
+.publishRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fieldHint {
+  margin: calc(-1 * var(--cf-space-8)) 0 0;
+  font-size: 0.8125rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.4;
+}
+
+.richTextField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+}
+
+.richTextLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cms-text, var(--cf-neutral-700));
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-12);
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .orderStage {
+    gap: var(--cf-space-12);
+  }
+
+  .orderList {
+    gap: var(--cf-space-4);
+  }
+
+  .orderStripRow {
+    gap: var(--cf-space-4);
+  }
+
+  .orderItem {
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+  }
+
+  .orderAddWrap {
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+  }
+
+  .orderAdd {
+    font-size: 1rem;
+  }
+
+  .dragPreview {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .footer {
+    gap: var(--cf-space-8);
+  }
+}

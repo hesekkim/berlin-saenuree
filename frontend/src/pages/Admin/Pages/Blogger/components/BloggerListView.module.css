@@ -1,0 +1,12 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cms-border, #d5d7db);
+  border-radius: var(--cf-radius-8, 8px);
+  overflow: hidden;
+}
+
+.draftList {
+  margin-bottom: var(--cf-space-16);
+}
