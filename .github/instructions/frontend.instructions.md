@@ -14,6 +14,7 @@ applyTo: 'frontend/**/*.{ts,tsx}'
 - `useEffect`는 구조를 강제하는 도구가 아니다. fetch, subscription, DOM 동기화처럼 필요한 side effect에만 쓰고, 가능하면 custom hook 안에 둔다
 - 컴포넌트/훅 전용 타입은 그 파일에 둔다. 2곳 이상에서 쓰는 타입만 `shared/types`로 올린다
 - form `onSubmit` 핸들러 타입은 `React.SubmitEvent`를 쓴다 (`FormEvent`는 React 19 types에서 deprecated)
+- CSS 색상값을 컴포넌트 스타일에 직접 하드코딩하지 않는다. `frontend/src/index.css`의 공통 CSS custom property를 사용하고, 새 색상은 공통 토큰으로 정의한다
 
 ## Dialog / Modal
 

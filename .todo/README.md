@@ -16,6 +16,7 @@
 - `legacy-frontend/`와 `reference-frontend/`는 로컬 참고 프로젝트이며 Git 커밋에 포함하지 않는다.
 - 레거시 다크모드는 이관하지 않으며 다크모드 기능을 추가하지 않는다.
 - 한국어만을 전제로 구현하지 않는다. 현재 프로젝트의 CMS와 사이트 설정에서 지원하는 언어를 사용하고, 프론트엔드에 번역 맵을 하드코딩하지 않는다.
+- CSS 색상값을 컴포넌트 스타일에 직접 하드코딩하지 않는다. `frontend/src/index.css`에 정의된 공통 CSS custom property를 사용하며, 새 색상이 필요하면 공통 토큰 체계에 추가한다.
 - 티켓에 별도로 명시되지 않는 한 기존 페이지 구성과 데이터의 범위를 변경하지 않는다.
 
 ## 티켓 분할 순서
@@ -32,4 +33,5 @@
 
 ## 현재 작업
 
-아직 등록된 티켓이 없다.
+- [001-navbar-legacy-navigation.md](./001-navbar-legacy-navigation.md): 기존 Navbar 확장 및 레거시 메뉴 목적지 임시 화면 연결
+- [002-footer-legacy-content.md](./002-footer-legacy-content.md): reference 레이아웃과 레거시 교회 정보를 사용하는 Footer 구현
