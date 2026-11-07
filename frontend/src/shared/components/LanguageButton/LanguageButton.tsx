@@ -1,19 +1,25 @@
+import { useId } from 'react';
 import styles from './LanguageButton.module.css';
 import { HiOutlineLanguage } from 'react-icons/hi2';
-import { FaLocationArrow } from 'react-icons/fa6';
 import { useLanguageButton } from './useLanguageButton';
 
-export default function LanguageButton({ onClick }: { onClick: () => void }) {
+export default function LanguageButton({
+  onClick,
+  openMenuBar,
+}: {
+  onClick: () => void;
+  openMenuBar: boolean;
+}) {
   const {
     selectedLanguage,
     languageItems,
     isHover,
     isClicked,
-    sizeMedium,
     handleHover,
     handleTitleClick,
     handleLanguageClick,
-  } = useLanguageButton(onClick);
+  } = useLanguageButton(onClick, openMenuBar);
+  const submenuId = useId();
 
   return (
     <li
@@ -21,32 +27,40 @@ export default function LanguageButton({ onClick }: { onClick: () => void }) {
       onMouseEnter={() => handleHover(true)}
       onMouseLeave={() => handleHover(false)}
     >
-      <div className={styles['header']} onClick={handleTitleClick}>
-        {window.innerWidth >= sizeMedium ? (
-          <div className={styles['header-icon']}>
-            <HiOutlineLanguage />
-          </div>
-        ) : (
-          <span className={styles['header-title']}>
-            {getMenuTitle(selectedLanguage)}
-          </span>
-        )}
-      </div>
+      <button
+        type="button"
+        className={styles.header}
+        onClick={handleTitleClick}
+        aria-label={getMenuTitle(selectedLanguage)}
+        aria-haspopup="true"
+        aria-expanded={isHover || isClicked}
+        aria-controls={submenuId}
+      >
+        <HiOutlineLanguage className={styles['header-icon']} />
+        <span className={styles['header-title']}>
+          {getMenuTitle(selectedLanguage)}
+        </span>
+      </button>
       <div
         className={`${styles['language-container']} ${
           (isHover || isClicked) && styles.show
         }`}
+        id={submenuId}
       >
-        <div className={styles.point} />
         <ul className={styles.languages}>
           {languageItems.map(({ language, display }) => (
-            <li
-              className={styles.language}
-              key={language}
-              onClick={() => handleLanguageClick(language)}
-            >
-              <span>{display}</span>
-              <FaLocationArrow />
+            <li className={styles['language-wrapper']} key={language}>
+              <button
+                type="button"
+                className={`${styles.language} ${
+                  language === selectedLanguage ? styles.selected : ''
+                }`}
+                onClick={() => handleLanguageClick(language)}
+                lang={language}
+                aria-pressed={language === selectedLanguage}
+              >
+                {display}
+              </button>
             </li>
           ))}
         </ul>

@@ -33,5 +33,8 @@
 
 ## 현재 작업
 
-- [001-navbar-legacy-navigation.md](./001-navbar-legacy-navigation.md): 기존 Navbar 확장 및 레거시 메뉴 목적지 임시 화면 연결
 - [002-footer-legacy-content.md](./002-footer-legacy-content.md): reference 레이아웃과 레거시 교회 정보를 사용하는 Footer 구현
+
+## 완료된 작업
+
+- [001-navbar-legacy-navigation.md](./done/001-navbar-legacy-navigation.md): Navbar 확장 및 메뉴 목적지 임시 화면 연결

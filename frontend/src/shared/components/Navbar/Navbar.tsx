@@ -4,10 +4,12 @@ import LanguageButton from '../LanguageButton/LanguageButton';
 import { BiMenu, BiX } from 'react-icons/bi';
 import NavbarItem from '../NavbarItem/NavbarItem';
 import type { NavbarItemProps } from '../../types/NavbarItemProps';
+import { Language } from '../../types/Language';
 import { useConfig } from '../../context/ConfigContext';
 import { toContentLanguage } from '../../config/siteLanguages';
-import { SITE_NAME } from '../../config/site';
+import { CHURCH_NAMES } from '../../config/site';
 import { useNavbarChrome } from './useNavbarChrome';
+import churchLogo from '../../../assets/church-logo.png';
 
 export default function Navbar({
   navbarItems,
@@ -17,8 +19,6 @@ export default function Navbar({
   const { language } = useConfig();
   const contentLanguage = toContentLanguage(language);
   const {
-    isAuthenticated,
-    selectedMenuTitle,
     openMenuBar,
     showBackground,
     enhancedNavbarItems,
@@ -31,56 +31,67 @@ export default function Navbar({
     <header
       className={`${styles['main-container']} ${
         showBackground && styles.accent
-      }`}
+      } ${openMenuBar ? styles['menu-open'] : ''}`}
     >
       <div className={styles['left-side']}>
         <div className={styles['title-container']}>
           <Link
-            to={isAuthenticated ? '/admin' : '/'}
+            to="/home"
             className={`${styles.title} ${styles['brand-title']}`}
-            onClick={() =>
-              handleSelectMenu(
-                isAuthenticated ? '' : navbarItems[0]?.title[contentLanguage] || ''
-              )
-            }
+            onClick={() => handleSelectMenu('')}
           >
-            {SITE_NAME}
+            <img className={styles['brand-logo']} src={churchLogo} alt="" />
+            <span lang={Language.KO}>{CHURCH_NAMES[Language.KO]}</span>
           </Link>
         </div>
 
         <button
+          type="button"
           className={styles['toggle-button-wrapper']}
           onClick={toggleOpenMenuBar}
+          aria-label={
+            openMenuBar ? 'Close navigation menu' : 'Open navigation menu'
+          }
+          aria-expanded={openMenuBar}
+          aria-controls="primary-navigation"
         >
-          <div
+          <span
+            aria-hidden="true"
             className={`${styles['toggle-button']} ${
               !openMenuBar && styles.show
             }`}
           >
             <BiMenu />
-          </div>
-          <div
+          </span>
+          <span
+            aria-hidden="true"
             className={`${styles['toggle-button']} ${
               openMenuBar && styles.show
             }`}
           >
             <BiX />
-          </div>
+          </span>
         </button>
       </div>
 
-      <nav className={styles['brand-nav']}>
+      <nav
+        id="primary-navigation"
+        className={styles['brand-nav']}
+        aria-label="Main navigation"
+      >
         <ul className={`${styles.menus} ${openMenuBar && styles.open}`}>
           {enhancedNavbarItems.map((navbarItem, index) => (
             <NavbarItem
               key={index}
               navbarItem={navbarItem}
-              selectedMenuTitle={selectedMenuTitle}
               onClick={() => handleSelectMenu(navbarItem.title[contentLanguage])}
               openMenuBar={openMenuBar}
             />
           ))}
-          <LanguageButton onClick={handleLanguageClick} />
+          <LanguageButton
+            onClick={handleLanguageClick}
+            openMenuBar={openMenuBar}
+          />
         </ul>
       </nav>
     </header>

@@ -18,9 +18,20 @@ export function useNavbarItem(
     setIsHover(nextHover);
   };
 
+  const handleFocus = () => {
+    if (window.innerWidth >= sizeMedium) {
+      setIsHover(true);
+    }
+  };
+
+  const handleBlur = () => setIsHover(false);
+
   const handleMenuClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (window.innerWidth >= sizeMedium) {
+      setIsHover(false);
+      setIsClicked(false);
       onClick();
+      e.currentTarget.blur();
       return;
     }
 
@@ -33,19 +44,35 @@ export function useNavbarItem(
     }
   };
 
-  const handleSubmenuClick = () => {
+  const handleSubmenuClick = (
+    e: React.MouseEvent<HTMLAnchorElement>
+  ) => {
     setIsHover(false);
+    setIsClicked(false);
     onClick();
+    e.currentTarget.blur();
   };
 
   useEffect(() => {
     setIsClicked(false);
   }, [openMenuBar]);
 
+  useEffect(() => {
+    const closeSubmenu = () => {
+      setIsHover(false);
+      setIsClicked(false);
+    };
+
+    window.addEventListener('resize', closeSubmenu);
+    return () => window.removeEventListener('resize', closeSubmenu);
+  }, []);
+
   return {
     isHover,
     isClicked,
     handleHover,
+    handleFocus,
+    handleBlur,
     handleMenuClick,
     handleSubmenuClick,
   };

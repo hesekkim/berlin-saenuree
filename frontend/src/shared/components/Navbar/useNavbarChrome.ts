@@ -29,7 +29,9 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
   const { isAuthenticated } = useAuth();
   const { selectedMenuTitle, setSelectedMenuTitle } = useNavbar();
   const [openMenuBar, setOpenMenuBar] = useState(false);
-  const [showBackground, setShowBackground] = useState(false);
+  const [showBackground, setShowBackground] = useState(
+    () => window.scrollY > 10
+  );
 
   const enhancedNavbarItems = filterMenuByAuth(navbarItems, isAuthenticated);
 
@@ -38,12 +40,10 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
   );
 
   const closeMenu = () => {
-    setShowBackground(false);
     setOpenMenuBar(false);
   };
 
   const toggleOpenMenuBar = () => {
-    setShowBackground(!openMenuBar);
     setOpenMenuBar((prev) => !prev);
   };
 
@@ -65,11 +65,11 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
 
     const onResize = () => setOpenMenuBar(false);
 
-    document.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll);
     window.addEventListener('resize', onResize);
 
     return () => {
-      document.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
     };
   }, []);

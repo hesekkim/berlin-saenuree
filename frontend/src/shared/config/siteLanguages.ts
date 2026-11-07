@@ -76,7 +76,7 @@ export function resolveDefaultLanguage(
   return available[0] ?? Language.EN;
 }
 
-/** Maps a site language code to a content Language (ko/en/de), falling back to EN. */
+/** Resolve user-facing UI copy language; codes without ko/en/de translations use English. */
 export function toContentLanguage(code: string): Language {
   return parseLanguage(code) ?? Language.EN;
 }

@@ -3,8 +3,8 @@
   --color-bg-primary: #fdfcfa;
   --color-bg-secondary: #ffffff;
   --color-bg: #fdfcfa;
-  --color-bg-transparent-dark: #fdfcfaee;
   --color-bg-transparent: #fdfcfa99;
+  --color-bg-secondary-transparent: #fffffff0;
 
   --color-text: #1a1a1a;
   --color-text-secondary: #4a4a4a;
@@ -13,6 +13,8 @@
   --color-primary: #b8956a;
   --color-accent: #9d7e54;
   --color-border: #e5e5e5;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
 
   /* Typography */
   --font-display: 'Playfair Display', serif;

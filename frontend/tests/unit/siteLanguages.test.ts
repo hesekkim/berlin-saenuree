@@ -8,6 +8,7 @@ import {
   resolveLanguage,
   toContentLanguage,
 } from '../../src/shared/config/siteLanguages';
+import { getChurchName } from '../../src/shared/config/site';
 
 describe('siteLanguages', () => {
   it('keeps world-language codes in selection order', () => {
@@ -37,5 +38,11 @@ describe('siteLanguages', () => {
   it('maps unknown site languages to content Language.EN', () => {
     expect(toContentLanguage('fr')).toBe(Language.EN);
     expect(toContentLanguage('ko')).toBe(Language.KO);
+  });
+
+  it('uses the translated church name and English fallback', () => {
+    expect(getChurchName('ko')).toBe('베를린 새누리교회');
+    expect(getChurchName('de')).toBe('Berliner saenuree-Gemeinde');
+    expect(getChurchName('fr')).toBe('Berlin saenuree Church');
   });
 });

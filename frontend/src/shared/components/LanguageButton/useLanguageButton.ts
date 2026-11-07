@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { getLanguageLabel } from '../../config/siteLanguages';
 
-export function useLanguageButton(onClick: () => void) {
+export function useLanguageButton(
+  onClick: () => void,
+  openMenuBar: boolean
+) {
   const {
     language: selectedLanguage,
     setLanguage,
@@ -10,7 +13,6 @@ export function useLanguageButton(onClick: () => void) {
   } = useConfig();
   const [isHover, setIsHover] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
-
   const sizeMedium = parseInt(
     getComputedStyle(document.documentElement).getPropertyValue('--size-lg')
   );
@@ -26,12 +28,7 @@ export function useLanguageButton(onClick: () => void) {
     }
   };
 
-  const handleTitleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (window.innerWidth < sizeMedium) {
-      setIsClicked((prev) => !prev);
-      e.preventDefault();
-    }
-  };
+  const handleTitleClick = () => setIsClicked((prev) => !prev);
 
   const handleLanguageClick = (language: string) => {
     setIsClicked(false);
@@ -40,12 +37,28 @@ export function useLanguageButton(onClick: () => void) {
     onClick();
   };
 
+  useEffect(() => {
+    const closeOnResize = () => {
+      setIsClicked(false);
+      setIsHover(false);
+    };
+
+    window.addEventListener('resize', closeOnResize);
+    return () => window.removeEventListener('resize', closeOnResize);
+  }, []);
+
+  useEffect(() => {
+    if (!openMenuBar) {
+      setIsClicked(false);
+      setIsHover(false);
+    }
+  }, [openMenuBar]);
+
   return {
     selectedLanguage,
     languageItems,
     isHover,
     isClicked,
-    sizeMedium,
     handleHover,
     handleTitleClick,
     handleLanguageClick,

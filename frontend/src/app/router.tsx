@@ -14,6 +14,13 @@ import BloggerDocumentEditor from '../pages/Admin/Pages/Blogger/components/Blogg
 import TrashPage from '../pages/Admin/Pages/Trash/Trash';
 import PrivacyPolicy from '../pages/PrivacyPolicy/PrivacyPolicy';
 import { isUiLabEnabled } from '../shared/config/features';
+import ChurchHistory from '../pages/ChurchHistory/ChurchHistory';
+import SeniorPastor from '../pages/SeniorPastor/SeniorPastor';
+import PastoralPhilosophy from '../pages/PastoralPhilosophy/PastoralPhilosophy';
+import ChurchVision from '../pages/ChurchVision/ChurchVision';
+import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
+import Worship from '../pages/Worship/Worship';
+import Location from '../pages/Location/Location';
 
 export const router = createBrowserRouter([
   {
@@ -74,6 +81,34 @@ export const router = createBrowserRouter([
       {
         path: 'privacy-policy',
         element: <PrivacyPolicy />,
+      },
+      {
+        path: 'about/church-history',
+        element: <ChurchHistory />,
+      },
+      {
+        path: 'about/senior-pastor',
+        element: <SeniorPastor />,
+      },
+      {
+        path: 'calling/pastoral-philosophy',
+        element: <PastoralPhilosophy />,
+      },
+      {
+        path: 'calling/church-vision',
+        element: <ChurchVision />,
+      },
+      {
+        path: 'saenuree-news',
+        element: <SaenureeNews />,
+      },
+      {
+        path: 'worship',
+        element: <Worship />,
+      },
+      {
+        path: 'location',
+        element: <Location />,
       },
       ...(isUiLabEnabled
         ? [

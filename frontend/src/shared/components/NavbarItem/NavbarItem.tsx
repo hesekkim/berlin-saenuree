@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useId } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import styles from './NavbarItem.module.css';
 import type { NavbarItemProps } from '../../types/NavbarItemProps';
 import { useConfig } from '../../context/ConfigContext';
@@ -7,37 +8,60 @@ import { useNavbarItem } from './useNavbarItem';
 
 export default function NavbarItem({
   navbarItem,
-  selectedMenuTitle,
   onClick,
   openMenuBar,
 }: {
   navbarItem: NavbarItemProps;
-  selectedMenuTitle: string;
   onClick: () => void;
   openMenuBar: boolean;
 }) {
   const { language } = useConfig();
+  const { pathname } = useLocation();
   const contentLanguage = toContentLanguage(language);
   const { title, link, subNavbarItems } = navbarItem;
   const displayTitle = title[contentLanguage];
+  const submenuId = useId();
+  const isSelected =
+    pathname === link || subNavbarItems?.some((item) => item.link === pathname);
   const {
     isHover,
     isClicked,
     handleHover,
+    handleFocus,
+    handleBlur,
     handleMenuClick,
     handleSubmenuClick,
   } = useNavbarItem(subNavbarItems, openMenuBar, onClick);
 
   return (
-    <li className={styles['main-container']}>
+    <li
+      className={styles['main-container']}
+      onMouseEnter={() => handleHover(true)}
+      onMouseLeave={() => handleHover(false)}
+      onFocus={handleFocus}
+      onBlur={(event) => {
+        if (
+          !event.currentTarget.contains(
+            event.relatedTarget as Node | null
+          )
+        ) {
+          handleBlur();
+        }
+      }}
+    >
       <Link
         to={link}
+        lang={contentLanguage}
         className={`${styles.title} ${
-          displayTitle === selectedMenuTitle && styles.selected
+          isSelected && styles.selected
         }`}
-        onMouseEnter={() => handleHover(true)}
-        onMouseLeave={() => handleHover(false)}
         onClick={handleMenuClick}
+        aria-haspopup={subNavbarItems ? 'true' : undefined}
+        aria-expanded={
+          subNavbarItems ? isHover || isClicked : undefined
+        }
+        aria-controls={subNavbarItems ? submenuId : undefined}
+        aria-current={pathname === link ? 'page' : undefined}
       >
         {displayTitle}
       </Link>
@@ -47,17 +71,18 @@ export default function NavbarItem({
           className={`${styles['submenu-container']} ${
             (isHover || isClicked) && styles.show
           }`}
-          onMouseEnter={() => handleHover(true)}
-          onMouseLeave={() => handleHover(false)}
         >
-          <div className={styles.point} />
-          <ul className={styles.submenus}>
+          <ul className={styles.submenus} id={submenuId}>
             {subNavbarItems.map(({ title: subTitle, link: subLink }, index) => (
               <li className={styles['submenu-wrapper']} key={index}>
                 <Link
                   to={subLink}
-                  className={styles.submenu}
+                  lang={contentLanguage}
+                  className={`${styles.submenu} ${
+                    pathname === subLink ? styles.selected : ''
+                  }`}
                   onClick={handleSubmenuClick}
+                  aria-current={pathname === subLink ? 'page' : undefined}
                 >
                   {subTitle[contentLanguage]}
                 </Link>
