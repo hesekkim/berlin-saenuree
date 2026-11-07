@@ -1,14 +1,8 @@
-import {
-  SITE_EMAIL,
-  SITE_FACEBOOK,
-  SITE_INSTAGRAM,
-  SITE_NAME,
-} from './site';
-
 export const footerInfos = {
-  title: SITE_NAME,
-  info: '123 Example Street, Sample City',
-  email: SITE_EMAIL,
-  instagram: SITE_INSTAGRAM,
-  facebook: SITE_FACEBOOK,
+  address: 'Borsigstraße 5, 10115 Berlin, Germany',
+  phone: '+49-1767-2169883',
+  email: 'hanjoorang@daum.net',
+  youtube: 'https://www.youtube.com/@berlinsaenuree',
+  instagram: 'https://www.instagram.com/saenuree_berlin/',
+  facebook: 'https://www.facebook.com/profile.php?id=100066258201031',
 };

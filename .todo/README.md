@@ -33,8 +33,9 @@
 
 ## 현재 작업
 
-- [002-footer-legacy-content.md](./002-footer-legacy-content.md): reference 레이아웃과 레거시 교회 정보를 사용하는 Footer 구현
+현재 진행 중인 티켓이 없습니다.
 
 ## 완료된 작업
 
 - [001-navbar-legacy-navigation.md](./done/001-navbar-legacy-navigation.md): Navbar 확장 및 메뉴 목적지 임시 화면 연결
+- [002-footer-legacy-content.md](./done/002-footer-legacy-content.md): 레거시 교회 정보와 언어별 문구를 사용하는 반응형 Footer 구현
