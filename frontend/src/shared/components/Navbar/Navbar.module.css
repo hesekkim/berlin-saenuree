@@ -10,15 +10,19 @@
   align-items: center;
   width: 100%;
   padding: 0.5rem 1.5rem;
-  background-color: var(--color-bg-secondary);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
   z-index: 50;
+  transition:
+    background-color var(--animation-duration) ease-out,
+    backdrop-filter var(--animation-duration) ease-out;
 }
 
 .main-container.accent {
-  background-color: var(--color-bg-secondary-transparent);
-  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom-color: var(--color-border);
 }
 
 .title-container {
