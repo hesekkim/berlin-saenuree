@@ -44,6 +44,7 @@ def collect_active_media_refs() -> set[str]:
         blogger_draft_service,
         blogger_service,
         blogger_trash_service,
+        page_content_service,
         popups_service,
         posts_service,
         posts_trash_service,
@@ -56,6 +57,7 @@ def collect_active_media_refs() -> set[str]:
     refs.update(blogger_trash_service.list_trash_refs())
     refs.update(blogger_draft_service.list_draft_media_ids())
     refs.update(popups_service.list_popup_media_refs())
+    refs.update(page_content_service.get_home_media_refs())
     return {normalize_media_id(ref) for ref in refs if ref}
 
 

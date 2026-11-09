@@ -1,4 +1,6 @@
 from typing import Literal
+import re
+from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -16,21 +18,84 @@ CmsFileRole = Literal["page_admin", "page_manager"]
 CmsRole = Literal["site_admin", "page_admin", "page_manager"]
 
 
+class HomeImage(BaseModel):
+    imageId: str
+    sourceFileId: str
+
+
 class HomeCopy(BaseModel):
-    title: str = ""
-    subtitle: str = ""
-    description: str = ""
+    model_config = {"extra": "allow"}
+
+    yearMotto: str = ""
+    bibleVerse: str = ""
+    bibleReference: str = ""
+
+    @model_validator(mode="after")
+    def validate_legacy_video_urls(self):
+        if "youtubeVideoUrls" in (self.model_extra or {}):
+            HomeSharedMedia(
+                youtubeVideoUrls=self.model_extra["youtubeVideoUrls"]
+            )
+        return self
+
+
+class HomeSharedMedia(BaseModel):
+    heroImages: list[HomeImage] = Field(default_factory=list)
+    panoramaImageId: str = ""
+    panoramaSourceFileId: str = ""
+    youtubeVideoUrls: list[str] = Field(default_factory=list, max_length=3)
+
+    @field_validator("youtubeVideoUrls")
+    @classmethod
+    def validate_youtube_video_urls(cls, values: list[str]) -> list[str]:
+        video_id_pattern = re.compile(r"^[A-Za-z0-9_-]{11}$")
+        hosts = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
+        normalized: list[str] = []
+        for value in values:
+            video = value.strip()
+            if video_id_pattern.fullmatch(video):
+                normalized.append(video)
+                continue
+            parsed = urlparse(video)
+            path = [segment for segment in parsed.path.split("/") if segment]
+            if parsed.scheme != "https" or parsed.hostname not in hosts:
+                raise ValueError("YouTube videos must use a supported HTTPS URL or video ID")
+            if parsed.hostname == "youtu.be":
+                video_id = path[0] if path else ""
+            elif parsed.path == "/watch":
+                video_id = parse_qs(parsed.query).get("v", [""])[0]
+            elif path and path[0] in {"embed", "shorts", "live"}:
+                video_id = path[1] if len(path) > 1 else ""
+            else:
+                video_id = ""
+            if not video_id_pattern.fullmatch(video_id or ""):
+                raise ValueError("Invalid YouTube video URL")
+            normalized.append(video)
+        if len(normalized) > 3:
+            raise ValueError("Select no more than three YouTube videos")
+        return normalized
 
 
 class PageContentResponse(BaseModel):
     slug: str
     contentRevision: int
     content: dict[str, HomeCopy]
+    sharedMedia: HomeSharedMedia | None = None
 
 
 class PageContentUpdateRequest(BaseModel):
     contentRevision: int = Field(ge=0)
     content: dict[str, HomeCopy]
+    sharedMedia: HomeSharedMedia | None = None
+
+    @model_validator(mode="after")
+    def validate_legacy_home_media(self):
+        if self.sharedMedia is None:
+            for copy in self.content.values():
+                legacy_url = (copy.model_extra or {}).get("youtubeVideoUrl")
+                if legacy_url:
+                    HomeSharedMedia(youtubeVideoUrls=[legacy_url])
+        return self
 
 
 class SiteSettingsResponse(BaseModel):

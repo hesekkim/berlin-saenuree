@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from services.image_optimize_service import delete_derivatives, get_image_variant
+from services.image_optimize_service import (
+    delete_derivatives,
+    derived_image_ids_for_source,
+    get_image_variant,
+)
 from services.media_files_service import (
     delete_file,
     get_file_record,
     normalize_uploader,
 )
-from services.media_refs import is_media_referenced
+from services.media_refs import cleanup_unused_media, is_media_referenced
 
 
 class MediaInUseError(Exception):
@@ -44,6 +48,10 @@ def delete_media_file(file_id: str, *, role: str, email: str) -> None:
         role=role,
         email=email,
         uploaded_by=meta.get("uploadedBy"),
+    )
+    cleanup_unused_media(
+        image_ids=derived_image_ids_for_source(file_id),
+        file_ids=[],
     )
     delete_file(file_id)
 

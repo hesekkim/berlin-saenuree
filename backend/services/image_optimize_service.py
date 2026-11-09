@@ -387,6 +387,21 @@ def _derived_image_ids(source_file_id: str) -> list[str]:
     return _derived_ids_in(payload)
 
 
+def derived_image_ids_for_source(source_file_id: str) -> list[str]:
+    """Image derivatives created from an uploaded source file."""
+    derived = set(_derived_image_ids(source_file_id))
+    for image_dir in settings.media_images_dir.iterdir():
+        if not image_dir.is_dir():
+            continue
+        try:
+            meta = _read_meta(image_dir)
+        except ImageOptimizeError:
+            continue
+        if str(meta.get("sourceFileId") or "") == source_file_id:
+            derived.add(str(meta.get("id") or image_dir.name))
+    return sorted(derived)
+
+
 def _register_derivative(source_file_id: str, image_id: str) -> None:
     """Record imageId on the source file so publish can find reusable derivatives without a scan."""
     with _SOURCE_INDEX_LOCK:

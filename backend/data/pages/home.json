@@ -1,0 +1,43 @@
+{
+  "contentRevision": 10,
+  "content": {
+    "ko": {
+      "yearMotto": "새로운 일을 행하실\n하나님을 기대하라",
+      "bibleVerse": "그런즉 누구든지 그리스도 안에 있으면 새로운 피조물이라 이전 것은 지나갔으니 보라 새 것이 되었도다",
+      "bibleReference": "고린도후서 5:17"
+    },
+    "en": {
+      "yearMotto": "Look forward to the new thing God will do.",
+      "bibleVerse": "Therefore if any man be in Christ, he is a new creature: old things are passed away; behold, all things are become new.",
+      "bibleReference": "2 Corinthians 5:17"
+    },
+    "de": {
+      "yearMotto": "Erwarte das Neue, das Gott tun wird.",
+      "bibleVerse": "Darum, ist jemand in Christo, so ist er eine neue Kreatur; das Alte ist vergangen, siehe, es ist alles neu geworden!",
+      "bibleReference": "2. Korinther 5,17"
+    }
+  },
+  "sharedMedia": {
+    "heroImages": [
+      {
+        "imageId": "16b9391b-9b3e-4bd6-b176-ee1b49aee439",
+        "sourceFileId": "150bf940-dbc3-4c99-be56-9f0de8eaec8e"
+      },
+      {
+        "imageId": "502ff717-64cc-4867-a952-7de81bca3282",
+        "sourceFileId": "f69bcff5-00c9-4836-a91e-0cf23818ed30"
+      },
+      {
+        "imageId": "f2e69257-f399-4d9d-aec5-384a12896d8d",
+        "sourceFileId": "0cf8326e-cba3-40bb-b248-8dc14721ea47"
+      }
+    ],
+    "panoramaImageId": "",
+    "panoramaSourceFileId": "",
+    "youtubeVideoUrls": [
+      "https://www.youtube.com/watch?v=rKY6bp79-6A",
+      "https://www.youtube.com/watch?v=yyCDZM51RzU",
+      "https://www.youtube.com/watch?v=XyyEKZskwaY"
+    ]
+  }
+}

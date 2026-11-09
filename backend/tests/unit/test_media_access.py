@@ -106,9 +106,9 @@ def test_delete_unreferenced_own_media_succeeds(isolated_data):
     client = _act_as("page_manager", "manager@example.com")
     file_id, image_id = _upload_and_optimize(client)
 
-    assert client.delete(f"/api/v1/media/images/{image_id}").status_code == 204
     assert client.delete(f"/api/v1/media/files/{file_id}").status_code == 204
     assert client.get(f"/api/v1/media/files/{file_id}").status_code == 404
+    assert client.get(f"/api/v1/media/images/{image_id}/display").status_code == 404
 
 
 def test_page_manager_cannot_delete_other_users_media(isolated_data):

@@ -1,11 +1,21 @@
 import { apiClient } from '../lib/axios';
-import type { HomeContentByLanguage } from '../content/homeContent';
+import {
+  normalizeSharedHomeMedia,
+  normalizeHomeCopy,
+  createEmptyHomeSharedMedia,
+  type HomeContentByLanguage,
+  type HomeSharedMedia,
+} from '../content/homeContent';
 import type { Language } from '../types/Language';
 
 export type PageContentResponse = {
   slug: string;
   contentRevision: number;
-  content: HomeContentByLanguage;
+  content: Record<
+    string,
+    Partial<HomeContentByLanguage[string]> & { youtubeVideoUrl?: string }
+  >;
+  sharedMedia?: Partial<HomeSharedMedia> | null;
 };
 
 export type PageDocument = {
@@ -29,7 +39,36 @@ export type SiteSettingsUpdate = {
 export function pageDocumentFromResponse(
   data: PageContentResponse
 ): PageDocument {
-  return { contentRevision: data.contentRevision, content: data.content };
+  const content = Object.fromEntries(
+    Object.entries(data.content).map(([language, copy]) => [
+      language,
+      {
+        ...normalizeHomeCopy(copy),
+        youtubeVideoUrls:
+          copy.youtubeVideoUrls ??
+          (copy.youtubeVideoUrl ? [copy.youtubeVideoUrl] : []),
+      },
+    ])
+  );
+  let normalizedContent = normalizeSharedHomeMedia(
+    content as HomeContentByLanguage
+  );
+  if (data.slug === 'home' && data.sharedMedia) {
+    const sharedMedia = {
+      ...createEmptyHomeSharedMedia(),
+      ...data.sharedMedia,
+    };
+    normalizedContent = Object.fromEntries(
+      Object.entries(normalizedContent).map(([language, copy]) => [
+        language,
+        { ...copy, ...sharedMedia },
+      ])
+    );
+  }
+  return {
+    contentRevision: data.contentRevision,
+    content: normalizedContent,
+  };
 }
 
 export async function fetchPageDocument(slug: string): Promise<PageDocument> {
@@ -49,9 +88,38 @@ export async function savePageDocument(
   slug: string,
   document: PageDocument
 ): Promise<PageDocument> {
+  let content = document.content;
+  let sharedMedia: HomeSharedMedia | undefined;
+  if (slug === 'home') {
+    content = normalizeSharedHomeMedia(content);
+    const sharedCopy = Object.values(content)[0];
+    sharedMedia = sharedCopy
+      ? {
+          heroImages: sharedCopy.heroImages,
+          panoramaImageId: sharedCopy.panoramaImageId,
+          panoramaSourceFileId: sharedCopy.panoramaSourceFileId,
+          youtubeVideoUrls: sharedCopy.youtubeVideoUrls,
+        }
+      : createEmptyHomeSharedMedia();
+    const sharedFields = new Set([
+      'heroImages',
+      'panoramaImageId',
+      'panoramaSourceFileId',
+      'youtubeVideoUrls',
+    ]);
+    content = Object.fromEntries(
+      Object.entries(content).map(([language, copy]) => [
+        language,
+        Object.fromEntries(
+          Object.entries(copy).filter(([key]) => !sharedFields.has(key))
+        ),
+      ])
+    ) as HomeContentByLanguage;
+  }
   const response = await apiClient.put<PageContentResponse>(`/pages/${slug}`, {
     contentRevision: document.contentRevision,
-    content: document.content,
+    content,
+    ...(sharedMedia ? { sharedMedia } : {}),
   });
   return pageDocumentFromResponse(response.data);
 }

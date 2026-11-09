@@ -33,7 +33,9 @@
 
 ## 현재 작업
 
-현재 진행 중인 티켓이 없습니다.
+현재 진행 중인 티켓:
+
+- [003-home-page-legacy-content.md](./003-home-page-legacy-content.md): Home 사진 슬라이드·콘텐츠 및 CMS 편집 기능
 
 ## 완료된 작업
 

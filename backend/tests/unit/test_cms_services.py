@@ -18,7 +18,7 @@ def test_get_page_content_returns_empty_without_file(isolated_data):
 
 def test_save_page_content_persists_and_reloads(isolated_data):
     saved = page_content_service.save_page_content(
-        "home",
+        "posts",
         {
             "en": {
                 "title": "Hello",
@@ -30,7 +30,7 @@ def test_save_page_content_persists_and_reloads(isolated_data):
     )
     assert saved.revision == 1
     assert saved.content["en"]["title"] == "Hello"
-    assert page_content_service.get_page_content("home")["en"]["title"] == "Hello"
+    assert page_content_service.get_page_content("posts")["en"]["title"] == "Hello"
 
 
 def test_save_site_settings_requires_at_least_one_language(isolated_data):
