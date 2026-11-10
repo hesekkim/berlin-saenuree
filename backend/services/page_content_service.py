@@ -52,6 +52,11 @@ def is_allowed_slug(slug: str) -> bool:
 
 
 def get_default_page_content(_slug: str) -> dict[str, dict[str, Any]]:
+    if _slug == "visit":
+        seed_path = Path(__file__).parent.parent / "data" / "pages" / "visit.json"
+        seed_document = _read_document(seed_path, strict=False, slug="visit")
+        if seed_document is not None:
+            return seed_document.content
     return {}
 
 

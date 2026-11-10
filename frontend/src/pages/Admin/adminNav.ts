@@ -5,6 +5,7 @@ import {
   FiHome,
   FiSettings,
   FiLayout,
+  FiMapPin,
   FiTrash2,
 } from 'react-icons/fi';
 import type { CmsRole } from '../../shared/api/authApi';
@@ -14,13 +15,21 @@ export type AdminNavIcon =
   | 'posts'
   | 'blogger'
   | 'settings'
+  | 'visit'
   | 'popups'
   | 'trash';
 
 export type AdminNavItem = {
   id: string;
   to: string;
-  labelKey: 'home' | 'posts' | 'blogger' | 'settings' | 'popups' | 'trash';
+  labelKey:
+    | 'home'
+    | 'visit'
+    | 'posts'
+    | 'blogger'
+    | 'settings'
+    | 'popups'
+    | 'trash';
   icon: AdminNavIcon;
   end?: boolean;
 };
@@ -33,7 +42,7 @@ export type AdminNavSection = {
 
 export type AdminPageNode = {
   slug: string;
-  labelKey: 'home' | 'posts' | 'blogger';
+  labelKey: 'home' | 'visit' | 'posts' | 'blogger';
   to: string;
   icon: AdminNavIcon;
   end?: boolean;
@@ -50,6 +59,14 @@ export const adminPageTree: AdminPageNode[] = [
     labelKey: 'home',
     to: '/admin/pages/home',
     icon: 'home',
+    end: true,
+    children: [],
+  },
+  {
+    slug: 'visit',
+    labelKey: 'visit',
+    to: '/admin/pages/visit',
+    icon: 'visit',
     end: true,
     children: [],
   },
@@ -220,6 +237,7 @@ export const adminNavSections: AdminNavSection[] = buildAdminNavSections(
 
 export const adminNavIcons: Record<AdminNavIcon, IconType> = {
   home: FiHome,
+  visit: FiMapPin,
   posts: FiGrid,
   blogger: FiBookOpen,
   settings: FiSettings,

@@ -1,0 +1,494 @@
+.page {
+  width: min(100% - 2.5rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(4rem, 9vw, 8rem) 0;
+}
+
+.header {
+  max-width: 46rem;
+  margin: 0 auto clamp(4rem, 9vw, 7rem);
+  text-align: center;
+}
+
+.eyebrow,
+.cardEyebrow,
+.servicePlaceLabel {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display-kr);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.loadError {
+  margin: -2rem auto 3rem;
+  color: var(--color-danger);
+  text-align: center;
+}
+
+.section + .section {
+  margin-top: clamp(4.5rem, 10vw, 8rem);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.sectionHeading h2 {
+  margin: 0;
+  font-family: var(--font-display-kr);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 500;
+}
+
+.sectionNumber {
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.serviceCard {
+  display: flex;
+  flex-direction: column;
+  min-height: 17rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-secondary);
+}
+
+.serviceName {
+  margin: 0 0 1.25rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.serviceDay {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.serviceTime {
+  margin: 0.1rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 5vw, 3.75rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.serviceDivider {
+  height: 1px;
+  margin: auto 0 1rem;
+  background: var(--color-border);
+}
+
+.servicePlaceLabel {
+  font-size: 0.65rem;
+}
+
+.servicePlace {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.locationGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.locationDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.addressCard {
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg-secondary);
+}
+
+.address {
+  margin: 0.5rem 0 1.25rem;
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+}
+
+.mapLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  background: var(--color-text);
+  color: var(--color-bg-secondary);
+  font-size: 0.875rem;
+  transition:
+    background-color var(--animation-duration) ease,
+    color var(--animation-duration) ease;
+}
+
+.mapLink:hover {
+  background: var(--color-primary);
+  color: var(--color-bg-secondary);
+}
+
+.transitSection h3,
+.venue h3 {
+  margin: 0 0 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.transitGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.transitCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-secondary);
+  font-size: 0.875rem;
+}
+
+.transitType {
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.transitCard strong {
+  font-size: 1.125rem;
+}
+
+.transitCard > span:not(.transitType) {
+  overflow-wrap: anywhere;
+}
+
+.walkingTime {
+  color: var(--color-text-secondary);
+}
+
+.secondaryTransit {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+.secondaryTransit summary {
+  width: fit-content;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.secondaryTransit h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.secondaryTransit ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.secondaryTransit li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.secondaryTransit li strong {
+  color: var(--color-text);
+}
+
+.mapColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mapFrame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg-secondary);
+}
+
+.mapFrame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+.mapControls {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-bg-secondary);
+}
+
+.mapControls button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  color: var(--color-text);
+  font-size: 1.125rem;
+}
+
+.mapControls button + button {
+  border-top: 1px solid var(--color-border);
+}
+
+.mapControls button:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.mapControls button:focus-visible,
+.carousel button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.venue {
+  min-width: 0;
+}
+
+.carousel {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--color-bg-secondary);
+  touch-action: pan-y;
+}
+
+.carouselSlide {
+  position: absolute;
+  top: 5%;
+  left: 9%;
+  z-index: 0;
+  width: 82%;
+  height: 90%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 600ms ease,
+    filter 600ms ease,
+    opacity 600ms ease;
+}
+
+.carouselSlide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carouselSlideActive,
+.carouselSlidePrevious,
+.carouselSlideNext {
+  opacity: 1;
+}
+
+.carouselSlideActive {
+  z-index: 2;
+  filter: none;
+  transform: translateX(0) scale(1);
+}
+
+.carouselSlidePrevious {
+  z-index: 1;
+  filter: blur(3px);
+  transform: translateX(-36%) scale(0.88);
+}
+
+.carouselSlideNext {
+  z-index: 1;
+  filter: blur(3px);
+  transform: translateX(36%) scale(0.88);
+}
+
+.carouselSlideHiddenPrevious {
+  filter: blur(3px);
+  transform: translateX(-120%) scale(0.82);
+}
+
+.carouselSlideHiddenNext {
+  filter: blur(3px);
+  transform: translateX(120%) scale(0.82);
+}
+
+.carouselArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translateY(-50%);
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-size: 1.25rem;
+}
+
+.carouselArrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.previous {
+  left: 0.75rem;
+}
+
+.next {
+  right: 0.75rem;
+}
+
+.carouselPagination {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0.75rem;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.carouselPagination button {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: 1px solid var(--color-bg-secondary);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.carouselPagination .activeDot {
+  background: var(--color-bg-secondary);
+}
+
+@media (max-width: 800px) {
+  .serviceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .serviceCard:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .locationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .page {
+    width: min(100% - 2rem, 76rem);
+    padding-top: clamp(5rem, 18vw, 6.5rem);
+  }
+
+  .serviceGrid {
+    display: flex;
+    gap: 0.75rem;
+    margin-inline: -1rem;
+    padding: 0.5rem 15vw 0.75rem;
+    overflow-x: auto;
+    scroll-padding-inline: 15vw;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .serviceGrid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .serviceCard {
+    flex: 0 0 70vw;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+
+  .secondaryTransit li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .secondaryTransit li strong {
+    grid-column: 1 / -1;
+  }
+
+  .carouselArrow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapLink {
+    transition: none;
+  }
+
+  .carouselSlide {
+    transition: none;
+  }
+}

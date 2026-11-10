@@ -235,6 +235,40 @@ def test_put_accepts_home_content_fields(isolated_data):
     assert response.json()["sharedMedia"] == shared_media
 
 
+def test_visit_content_round_trips_through_page_api(isolated_data):
+    app.dependency_overrides[require_page_editor] = lambda: {
+        "email": "admin@example.com",
+        "role": "site_admin",
+    }
+    client = TestClient(app)
+    content = {
+        "en": {
+            "address": "Borsigstraße 5, 10115 Berlin",
+            "services": [
+                {
+                    "id": "sunday-service",
+                    "name": "Sunday Service",
+                    "day": "Sunday",
+                    "time": "11:30",
+                    "place": "GROSSER SAAL",
+                }
+            ],
+        }
+    }
+    try:
+        response = client.put(
+            "/api/v1/pages/visit",
+            json={"contentRevision": 0, "content": content},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["contentRevision"] == 1
+    assert response.json()["content"]["en"]["address"] == content["en"]["address"]
+    assert response.json()["content"]["en"]["services"] == content["en"]["services"]
+
+
 def test_put_preserves_non_home_page_fields(isolated_data):
     app.dependency_overrides[require_page_editor] = lambda: {
         "email": "admin@example.com",

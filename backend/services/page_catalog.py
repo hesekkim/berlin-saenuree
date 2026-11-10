@@ -21,6 +21,7 @@ class PageNode:
 # Top-level nodes are the only assignable pages in Settings.
 PAGE_TREE: tuple[PageNode, ...] = (
     PageNode("home"),
+    PageNode("visit"),
     PageNode("posts"),
     PageNode("blogger"),
 )

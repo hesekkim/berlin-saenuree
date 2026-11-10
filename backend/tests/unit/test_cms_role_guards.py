@@ -67,6 +67,11 @@ def test_page_manager_require_page_editor_allows_assigned_slug(isolated_data):
     assert require_page_editor(slug="home", user=user) is user
 
 
+def test_page_manager_can_edit_assigned_visit_page(isolated_data):
+    user = _manager_user(pages=["visit"], effectivePages=["visit"])
+    assert require_page_editor(slug="visit", user=user) is user
+
+
 def test_page_manager_require_page_editor_rejects_unassigned_slug(isolated_data):
     user = _manager_user(effectivePages=["home"])
     with pytest.raises(HTTPException) as exc_info:

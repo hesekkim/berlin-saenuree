@@ -18,8 +18,8 @@ import ChurchHistory from '../pages/ChurchHistory/ChurchHistory';
 import SeniorPastor from '../pages/SeniorPastor/SeniorPastor';
 import ChurchVision from '../pages/ChurchVision/ChurchVision';
 import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
-import Worship from '../pages/Worship/Worship';
-import Location from '../pages/Location/Location';
+import Visit from '../pages/Visit/Visit';
+import VisitPageEditor from '../pages/Admin/Pages/Visit/VisitPageEditor';
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +46,10 @@ export const router = createBrowserRouter([
           {
             path: 'pages/home',
             element: <HomePageEditor />,
+          },
+          {
+            path: 'pages/visit',
+            element: <VisitPageEditor />,
           },
           {
             path: 'pages/posts',
@@ -98,12 +102,8 @@ export const router = createBrowserRouter([
         element: <SaenureeNews />,
       },
       {
-        path: 'worship',
-        element: <Worship />,
-      },
-      {
-        path: 'location',
-        element: <Location />,
+        path: 'visit',
+        element: <Visit />,
       },
       ...(isUiLabEnabled
         ? [

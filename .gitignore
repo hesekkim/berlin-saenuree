@@ -6,6 +6,7 @@ backend/data/*
 !backend/data/pages/
 backend/data/pages/*
 !backend/data/pages/home.json
+!backend/data/pages/visit.json
 
 # frontend
 node_modules

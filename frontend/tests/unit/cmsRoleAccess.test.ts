@@ -69,4 +69,17 @@ describe('adminNav page_manager', () => {
     const pages = sections.find((section) => section.id === 'pages');
     expect(pages?.items.map((item) => item.id)).toEqual(['home']);
   });
+
+  it('includes Visit as an assignable CMS page', () => {
+    const sections = buildAdminNavSections('site_admin', []);
+    const pages = sections.find((section) => section.id === 'pages');
+
+    expect(pages?.items).toContainEqual(
+      expect.objectContaining({
+        id: 'visit',
+        to: '/admin/pages/visit',
+        labelKey: 'visit',
+      }),
+    );
+  });
 });

@@ -1,0 +1,211 @@
+.page {
+  width: min(100%, 64rem);
+}
+
+.header {
+  margin-bottom: var(--cf-space-24);
+}
+
+.header h1 {
+  margin: 0 0 var(--cf-space-8);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.header p,
+.mapField p,
+.loadError p {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.6;
+}
+
+.language {
+  max-width: 16rem;
+  margin-bottom: var(--cf-space-24);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-24);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+  padding: var(--cf-space-16);
+  border: 1px solid var(--border-color, var(--cf-neutral-300));
+  border-radius: var(--cf-radius-card);
+  background: var(--cms-surface, var(--cf-white));
+}
+
+.locationGroup {
+  gap: var(--cf-space-32);
+}
+
+.listHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.group > h2,
+.listHeading h2,
+.listHeading h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.listHeading h3 {
+  font-size: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+}
+
+.fieldGroup h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.transitGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+}
+
+.transitItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-24);
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-24);
+}
+
+.item {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.item legend {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+  padding: 0;
+  color: var(--cms-text, var(--cf-neutral-800));
+  font-weight: 600;
+}
+
+.item legend span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.addButton,
+.removeButton {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--cf-radius-input);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.addButton {
+  color: var(--cms-primary, var(--cf-blue-63));
+}
+
+.addButton:hover:not(:disabled) {
+  border-color: var(--cms-primary-soft-hover, var(--cf-blue-25));
+  background: var(--cms-primary-soft, var(--cf-blue-13));
+}
+
+.removeButton {
+  color: var(--cms-danger, var(--cf-red-63));
+}
+
+.removeButton:hover:not(:disabled) {
+  border-color: var(--cms-danger, var(--cf-red-63));
+  background: var(--cms-danger-soft, #fee2e2);
+}
+
+.addButton:focus-visible,
+.removeButton:focus-visible {
+  outline: 2px solid var(--cms-focus, var(--cf-blue-63));
+  outline-offset: 2px;
+}
+
+.addButton:disabled,
+.removeButton:disabled {
+  cursor: not-allowed;
+  opacity: var(--cf-disabled-opacity);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cf-space-16);
+}
+
+.mapField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+}
+
+.mapField p {
+  font-size: 0.875rem;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-16);
+  margin-top: var(--cf-space-24);
+}
+
+.loadError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+  margin-bottom: var(--cf-space-24);
+  padding: var(--cf-space-16);
+  border: 1px solid var(--cf-red-63);
+  border-radius: var(--cf-radius-card);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .loadError {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

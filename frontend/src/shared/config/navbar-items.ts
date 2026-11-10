@@ -56,19 +56,11 @@ const navbarItems: NavbarItemProps[] = [
   },
   {
     title: {
-      [Language.KO]: '예배 안내',
-      [Language.EN]: 'Worship',
-      [Language.DE]: 'Gottesdienst',
+      [Language.KO]: '예배 및 오시는 길',
+      [Language.EN]: 'Worship & Directions',
+      [Language.DE]: 'Gottesdienst & Anfahrt',
     },
-    link: '/worship',
-  },
-  {
-    title: {
-      [Language.KO]: '위치 안내',
-      [Language.EN]: 'Location',
-      [Language.DE]: 'Anfahrt',
-    },
-    link: '/location',
+    link: '/visit',
   },
 ];
 

@@ -33,6 +33,28 @@ def test_save_page_content_persists_and_reloads(isolated_data):
     assert page_content_service.get_page_content("posts")["en"]["title"] == "Hello"
 
 
+def test_visit_page_is_available_and_persists_content(isolated_data):
+    assert page_content_service.is_allowed_slug("visit") is True
+    default_content = page_content_service.get_page_content("visit")
+    assert default_content["ko"]["address"] == "Borsigstraße 5, 10115 Berlin"
+
+    saved = page_content_service.save_page_content(
+        "visit",
+        {
+            "en": {
+                "address": "Borsigstraße 5, 10115 Berlin",
+                "services": [{"id": "sunday-service", "time": "11:30"}],
+            }
+        },
+        expected_revision=0,
+    )
+
+    assert saved.revision == 1
+    content = page_content_service.get_page_content("visit")
+    assert content["en"]["address"] == "Borsigstraße 5, 10115 Berlin"
+    assert content["en"]["services"][0]["time"] == "11:30"
+
+
 def test_save_site_settings_requires_at_least_one_language(isolated_data):
     with pytest.raises(site_settings_service.SiteSettingsError):
         site_settings_service.save_site_settings(available_languages=[])

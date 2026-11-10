@@ -1,0 +1,182 @@
+{
+  "contentRevision": 3,
+  "content": {
+    "ko": {
+      "services": [
+        {
+          "id": "sunday-service",
+          "name": "주일 예배",
+          "day": "주일",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "sunday-school",
+          "name": "주일 학교",
+          "day": "주일",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "morning-prayer",
+          "name": "새벽 예배",
+          "day": "월요일–토요일",
+          "time": "07:00",
+          "place": "GROSSER SAAL"
+        }
+      ],
+      "address": "Borsigstraße 5, 10115 Berlin",
+      "primaryTransit": [
+        {
+          "id": "s-bahn",
+          "type": "S-Bahn",
+          "line": "S1 · S2",
+          "station": "Nordbahnhof",
+          "walkingTime": "도보 4분"
+        },
+        {
+          "id": "u-bahn",
+          "type": "U-Bahn",
+          "line": "U6",
+          "station": "Oranienburger Tor",
+          "walkingTime": "도보 7분"
+        }
+      ],
+      "secondaryTransit": [
+        {
+          "id": "tram",
+          "type": "Tram",
+          "line": "M5",
+          "station": "Oranienburger Tor",
+          "walkingTime": "도보 6분"
+        },
+        {
+          "id": "bus",
+          "type": "Bus",
+          "line": "142",
+          "station": "Tucholskystraße",
+          "walkingTime": "도보 2분"
+        }
+      ],
+      "googleMapsUrl": "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+    },
+    "en": {
+      "services": [
+        {
+          "id": "sunday-service",
+          "name": "Sunday Service",
+          "day": "Sunday",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "sunday-school",
+          "name": "Sunday School",
+          "day": "Sunday",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "morning-prayer",
+          "name": "Morning Prayer",
+          "day": "Monday–Saturday",
+          "time": "07:00",
+          "place": "GROSSER SAAL"
+        }
+      ],
+      "address": "Borsigstraße 5, 10115 Berlin",
+      "primaryTransit": [
+        {
+          "id": "s-bahn",
+          "type": "S-Bahn",
+          "line": "S1 · S2",
+          "station": "Nordbahnhof",
+          "walkingTime": "4 min walk"
+        },
+        {
+          "id": "u-bahn",
+          "type": "U-Bahn",
+          "line": "U6",
+          "station": "Oranienburger Tor",
+          "walkingTime": "7 min walk"
+        }
+      ],
+      "secondaryTransit": [
+        {
+          "id": "tram",
+          "type": "Tram",
+          "line": "M5",
+          "station": "Oranienburger Tor",
+          "walkingTime": "6 min walk"
+        },
+        {
+          "id": "bus",
+          "type": "Bus",
+          "line": "142",
+          "station": "Tucholskystraße",
+          "walkingTime": "2 min walk"
+        }
+      ],
+      "googleMapsUrl": "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+    },
+    "de": {
+      "services": [
+        {
+          "id": "sunday-service",
+          "name": "Sonntagsgottesdienst",
+          "day": "Sonntag",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "sunday-school",
+          "name": "Kindergottesdienst",
+          "day": "Sonntag",
+          "time": "11:30",
+          "place": "GROSSER SAAL"
+        },
+        {
+          "id": "morning-prayer",
+          "name": "Morgengebet",
+          "day": "Montag–Samstag",
+          "time": "07:00",
+          "place": "GROSSER SAAL"
+        }
+      ],
+      "address": "Borsigstraße 5, 10115 Berlin",
+      "primaryTransit": [
+        {
+          "id": "s-bahn",
+          "type": "S-Bahn",
+          "line": "S1 · S2",
+          "station": "Nordbahnhof",
+          "walkingTime": "4 Min. zu Fuß"
+        },
+        {
+          "id": "u-bahn",
+          "type": "U-Bahn",
+          "line": "U6",
+          "station": "Oranienburger Tor",
+          "walkingTime": "7 Min. zu Fuß"
+        }
+      ],
+      "secondaryTransit": [
+        {
+          "id": "tram",
+          "type": "Tram",
+          "line": "M5",
+          "station": "Oranienburger Tor",
+          "walkingTime": "6 Min. zu Fuß"
+        },
+        {
+          "id": "bus",
+          "type": "Bus",
+          "line": "142",
+          "station": "Tucholskystraße",
+          "walkingTime": "2 Min. zu Fuß"
+        }
+      ],
+      "googleMapsUrl": "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+    }
+  }
+}

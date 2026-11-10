@@ -23,6 +23,13 @@ export type PageDocument = {
   content: HomeContentByLanguage;
 };
 
+export type EditablePageContent = Record<string, Record<string, unknown>>;
+
+export type EditablePageDocument = {
+  contentRevision: number;
+  content: EditablePageContent;
+};
+
 export type SiteSettingsResponse = {
   availableLanguages: string[];
   adminLanguage: Language;
@@ -122,6 +129,30 @@ export async function savePageDocument(
     ...(sharedMedia ? { sharedMedia } : {}),
   });
   return pageDocumentFromResponse(response.data);
+}
+
+export async function fetchEditablePageDocument(
+  slug: string,
+): Promise<EditablePageDocument> {
+  const response = await apiClient.get<PageContentResponse>(`/pages/${slug}`);
+  return {
+    contentRevision: response.data.contentRevision,
+    content: response.data.content,
+  };
+}
+
+export async function saveEditablePageDocument(
+  slug: string,
+  document: EditablePageDocument,
+): Promise<EditablePageDocument> {
+  const response = await apiClient.put<PageContentResponse>(`/pages/${slug}`, {
+    contentRevision: document.contentRevision,
+    content: document.content,
+  });
+  return {
+    contentRevision: response.data.contentRevision,
+    content: response.data.content,
+  };
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettingsResponse> {

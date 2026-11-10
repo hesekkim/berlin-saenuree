@@ -36,6 +36,7 @@ export interface InputFieldProps {
   required?: boolean;
   maxLength?: number;
   className?: string;
+  hideLabel?: boolean;
   onBlur?: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onFocus?: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 }
@@ -68,6 +69,7 @@ const InputField = forwardRef<
     required,
     maxLength,
     className = '',
+    hideLabel = false,
   },
   ref,
 ) {
@@ -127,6 +129,7 @@ const InputField = forwardRef<
           htmlFor={inputId}
           className={[
             styles['input-field__label'],
+            hideLabel ? styles['input-field__label--visually-hidden'] : '',
             error ? styles['input-field__label--error'] : '',
           ]
             .filter(Boolean)
