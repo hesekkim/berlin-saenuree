@@ -34,16 +34,8 @@ const navbarItems: NavbarItemProps[] = [
       [Language.EN]: 'Our Calling',
       [Language.DE]: 'Unser Auftrag',
     },
-    link: '/calling/pastoral-philosophy',
+    link: '/calling/church-vision',
     subNavbarItems: [
-      {
-        title: {
-          [Language.KO]: '목회 철학',
-          [Language.EN]: 'Pastoral Philosophy',
-          [Language.DE]: 'Pastorale Philosophie',
-        },
-        link: '/calling/pastoral-philosophy',
-      },
       {
         title: {
           [Language.KO]: '교회 비전',

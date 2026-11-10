@@ -16,7 +16,6 @@ import PrivacyPolicy from '../pages/PrivacyPolicy/PrivacyPolicy';
 import { isUiLabEnabled } from '../shared/config/features';
 import ChurchHistory from '../pages/ChurchHistory/ChurchHistory';
 import SeniorPastor from '../pages/SeniorPastor/SeniorPastor';
-import PastoralPhilosophy from '../pages/PastoralPhilosophy/PastoralPhilosophy';
 import ChurchVision from '../pages/ChurchVision/ChurchVision';
 import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
 import Worship from '../pages/Worship/Worship';
@@ -89,10 +88,6 @@ export const router = createBrowserRouter([
       {
         path: 'about/senior-pastor',
         element: <SeniorPastor />,
-      },
-      {
-        path: 'calling/pastoral-philosophy',
-        element: <PastoralPhilosophy />,
       },
       {
         path: 'calling/church-vision',
