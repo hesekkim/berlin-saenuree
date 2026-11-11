@@ -1,5 +1,5 @@
 {
-  "contentRevision": 10,
+  "contentRevision": 11,
   "content": {
     "ko": {
       "yearMotto": "새로운 일을 행하실\n하나님을 기대하라",
@@ -18,20 +18,7 @@
     }
   },
   "sharedMedia": {
-    "heroImages": [
-      {
-        "imageId": "16b9391b-9b3e-4bd6-b176-ee1b49aee439",
-        "sourceFileId": "150bf940-dbc3-4c99-be56-9f0de8eaec8e"
-      },
-      {
-        "imageId": "502ff717-64cc-4867-a952-7de81bca3282",
-        "sourceFileId": "f69bcff5-00c9-4836-a91e-0cf23818ed30"
-      },
-      {
-        "imageId": "f2e69257-f399-4d9d-aec5-384a12896d8d",
-        "sourceFileId": "0cf8326e-cba3-40bb-b248-8dc14721ea47"
-      }
-    ],
+    "heroImages": [],
     "panoramaImageId": "",
     "panoramaSourceFileId": "",
     "youtubeVideoUrls": [
