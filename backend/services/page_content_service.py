@@ -136,6 +136,28 @@ def _normalize_church_history_shared_media(
     }
 
 
+def _normalize_visit_shared_media(raw: object) -> dict[str, Any]:
+    source = raw if isinstance(raw, dict) else {}
+    normalized: dict[str, list[dict[str, str]]] = {}
+    for group in ("mapImages", "venueImages"):
+        images = source.get(group)
+        normalized[group] = (
+            [
+                {
+                    "imageId": str(image.get("imageId") or ""),
+                    "sourceFileId": str(image.get("sourceFileId") or ""),
+                }
+                for image in images
+                if isinstance(image, dict)
+                and image.get("imageId")
+                and image.get("sourceFileId")
+            ]
+            if isinstance(images, list)
+            else []
+        )
+    return normalized
+
+
 def get_church_history_public_document() -> PageDocument:
     editable = get_page_document("church-history")
     baseline = get_church_history_baseline_content()
@@ -348,6 +370,16 @@ def _parse_document(parsed: Any, *, slug: str) -> PageDocument | None:
                     parsed.get(_SHARED_MEDIA_KEY), content
                 ),
             )
+        if slug == "visit":
+            return PageDocument(
+                revision=max(1, revision),
+                content=normalized,
+                shared_media=(
+                    _normalize_visit_shared_media(parsed.get(_SHARED_MEDIA_KEY))
+                    if _SHARED_MEDIA_KEY in parsed
+                    else {}
+                ),
+            )
         return PageDocument(
             revision=max(1, revision),
             content=normalized,
@@ -366,6 +398,16 @@ def _parse_document(parsed: Any, *, slug: str) -> PageDocument | None:
             revision=1,
             content=normalized,
             shared_media=_normalize_church_history_shared_media(None, parsed),
+        )
+    if slug == "visit":
+        return PageDocument(
+            revision=1,
+            content=normalized,
+            shared_media=(
+                _normalize_visit_shared_media(parsed.get(_SHARED_MEDIA_KEY))
+                if _SHARED_MEDIA_KEY in parsed
+                else {}
+            ),
         )
     return PageDocument(revision=1, content=normalized)
 
@@ -404,6 +446,11 @@ def _write_document(path: Path, document: PageDocument, *, slug: str) -> None:
         payload[_SHARED_MEDIA_KEY] = _normalize_church_history_shared_media(
             document.shared_media, document.content
         )
+    elif slug == "visit":
+        if document.shared_media:
+            payload[_SHARED_MEDIA_KEY] = _normalize_visit_shared_media(
+                document.shared_media
+            )
     write_json_store(path, payload)
 
 
@@ -467,6 +514,22 @@ def get_church_history_media_refs() -> set[str]:
     return image_ids | file_ids
 
 
+def get_visit_media_refs() -> set[str]:
+    with _page_lock("visit"):
+        document = _read_document(
+            settings.page_content_file("visit"), strict=True, slug="visit"
+        )
+    if document is None:
+        return set()
+    return {
+        str(image.get(field) or "")
+        for group in ("mapImages", "venueImages")
+        for image in document.shared_media.get(group, [])
+        for field in ("imageId", "sourceFileId")
+        if image.get(field)
+    }
+
+
 def save_page_content(
     slug: str,
     content: dict[str, dict[str, Any]],
@@ -517,6 +580,12 @@ def save_page_content(
                             next_shared_media.setdefault("events", {}).setdefault(
                                 event_id, image
                             )
+            elif slug == "visit":
+                next_shared_media = (
+                    _normalize_visit_shared_media(shared_media)
+                    if shared_media is not None
+                    else current.shared_media
+                )
             saved = PageDocument(
                 revision=current.revision + 1,
                 content=normalized_content,
@@ -568,8 +637,36 @@ def save_page_content(
                 )
             except Exception:
                 logger.exception("Failed to clean up replaced Church History media")
+        elif slug == "visit":
+            old_refs = _visit_media_refs(current.shared_media)
+            new_refs = _visit_media_refs(saved.shared_media)
+            try:
+                from services.media_refs import cleanup_unused_media
+
+                cleanup_unused_media(
+                    image_ids=old_refs[0] - new_refs[0],
+                    file_ids=old_refs[1] - new_refs[1],
+                )
+            except Exception:
+                logger.exception("Failed to clean up replaced Visit media")
 
         return saved
+
+
+def _visit_media_refs(
+    shared_media: dict[str, Any] | None,
+) -> tuple[set[str], set[str]]:
+    image_ids: set[str] = set()
+    file_ids: set[str] = set()
+    for group in ("mapImages", "venueImages"):
+        for image in (shared_media or {}).get(group, []):
+            if not isinstance(image, dict):
+                continue
+            if image.get("imageId"):
+                image_ids.add(str(image["imageId"]))
+            if image.get("sourceFileId"):
+                file_ids.add(str(image["sourceFileId"]))
+    return image_ids, file_ids
 
 
 def _page_media_refs(

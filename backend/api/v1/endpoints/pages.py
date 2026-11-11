@@ -7,6 +7,7 @@ from models import (
     HomeSharedMedia,
     PageContentResponse,
     PageContentUpdateRequest,
+    VisitSharedMedia,
 )
 from services import page_content_service
 from services.page_content_service import PageContentConflictError, PageDocument
@@ -26,7 +27,11 @@ def _to_response(slug: str, document: PageDocument) -> PageContentResponse:
             else (
                 ChurchHistorySharedMedia(**document.shared_media)
                 if slug == "church-history"
-                else None
+                else (
+                    VisitSharedMedia(**document.shared_media)
+                    if slug == "visit" and document.shared_media
+                    else None
+                )
             )
         ),
     )

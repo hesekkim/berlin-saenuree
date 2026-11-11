@@ -1,3 +1,5 @@
+import { mediaImageAbsoluteUrl } from '../api/mediaApi';
+
 export type VisitService = {
   id: string;
   name: string;
@@ -22,7 +24,53 @@ export type VisitCopy = {
   googleMapsUrl: string;
 };
 
+export type VisitImage = {
+  imageId: string;
+  sourceFileId: string;
+};
+
+export type VisitSharedMedia = {
+  mapImages: VisitImage[];
+  venueImages: VisitImage[];
+};
+
 export type VisitContentByLanguage = Record<string, VisitCopy>;
+
+export function visitImageUrl(image: VisitImage): string {
+  return image.imageId ? mediaImageAbsoluteUrl(image.imageId, 'display') : '';
+}
+
+export function normalizeVisitSharedMedia(value: unknown): VisitSharedMedia {
+  if (!value || typeof value !== 'object') {
+    return { mapImages: [], venueImages: [] };
+  }
+  const media = value as Partial<VisitSharedMedia>;
+  return {
+    mapImages: normalizeVisitImages(media.mapImages),
+    venueImages: normalizeVisitImages(media.venueImages),
+  };
+}
+
+function normalizeVisitImages(value: unknown): VisitImage[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => {
+          if (!item || typeof item !== 'object') {
+            return null;
+          }
+          const image = item as Partial<VisitImage>;
+          const normalized = {
+            imageId: typeof image.imageId === 'string' ? image.imageId : '',
+            sourceFileId:
+              typeof image.sourceFileId === 'string' ? image.sourceFileId : '',
+          };
+          return normalized.imageId && normalized.sourceFileId
+            ? normalized
+            : null;
+        })
+        .filter((image): image is VisitImage => image !== null)
+    : [];
+}
 
 export function createEmptyVisitCopy(): VisitCopy {
   return {

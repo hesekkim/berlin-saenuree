@@ -1,5 +1,5 @@
 {
-  "contentRevision": 3,
+  "contentRevision": 12,
   "content": {
     "ko": {
       "services": [
@@ -178,5 +178,43 @@
       ],
       "googleMapsUrl": "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
     }
+  },
+  "sharedMedia": {
+    "mapImages": [
+      {
+        "imageId": "c10e169f-e469-46de-b7a8-6a865a2403d3",
+        "sourceFileId": "60173229-8dba-4273-9cea-e0e89874eac5"
+      },
+      {
+        "imageId": "4ff9480f-4510-4623-a1d2-fd790822781c",
+        "sourceFileId": "79e92f0a-dd2a-4074-a3ca-3709f8c0e765"
+      },
+      {
+        "imageId": "9c5fc7d3-ff16-4175-b491-1344ba92e313",
+        "sourceFileId": "6c6a0bc2-e796-4c38-ac64-0180333cdc3b"
+      },
+      {
+        "imageId": "24578012-ce9d-4df1-9d4e-ae36b8efc62a",
+        "sourceFileId": "053ede4d-5a6d-4434-a11d-bff0f70539ba"
+      }
+    ],
+    "venueImages": [
+      {
+        "imageId": "17aedd74-ee1e-4cc8-86d2-f4ca19adbb71",
+        "sourceFileId": "c9c130b9-aa92-4241-9c83-2075d203e936"
+      },
+      {
+        "imageId": "e4a1c778-abc4-460d-9511-d81d281ae2ce",
+        "sourceFileId": "4fb6436b-e1a5-486e-a1d4-1eba0a8a796f"
+      },
+      {
+        "imageId": "d70f3e0b-1ec1-481d-b7e8-a1258b78f031",
+        "sourceFileId": "c6b971af-c55a-4b14-a50b-a35e9ec7f7ff"
+      },
+      {
+        "imageId": "f446ad1d-e1d0-44bc-ba03-1ee9ee488e8f",
+        "sourceFileId": "2b817660-1990-451f-bfd1-8ebf614cafc5"
+      }
+    ]
   }
 }

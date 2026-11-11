@@ -59,6 +59,7 @@ def collect_active_media_refs() -> set[str]:
     refs.update(popups_service.list_popup_media_refs())
     refs.update(page_content_service.get_home_media_refs())
     refs.update(page_content_service.get_church_history_media_refs())
+    refs.update(page_content_service.get_visit_media_refs())
     return {normalize_media_id(ref) for ref in refs if ref}
 
 

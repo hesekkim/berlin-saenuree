@@ -91,17 +91,37 @@ class ChurchHistorySharedMedia(BaseModel):
     events: dict[str, ChurchHistoryEventMedia] = Field(default_factory=dict)
 
 
+class VisitImageMedia(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    imageId: str
+    sourceFileId: str
+
+    @model_validator(mode="after")
+    def require_media_reference(self):
+        if not self.imageId or not self.sourceFileId:
+            raise ValueError("Each Visit image requires imageId and sourceFileId")
+        return self
+
+
+class VisitSharedMedia(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    mapImages: list[VisitImageMedia] = Field(default_factory=list)
+    venueImages: list[VisitImageMedia] = Field(default_factory=list)
+
+
 class PageContentResponse(BaseModel):
     slug: str
     contentRevision: int
     content: dict[str, HomeCopy]
-    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | None = None
+    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | VisitSharedMedia | None = None
 
 
 class PageContentUpdateRequest(BaseModel):
     contentRevision: int = Field(ge=0)
     content: dict[str, HomeCopy]
-    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | None = None
+    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | VisitSharedMedia | None = None
 
     @model_validator(mode="after")
     def validate_legacy_home_media(self):

@@ -1,0 +1,16 @@
+{
+  "id": "c10e169f-e469-46de-b7a8-6a865a2403d3",
+  "sourceFileId": "60173229-8dba-4273-9cea-e0e89874eac5",
+  "width": 1300,
+  "height": 800,
+  "variants": [
+    "display",
+    "thumb"
+  ],
+  "encoderQuality": 85,
+  "encoderMethod": 4,
+  "createdAt": "2026-11-11T07:43:47+00:00",
+  "displayMaxEdge": 1920,
+  "thumbMaxEdge": 400,
+  "uploadedBy": "site_admin"
+}

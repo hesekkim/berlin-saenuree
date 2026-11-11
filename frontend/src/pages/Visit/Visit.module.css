@@ -126,6 +126,10 @@
   gap: clamp(1.5rem, 4vw, 3rem);
 }
 
+.locationGridFull {
+  grid-template-columns: 1fr;
+}
+
 .locationDetails {
   display: flex;
   flex-direction: column;

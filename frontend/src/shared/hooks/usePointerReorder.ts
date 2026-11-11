@@ -294,6 +294,16 @@ export function usePointerReorder<T>({
         }
       };
 
+      if (useHold) {
+        holdTimerRef.current = window.setTimeout(() => {
+          holdTimerRef.current = null;
+          const origin = originRef.current;
+          if (origin?.id === id && !origin.cancelled) {
+            startDrag();
+          }
+        }, holdMs);
+      }
+
       const onMove = (moveEvent: PointerEvent) => {
         if (moveEvent.pointerId !== pointerId) {
           return;

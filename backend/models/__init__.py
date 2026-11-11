@@ -13,6 +13,8 @@ from models.cms import (
     PageContentUpdateRequest,
     SiteSettingsResponse,
     SiteSettingsUpdateRequest,
+    VisitImageMedia,
+    VisitSharedMedia,
 )
 from models.media import (
     MediaFileResponse,
@@ -30,6 +32,8 @@ __all__ = [
     "ChurchHistorySharedMedia",
     "PageContentResponse",
     "PageContentUpdateRequest",
+    "VisitImageMedia",
+    "VisitSharedMedia",
     "SiteSettingsResponse",
     "SiteSettingsUpdateRequest",
     "CmsUserResponse",

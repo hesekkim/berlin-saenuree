@@ -10,6 +10,45 @@ backend/data/seed/*
 !backend/data/pages/home.json
 !backend/data/pages/visit.json
 !backend/data/seed/church-history.json
+# Keep the current editable Visit media in Git without tracking other CMS uploads.
+!backend/data/media/
+backend/data/media/*
+!backend/data/media/files/
+backend/data/media/files/*
+!backend/data/media/images/
+backend/data/media/images/*
+!backend/data/media/files/60173229-8dba-4273-9cea-e0e89874eac5/
+!backend/data/media/files/60173229-8dba-4273-9cea-e0e89874eac5/**
+!backend/data/media/files/79e92f0a-dd2a-4074-a3ca-3709f8c0e765/
+!backend/data/media/files/79e92f0a-dd2a-4074-a3ca-3709f8c0e765/**
+!backend/data/media/files/6c6a0bc2-e796-4c38-ac64-0180333cdc3b/
+!backend/data/media/files/6c6a0bc2-e796-4c38-ac64-0180333cdc3b/**
+!backend/data/media/files/053ede4d-5a6d-4434-a11d-bff0f70539ba/
+!backend/data/media/files/053ede4d-5a6d-4434-a11d-bff0f70539ba/**
+!backend/data/media/files/c9c130b9-aa92-4241-9c83-2075d203e936/
+!backend/data/media/files/c9c130b9-aa92-4241-9c83-2075d203e936/**
+!backend/data/media/files/4fb6436b-e1a5-486e-a1d4-1eba0a8a796f/
+!backend/data/media/files/4fb6436b-e1a5-486e-a1d4-1eba0a8a796f/**
+!backend/data/media/files/c6b971af-c55a-4b14-a50b-a35e9ec7f7ff/
+!backend/data/media/files/c6b971af-c55a-4b14-a50b-a35e9ec7f7ff/**
+!backend/data/media/files/2b817660-1990-451f-bfd1-8ebf614cafc5/
+!backend/data/media/files/2b817660-1990-451f-bfd1-8ebf614cafc5/**
+!backend/data/media/images/c10e169f-e469-46de-b7a8-6a865a2403d3/
+!backend/data/media/images/c10e169f-e469-46de-b7a8-6a865a2403d3/**
+!backend/data/media/images/4ff9480f-4510-4623-a1d2-fd790822781c/
+!backend/data/media/images/4ff9480f-4510-4623-a1d2-fd790822781c/**
+!backend/data/media/images/9c5fc7d3-ff16-4175-b491-1344ba92e313/
+!backend/data/media/images/9c5fc7d3-ff16-4175-b491-1344ba92e313/**
+!backend/data/media/images/24578012-ce9d-4df1-9d4e-ae36b8efc62a/
+!backend/data/media/images/24578012-ce9d-4df1-9d4e-ae36b8efc62a/**
+!backend/data/media/images/17aedd74-ee1e-4cc8-86d2-f4ca19adbb71/
+!backend/data/media/images/17aedd74-ee1e-4cc8-86d2-f4ca19adbb71/**
+!backend/data/media/images/e4a1c778-abc4-460d-9511-d81d281ae2ce/
+!backend/data/media/images/e4a1c778-abc4-460d-9511-d81d281ae2ce/**
+!backend/data/media/images/d70f3e0b-1ec1-481d-b7e8-a1258b78f031/
+!backend/data/media/images/d70f3e0b-1ec1-481d-b7e8-a1258b78f031/**
+!backend/data/media/images/f446ad1d-e1d0-44bc-ba03-1ee9ee488e8f/
+!backend/data/media/images/f446ad1d-e1d0-44bc-ba03-1ee9ee488e8f/**
 
 # frontend
 node_modules

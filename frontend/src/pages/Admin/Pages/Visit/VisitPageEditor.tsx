@@ -3,13 +3,23 @@ import Button from '../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
 import InputField from '../../../../shared/components/ui/InputField/InputField';
 import Select from '../../../../shared/components/ui/Select/Select';
+import { useCmsConfig } from '../../../../shared/context/CmsConfigContext';
+import { adminTranslations } from '../../translations';
+import VisitMediaEditor from './VisitMediaEditor';
 import { useVisitPageEditor } from './useVisitPageEditor';
 import styles from './VisitPageEditor.module.css';
 
 export default function VisitPageEditor() {
+  const { language: cmsLanguage } = useCmsConfig();
+  const uploadLabels = adminTranslations[cmsLanguage];
   const editor = useVisitPageEditor();
   const { labels, current } = editor;
-  const disabled = !editor.isReady || editor.isSaving;
+  const disabled =
+    !editor.isReady ||
+    editor.isSaving ||
+    editor.isImageUploading ||
+    editor.isImageOptimizing ||
+    editor.isImageCleaning;
 
   return (
     <div className={styles.page}>
@@ -258,6 +268,67 @@ export default function VisitPageEditor() {
               <p>{labels.mapLinkHint}</p>
             </div>
           </div>
+          {(
+            [
+              ['mapImages', labels.mapScreenshots],
+              ['venueImages', labels.venueImages],
+            ] as const
+          ).map(([group, title]) => (
+            <VisitMediaEditor
+              key={group}
+              title={title}
+              hint={
+                group === 'mapImages'
+                  ? labels.mapScreenshotHint
+                  : labels.mediaHint
+              }
+              images={editor.imagesDraft[group]}
+              disabled={disabled}
+              uploadKey={`${group}:${editor.uploadEpoch[group]}`}
+              removeImageLabel={labels.removeImage}
+              selectImageLabel={labels.reorderImage}
+              reorderHint={labels.reorderHint}
+              imageMovedLabel={labels.imageMoved}
+              uploadLabels={{
+                dropHint: uploadLabels.uploadDropHint,
+                chooseFile: uploadLabels.uploadChooseFile,
+                supportedFormats: uploadLabels.uploadSupportedFormats,
+                supportedFormatsShort:
+                  uploadLabels.uploadSupportedFormatsShort,
+                maximumSize: uploadLabels.uploadMaximumSize,
+                maximumSizeShort: uploadLabels.uploadMaximumSizeShort,
+                remove: uploadLabels.uploadRemove,
+                download: uploadLabels.uploadDownload,
+                upload: uploadLabels.uploadUpload,
+                retry: uploadLabels.uploadRetry,
+                uploading: uploadLabels.uploadUploading,
+                uploaded: uploadLabels.uploadUploaded,
+                typeNotAllowed: uploadLabels.uploadTypeNotAllowed,
+                sizeExceeded: uploadLabels.uploadSizeExceeded,
+                uploadFailed: uploadLabels.uploadUploadFailed,
+                unauthorized: uploadLabels.uploadUnauthorized,
+                downloadFailed: uploadLabels.uploadDownloadFailed,
+              }}
+              onUploaded={(files) => {
+                void editor.handleImageUploaded(group, files);
+              }}
+              onItemsChange={(items) =>
+                editor.handleImageItemsChange(group, items)
+              }
+              onRemove={(imageId) => editor.removeImage(group, imageId)}
+              onReorder={(images) => editor.reorderImages(group, images)}
+            />
+          ))}
+          {editor.isImageOptimizing || editor.isImageUploading ? (
+            <p className={styles.mediaHint} role="status">
+              {labels.imageProcessing}
+            </p>
+          ) : null}
+          {editor.imageUploadFailed ? (
+            <p className={styles.loadError} role="alert">
+              {labels.imageUploadFailed}
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -270,7 +341,10 @@ export default function VisitPageEditor() {
             editor.loadFailed ||
             !editor.isDirty ||
             editor.isSaving ||
-            editor.hasInvalidMapLink
+            editor.hasInvalidMapLink ||
+            editor.isImageUploading ||
+            editor.isImageOptimizing ||
+            editor.isImageCleaning
           }
         >
           {labels.save}

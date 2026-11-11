@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isSafeGoogleMapsUrl,
+  normalizeVisitSharedMedia,
   normalizeVisitCopy,
   resolveVisitCopy,
 } from '../../src/shared/content/visitContent';
@@ -57,5 +58,23 @@ describe('visitContent helpers', () => {
     );
     expect(isSafeGoogleMapsUrl('javascript:alert(1)')).toBe(false);
     expect(isSafeGoogleMapsUrl('https://example.com/maps')).toBe(false);
+  });
+
+  it('allows empty image collections', () => {
+    expect(
+      normalizeVisitSharedMedia({ mapImages: [], venueImages: [] }),
+    ).toEqual({ mapImages: [], venueImages: [] });
+  });
+
+  it('accepts any number of uploaded media references', () => {
+    const images = Array.from({ length: 5 }, (_, index) => ({
+      imageId: `image-${index}`,
+      sourceFileId: `source-${index}`,
+    }));
+
+    expect(
+      normalizeVisitSharedMedia({ mapImages: images, venueImages: [] })
+        .mapImages,
+    ).toEqual(images);
   });
 });

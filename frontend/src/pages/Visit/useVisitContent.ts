@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { fetchEditablePageDocument } from '../../shared/api/cmsApi';
 import { useConfig } from '../../shared/context/ConfigContext';
-import { resolveVisitCopy, type VisitCopy } from '../../shared/content/visitContent';
+import {
+  normalizeVisitSharedMedia,
+  resolveVisitCopy,
+} from '../../shared/content/visitContent';
 
 export function useVisitContent() {
   const { language } = useConfig();
   const [content, setContent] = useState<Record<string, unknown>>({});
+  const [sharedMedia, setSharedMedia] = useState<unknown>(null);
   const [hasLoadError, setHasLoadError] = useState(false);
 
   useEffect(() => {
@@ -14,6 +18,7 @@ export function useVisitContent() {
       .then((document) => {
         if (!cancelled) {
           setContent(document.content);
+          setSharedMedia(document.sharedMedia);
           setHasLoadError(false);
         }
       })
@@ -30,7 +35,8 @@ export function useVisitContent() {
   }, []);
 
   return {
-    content: resolveVisitCopy(content, language) as VisitCopy,
+    content: resolveVisitCopy(content, language),
+    sharedMedia: normalizeVisitSharedMedia(sharedMedia),
     hasLoadError,
   };
 }

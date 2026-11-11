@@ -1,0 +1,133 @@
+.mediaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+}
+
+.mediaGroup h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mediaHint {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mediaList {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: var(--cf-space-8);
+  width: 100%;
+  margin: 0;
+  padding: 0 0 var(--cf-space-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.mediaList::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mediaList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--cms-border, var(--cf-neutral-300));
+}
+
+.mediaItem {
+  position: relative;
+  flex: 0 0 7rem;
+  width: 7rem;
+  border: 1px solid var(--border-color, var(--cf-neutral-300));
+  border-radius: var(--cf-radius-card);
+  background: var(--cms-surface, var(--cf-white));
+  touch-action: pan-x;
+}
+
+.mediaItemDragging .mediaHandle {
+  border-style: dashed;
+  border-color: var(--cms-primary, var(--cf-blue-63));
+}
+
+.mediaItemDragging img {
+  opacity: 0.3;
+}
+
+.mediaHandle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: grab;
+}
+
+.mediaHandle:active {
+  cursor: grabbing;
+}
+
+.mediaHandle:focus-visible {
+  outline: 2px solid var(--cf-focus-color);
+  outline-offset: var(--cf-focus-offset);
+}
+
+.mediaHandle img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mediaRemoveButton {
+  position: absolute;
+  top: var(--cf-space-4);
+  right: var(--cf-space-4);
+  z-index: 1;
+}
+
+.dragPreview {
+  position: fixed;
+  z-index: 10000;
+  width: 7rem;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border: 2px solid var(--cms-primary, var(--cf-blue-63));
+  border-radius: var(--cf-radius-card);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .mediaItem {
+    flex-basis: 5.875rem;
+    width: 5.875rem;
+  }
+
+  .dragPreview {
+    width: 5.875rem;
+  }
+}

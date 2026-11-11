@@ -6,6 +6,7 @@ import {
   type HomeContentByLanguage,
   type HomeSharedMedia,
 } from '../content/homeContent';
+import type { VisitSharedMedia } from '../content/visitContent';
 import type { Language } from '../types/Language';
 
 export type PageContentResponse = {
@@ -15,7 +16,11 @@ export type PageContentResponse = {
     string,
     Partial<HomeContentByLanguage[string]> & { youtubeVideoUrl?: string }
   >;
-  sharedMedia?: Partial<HomeSharedMedia> | ChurchHistorySharedMedia | null;
+  sharedMedia?:
+    | Partial<HomeSharedMedia>
+    | ChurchHistorySharedMedia
+    | VisitSharedMedia
+    | null;
 };
 
 export type ChurchHistorySharedMedia = {

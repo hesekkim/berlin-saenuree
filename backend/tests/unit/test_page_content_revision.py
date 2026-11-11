@@ -105,6 +105,50 @@ def test_church_history_keeps_baseline_events_out_of_cms_content(isolated_data):
     assert public_events[-1]["id"] == "new-event"
 
 
+def test_visit_media_lists_are_optional_and_referenced(isolated_data):
+    image_id = "11111111-1111-4111-8111-111111111111"
+    source_file_id = "22222222-2222-4222-8222-222222222222"
+    saved = page_content_service.save_page_content(
+        "visit",
+        {"en": {"address": "Borsigstraße 5"}},
+        expected_revision=0,
+        shared_media={
+            "mapImages": [
+                {
+                    "imageId": image_id,
+                    "sourceFileId": source_file_id,
+                }
+            ],
+            "venueImages": [],
+        },
+    )
+
+    assert saved.shared_media["mapImages"][0]["imageId"] == image_id
+    assert saved.shared_media["venueImages"] == []
+    assert is_media_referenced(image_id)
+    assert is_media_referenced(source_file_id)
+    public = TestClient(app).get("/api/v1/pages/visit")
+    assert public.json()["sharedMedia"]["mapImages"] == [
+        {
+            "imageId": image_id,
+            "sourceFileId": source_file_id,
+        }
+    ]
+
+    empty = page_content_service.save_page_content(
+        "visit",
+        saved.content,
+        expected_revision=1,
+        shared_media={"mapImages": [], "venueImages": []},
+    )
+
+    assert empty.shared_media == {"mapImages": [], "venueImages": []}
+    assert not is_media_referenced(image_id)
+    assert not is_media_referenced(source_file_id)
+    public = TestClient(app).get("/api/v1/pages/visit")
+    assert public.json()["sharedMedia"] == {"mapImages": [], "venueImages": []}
+
+
 def test_each_save_increments_the_revision(isolated_data):
     first = page_content_service.save_page_content("home", {"en": COPY_EN}, expected_revision=0)
     second = page_content_service.save_page_content("home", {"en": COPY_EN}, expected_revision=1)

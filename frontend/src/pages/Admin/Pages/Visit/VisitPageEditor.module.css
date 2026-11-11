@@ -181,6 +181,17 @@
   font-size: 0.875rem;
 }
 
+.mediaHint {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.removeButton {
+  color: var(--cms-danger, var(--cf-red-63));
+}
+
 .actions {
   display: flex;
   align-items: center;

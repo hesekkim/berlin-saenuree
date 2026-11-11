@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   FiArrowUpRight,
   FiChevronLeft,
@@ -7,27 +7,21 @@ import {
   FiPlus,
 } from 'react-icons/fi';
 import { getVisitLabels, formatVisitLabel } from './visitLabels';
-import { isSafeGoogleMapsUrl } from '../../shared/content/visitContent';
+import {
+  isSafeGoogleMapsUrl,
+  visitImageUrl,
+} from '../../shared/content/visitContent';
 import { useConfig } from '../../shared/context/ConfigContext';
 import { useVisitContent } from './useVisitContent';
-import mapSmall from './assets/map-small.webp';
-import mapNormal from './assets/map-normal.webp';
-import mapMedium from './assets/map-medium.webp';
-import mapLarge from './assets/map-large.webp';
-import church1 from './assets/church1.webp';
-import church2 from './assets/church2.webp';
-import church3 from './assets/church3.webp';
-import church4 from './assets/church4.webp';
 import PageHeader from '../../shared/components/PageHeader/PageHeader';
 import styles from './Visit.module.css';
-
-const mapImages = [mapSmall, mapNormal, mapMedium, mapLarge];
-const venueImages = [church1, church2, church3, church4];
 
 export default function Visit() {
   const { language } = useConfig();
   const labels = getVisitLabels(language);
-  const { content, hasLoadError } = useVisitContent();
+  const { content, sharedMedia, hasLoadError } = useVisitContent();
+  const mapImages = sharedMedia.mapImages;
+  const venueImages = sharedMedia.venueImages;
   const [mapZoom, setMapZoom] = useState(0);
   const [venueIndex, setVenueIndex] = useState(0);
   const [showSecondaryTransit, setShowSecondaryTransit] = useState(false);
@@ -35,6 +29,19 @@ export default function Visit() {
   const mapUrl = isSafeGoogleMapsUrl(content.googleMapsUrl)
     ? content.googleMapsUrl
     : '';
+  const activeMapIndex = Math.min(mapZoom, Math.max(0, mapImages.length - 1));
+  const activeVenueIndex = Math.min(
+    venueIndex,
+    Math.max(0, venueImages.length - 1),
+  );
+  const hasImages = mapImages.length > 0 || venueImages.length > 0;
+
+  useEffect(() => {
+    setMapZoom((index) => Math.min(index, Math.max(0, mapImages.length - 1)));
+    setVenueIndex((index) =>
+      Math.min(index, Math.max(0, venueImages.length - 1)),
+    );
+  }, [mapImages.length, venueImages.length]);
 
   const setVenueSlide = (nextIndex: number) => {
     setVenueIndex(Math.max(0, Math.min(venueImages.length - 1, nextIndex)));
@@ -97,7 +104,11 @@ export default function Visit() {
           <h2 id="visit-location-title">{labels.locationTitle}</h2>
         </div>
 
-        <div className={styles.locationGrid}>
+        <div
+          className={`${styles.locationGrid} ${
+            hasImages ? '' : styles.locationGridFull
+          }`}
+        >
           <div className={styles.locationDetails}>
             <article className={styles.addressCard}>
               <p className={styles.cardEyebrow}>{labels.addressLabel}</p>
@@ -158,117 +169,140 @@ export default function Visit() {
             ) : null}
           </div>
 
-          <div className={styles.mapColumn}>
-            <div className={styles.mapFrame}>
-              <img
-                src={mapImages[mapZoom]}
-                alt={labels.mapTitle}
-                loading="lazy"
-                decoding="async"
-              />
-              <div className={styles.mapControls}>
-                <button
-                  type="button"
-                  aria-label={labels.zoomIn}
-                  onClick={() =>
-                    setMapZoom((current) =>
-                      Math.min(mapImages.length - 1, current + 1),
-                    )
-                  }
-                  disabled={mapZoom === mapImages.length - 1}
-                >
-                  <FiPlus aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  aria-label={labels.zoomOut}
-                  onClick={() => setMapZoom((current) => Math.max(0, current - 1))}
-                  disabled={mapZoom === 0}
-                >
-                  <FiMinus aria-hidden />
-                </button>
-              </div>
-            </div>
-            <section className={styles.venue} aria-labelledby="visit-venue-title">
-              <h3 id="visit-venue-title">{labels.venueTitle}</h3>
-              <div
-                className={styles.carousel}
-                role="group"
-                aria-roledescription="carousel"
-                aria-label={labels.venueTitle}
-                onPointerDown={handleCarouselPointerDown}
-                onPointerUp={handleCarouselPointerUp}
-              >
-                {venueImages.map((image, index) => {
-                  const position = index - venueIndex;
-                  const slideClass =
-                    position === 0
-                      ? styles.carouselSlideActive
-                      : position === -1
-                        ? styles.carouselSlidePrevious
-                        : position === 1
-                          ? styles.carouselSlideNext
-                          : position < 0
-                            ? styles.carouselSlideHiddenPrevious
-                            : styles.carouselSlideHiddenNext;
-
-                  return (
-                    <div
-                      className={`${styles.carouselSlide} ${slideClass}`}
-                      key={image}
-                      aria-hidden={position !== 0}
-                    >
-                      {Math.abs(position) <= 1 ? (
-                        <img
-                          src={image}
-                          alt={formatVisitLabel(labels.photoSlide, {
-                            current: index + 1,
-                            total: venueImages.length,
-                          })}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : null}
+          {mapImages.length || venueImages.length ? (
+            <div className={styles.mapColumn}>
+              {mapImages.length ? (
+                <div className={styles.mapFrame}>
+                  <img
+                    src={visitImageUrl(mapImages[activeMapIndex])}
+                    alt={labels.mapTitle}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  {mapImages.length > 1 ? (
+                    <div className={styles.mapControls}>
+                      <button
+                        type="button"
+                        aria-label={labels.zoomIn}
+                        onClick={() =>
+                          setMapZoom((current) =>
+                            Math.min(mapImages.length - 1, current + 1),
+                          )
+                        }
+                        disabled={activeMapIndex === mapImages.length - 1}
+                      >
+                        <FiPlus aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={labels.zoomOut}
+                        onClick={() => setMapZoom(activeMapIndex - 1)}
+                        disabled={activeMapIndex === 0}
+                      >
+                        <FiMinus aria-hidden />
+                      </button>
                     </div>
-                  );
-                })}
-                <button
-                  type="button"
-                  className={`${styles.carouselArrow} ${styles.previous}`}
-                  aria-label={labels.previousPhoto}
-                  onClick={() => setVenueSlide(venueIndex - 1)}
-                  disabled={venueIndex === 0}
-                >
-                  <FiChevronLeft aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.carouselArrow} ${styles.next}`}
-                  aria-label={labels.nextPhoto}
-                  onClick={() => setVenueSlide(venueIndex + 1)}
-                  disabled={venueIndex === venueImages.length - 1}
-                >
-                  <FiChevronRight aria-hidden />
-                </button>
-                <div className={styles.carouselPagination}>
-                  {venueImages.map((_, index) => (
-                    <button
-                      type="button"
-                      key={index}
-                      aria-label={formatVisitLabel(labels.photoPicker, {
-                        number: index + 1,
-                      })}
-                      aria-current={index === venueIndex ? 'true' : undefined}
-                      className={
-                        index === venueIndex ? styles.activeDot : undefined
-                      }
-                      onClick={() => setVenueSlide(index)}
-                    />
-                  ))}
+                  ) : null}
                 </div>
-              </div>
-            </section>
-          </div>
+              ) : null}
+              {venueImages.length ? (
+                <section
+                  className={styles.venue}
+                  aria-labelledby="visit-venue-title"
+                >
+                  <h3 id="visit-venue-title">{labels.venueTitle}</h3>
+                  <div
+                    className={styles.carousel}
+                    role="group"
+                    aria-roledescription="carousel"
+                    aria-label={labels.venueTitle}
+                    onPointerDown={handleCarouselPointerDown}
+                    onPointerUp={handleCarouselPointerUp}
+                  >
+                    {venueImages.map((image, index) => {
+                      const position = index - activeVenueIndex;
+                      const slideClass =
+                        position === 0
+                          ? styles.carouselSlideActive
+                          : position === -1
+                            ? styles.carouselSlidePrevious
+                            : position === 1
+                              ? styles.carouselSlideNext
+                              : position < 0
+                                ? styles.carouselSlideHiddenPrevious
+                                : styles.carouselSlideHiddenNext;
+
+                      return (
+                        <div
+                          className={`${styles.carouselSlide} ${slideClass}`}
+                          key={image.imageId}
+                          aria-hidden={position !== 0}
+                        >
+                          {Math.abs(position) <= 1 ? (
+                            <img
+                              src={visitImageUrl(image)}
+                              alt={formatVisitLabel(labels.photoSlide, {
+                                current: index + 1,
+                                total: venueImages.length,
+                              })}
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                    {venueImages.length > 1 ? (
+                      <button
+                        type="button"
+                        className={`${styles.carouselArrow} ${styles.previous}`}
+                        aria-label={labels.previousPhoto}
+                        onClick={() => setVenueSlide(activeVenueIndex - 1)}
+                        disabled={activeVenueIndex === 0}
+                      >
+                        <FiChevronLeft aria-hidden />
+                      </button>
+                    ) : null}
+                    {venueImages.length > 1 ? (
+                      <button
+                        type="button"
+                        className={`${styles.carouselArrow} ${styles.next}`}
+                        aria-label={labels.nextPhoto}
+                        onClick={() => setVenueSlide(activeVenueIndex + 1)}
+                        disabled={
+                          activeVenueIndex === venueImages.length - 1
+                        }
+                      >
+                        <FiChevronRight aria-hidden />
+                      </button>
+                    ) : null}
+                    {venueImages.length > 1 ? (
+                      <div className={styles.carouselPagination}>
+                        {venueImages.map((_, index) => (
+                          <button
+                            type="button"
+                            key={index}
+                            aria-label={formatVisitLabel(labels.photoPicker, {
+                              number: index + 1,
+                            })}
+                            aria-current={
+                              index === activeVenueIndex ? 'true' : undefined
+                            }
+                            className={
+                              index === activeVenueIndex
+                                ? styles.activeDot
+                                : undefined
+                            }
+                            onClick={() => setVenueSlide(index)}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
     </main>
