@@ -25,6 +25,41 @@
   margin-bottom: var(--cf-space-24);
 }
 
+.tabs {
+  display: flex;
+  gap: var(--cf-space-8);
+  margin-bottom: var(--cf-space-16);
+  border-bottom: 1px solid var(--border-color, var(--cf-neutral-300));
+}
+
+.tab {
+  position: relative;
+  min-height: 2.75rem;
+  padding: var(--cf-space-8) var(--cf-space-16);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--cms-primary, var(--cf-blue-63));
+  color: var(--cms-primary, var(--cf-blue-63));
+}
+
+.tab:focus-visible,
+.tabPanel:focus-visible {
+  outline: 2px solid var(--cms-focus, var(--cf-blue-63));
+  outline-offset: 2px;
+}
+
+.tabPanel[hidden] {
+  display: none;
+}
+
 .fields {
   display: flex;
   flex-direction: column;
@@ -36,7 +71,6 @@
   flex-direction: column;
   gap: var(--cf-space-16);
   padding: var(--cf-space-16);
-  border: 1px solid var(--border-color, var(--cf-neutral-300));
   border-radius: var(--cf-radius-card);
   background: var(--cms-surface, var(--cf-white));
 }
@@ -52,16 +86,14 @@
   gap: var(--cf-space-16);
 }
 
-.group > h2,
-.listHeading h2,
-.listHeading h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+.serviceActions {
+  justify-content: flex-end;
 }
 
 .listHeading h3 {
+  margin: 0;
   font-size: 1rem;
+  font-weight: 600;
 }
 
 .fieldGroup {

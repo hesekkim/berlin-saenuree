@@ -1,3 +1,4 @@
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
@@ -10,6 +11,11 @@ import { useVisitPageEditor } from './useVisitPageEditor';
 import styles from './VisitPageEditor.module.css';
 
 export default function VisitPageEditor() {
+  const [activeTab, setActiveTab] = useState<'services' | 'location'>(
+    'services',
+  );
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabIdPrefix = useId();
   const { language: cmsLanguage } = useCmsConfig();
   const uploadLabels = adminTranslations[cmsLanguage];
   const editor = useVisitPageEditor();
@@ -20,6 +26,31 @@ export default function VisitPageEditor() {
     editor.isImageUploading ||
     editor.isImageOptimizing ||
     editor.isImageCleaning;
+  const tabs = [
+    { id: 'services', label: labels.services },
+    { id: 'location', label: labels.location },
+  ] as const;
+  const handleTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight') {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    }
+    if (nextIndex === null) {
+      return;
+    }
+    event.preventDefault();
+    setActiveTab(tabs[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
 
   return (
     <div className={styles.page}>
@@ -46,10 +77,41 @@ export default function VisitPageEditor() {
         </div>
       ) : null}
 
+      <div className={styles.tabs} role="tablist" aria-label={labels.title}>
+        {tabs.map((tab, index) => {
+          const isSelected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
+              type="button"
+              id={`${tabIdPrefix}-${tab.id}-tab`}
+              className={styles.tab}
+              role="tab"
+              aria-selected={isSelected}
+              aria-controls={`${tabIdPrefix}-${tab.id}-panel`}
+              tabIndex={isSelected ? 0 : -1}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className={styles.fields} aria-busy={!editor.isReady}>
-        <section className={styles.group} aria-labelledby="visit-editor-services">
-          <div className={styles.listHeading}>
-            <h2 id="visit-editor-services">{labels.services}</h2>
+        <section
+          id={`${tabIdPrefix}-services-panel`}
+          className={`${styles.group} ${styles.tabPanel}`}
+          role="tabpanel"
+          aria-labelledby={`${tabIdPrefix}-services-tab`}
+          hidden={activeTab !== 'services'}
+          tabIndex={0}
+        >
+          <div className={`${styles.listHeading} ${styles.serviceActions}`}>
             <button
               type="button"
               className={styles.addButton}
@@ -125,10 +187,13 @@ export default function VisitPageEditor() {
         </section>
 
         <section
-          className={`${styles.group} ${styles.locationGroup}`}
-          aria-labelledby="visit-editor-location"
+          id={`${tabIdPrefix}-location-panel`}
+          className={`${styles.group} ${styles.locationGroup} ${styles.tabPanel}`}
+          role="tabpanel"
+          aria-labelledby={`${tabIdPrefix}-location-tab`}
+          hidden={activeTab !== 'location'}
+          tabIndex={0}
         >
-          <h2 id="visit-editor-location">{labels.location}</h2>
           <div className={styles.fieldGroup}>
             <h3>{labels.address}</h3>
             <InputField
