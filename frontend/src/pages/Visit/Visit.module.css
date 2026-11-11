@@ -31,6 +31,16 @@
   text-wrap: balance;
 }
 
+@media (min-width: 801px) {
+  .header {
+    max-width: 76rem;
+  }
+
+  .heading {
+    white-space: nowrap;
+  }
+}
+
 .loadError {
   margin: -2rem auto 3rem;
   color: var(--color-danger);
@@ -446,6 +456,16 @@
   .page {
     width: min(100% - 2rem, 76rem);
     padding-top: clamp(5rem, 18vw, 6.5rem);
+  }
+
+  .eyebrow {
+    font-size: 0.65rem;
+  }
+
+  .heading {
+    margin-top: 0.5rem;
+    font-size: 1.2rem;
+    line-height: 1.4;
   }
 
   .serviceGrid {

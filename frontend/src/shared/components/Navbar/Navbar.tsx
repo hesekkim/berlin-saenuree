@@ -30,7 +30,7 @@ export default function Navbar({
   return (
     <header
       className={`${styles['main-container']} ${
-        showBackground && styles.accent
+        (showBackground || openMenuBar) && styles.accent
       } ${openMenuBar ? styles['menu-open'] : ''}`}
     >
       <div className={styles['left-side']}>
