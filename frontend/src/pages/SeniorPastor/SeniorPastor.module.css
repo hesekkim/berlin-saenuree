@@ -1,0 +1,94 @@
+.page {
+  width: min(100% - 2.5rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(4rem, 9vw, 8rem) 0;
+}
+
+.header {
+  max-width: 46rem;
+  margin: 0 auto clamp(3rem, 7vw, 5rem);
+  text-align: center;
+}
+
+.profile {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5rem);
+  padding-bottom: clamp(3rem, 7vw, 5rem);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.portrait {
+  width: 100%;
+  max-height: 42rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+.profileCopy h2 {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display-kr);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.role {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+}
+
+.introduction p {
+  margin: 0.75rem 0;
+  color: var(--color-text-secondary);
+  line-height: 1.9;
+}
+
+.testimony {
+  max-width: 62rem;
+  margin: clamp(3rem, 7vw, 5rem) auto 0;
+}
+
+.testimony > h2 {
+  margin: 0 0 2rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display-kr);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 500;
+}
+
+.story + .story {
+  margin-top: 1.75rem;
+}
+
+.story h3 {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.story p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.9;
+  white-space: pre-line;
+}
+
+@media (max-width: 768px) {
+  .profile {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  .portrait {
+    width: min(100%, 30rem);
+    max-height: 38rem;
+    margin: 0 auto;
+  }
+}

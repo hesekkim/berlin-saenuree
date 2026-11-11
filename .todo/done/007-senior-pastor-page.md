@@ -1,6 +1,6 @@
 # 007. 담임목사 소개 페이지
 
-- 상태: 대기
+- 상태: 완료
 - 유형: 페이지
 - 선행 작업: [006-shared-page-header.md](./006-shared-page-header.md)
 
@@ -52,4 +52,7 @@ legacy-frontend는 콘텐츠와 기존 이미지의 참고 자료이며 실행 �
 - `/about/senior-pastor` 직접 진입 및 새로고침 확인
 - 한국어·영어·독일어 문구와 콘텐츠 언어 fallback 확인
 - 모바일 및 데스크톱 프로필·간증 표시 확인
-- frontend 빌드, 타입 검사 및 관련 테스트 실행
+- `npm run build`, 변경 파일 ESLint, `npm test` 실행
+  - 빌드 및 타입 검사 통과
+  - 변경된 TypeScript 파일 ESLint 통과
+  - Vitest 49개 파일, 263개 테스트 통과
