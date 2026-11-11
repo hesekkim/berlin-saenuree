@@ -21,6 +21,7 @@ import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
 import Visit from '../pages/Visit/Visit';
 import VisitPageEditor from '../pages/Admin/Pages/Visit/VisitPageEditor';
 import ChurchHistoryPageEditor from '../pages/Admin/Pages/ChurchHistory/ChurchHistoryPageEditor';
+import ChurchVisionPageEditor from '../pages/Admin/Pages/ChurchVision/ChurchVisionPageEditor';
 
 export const router = createBrowserRouter([
   {
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
           {
             path: 'pages/church-history',
             element: <ChurchHistoryPageEditor />,
+          },
+          {
+            path: 'pages/church-vision',
+            element: <ChurchVisionPageEditor />,
           },
           {
             path: 'pages/posts',
@@ -99,8 +104,12 @@ export const router = createBrowserRouter([
         element: <SeniorPastor />,
       },
       {
-        path: 'calling/church-vision',
+        path: 'church-vision',
         element: <ChurchVision />,
+      },
+      {
+        path: 'calling/church-vision',
+        element: <Navigate to="/church-vision" replace />,
       },
       {
         path: 'saenuree-news',

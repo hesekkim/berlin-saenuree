@@ -1,6 +1,7 @@
 import type { IconType } from 'react-icons';
 import {
   FiBookOpen,
+  FiTarget,
   FiClock,
   FiGrid,
   FiHome,
@@ -17,6 +18,7 @@ export type AdminNavIcon =
   | 'blogger'
   | 'settings'
   | 'churchHistory'
+  | 'churchVision'
   | 'visit'
   | 'popups'
   | 'trash';
@@ -27,6 +29,7 @@ export type AdminNavItem = {
   labelKey:
     | 'home'
     | 'churchHistory'
+    | 'churchVision'
     | 'visit'
     | 'posts'
     | 'blogger'
@@ -45,7 +48,13 @@ export type AdminNavSection = {
 
 export type AdminPageNode = {
   slug: string;
-  labelKey: 'home' | 'churchHistory' | 'visit' | 'posts' | 'blogger';
+  labelKey:
+    | 'home'
+    | 'churchHistory'
+    | 'churchVision'
+    | 'visit'
+    | 'posts'
+    | 'blogger';
   to: string;
   icon: AdminNavIcon;
   end?: boolean;
@@ -70,6 +79,14 @@ export const adminPageTree: AdminPageNode[] = [
     labelKey: 'churchHistory',
     to: '/admin/pages/church-history',
     icon: 'churchHistory',
+    end: true,
+    children: [],
+  },
+  {
+    slug: 'church-vision',
+    labelKey: 'churchVision',
+    to: '/admin/pages/church-vision',
+    icon: 'churchVision',
     end: true,
     children: [],
   },
@@ -250,6 +267,7 @@ export const adminNavIcons: Record<AdminNavIcon, IconType> = {
   home: FiHome,
   visit: FiMapPin,
   churchHistory: FiClock,
+  churchVision: FiTarget,
   posts: FiGrid,
   blogger: FiBookOpen,
   settings: FiSettings,

@@ -30,21 +30,11 @@ const navbarItems: NavbarItemProps[] = [
   },
   {
     title: {
-      [Language.KO]: '우리의 소명',
-      [Language.EN]: 'Our Calling',
-      [Language.DE]: 'Unser Auftrag',
+      [Language.KO]: '교회 비전',
+      [Language.EN]: 'Church Vision',
+      [Language.DE]: 'Gemeindevision',
     },
-    link: '/calling/church-vision',
-    subNavbarItems: [
-      {
-        title: {
-          [Language.KO]: '교회 비전',
-          [Language.EN]: 'Church Vision',
-          [Language.DE]: 'Gemeindevision',
-        },
-        link: '/calling/church-vision',
-      },
-    ],
+    link: '/church-vision',
   },
   {
     title: {

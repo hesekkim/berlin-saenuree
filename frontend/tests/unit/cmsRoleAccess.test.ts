@@ -95,4 +95,17 @@ describe('adminNav page_manager', () => {
       }),
     );
   });
+
+  it('includes Church Vision as an assignable CMS page', () => {
+    const sections = buildAdminNavSections('site_admin', []);
+    const pages = sections.find((section) => section.id === 'pages');
+
+    expect(pages?.items).toContainEqual(
+      expect.objectContaining({
+        id: 'church-vision',
+        to: '/admin/pages/church-vision',
+        labelKey: 'churchVision',
+      }),
+    );
+  });
 });

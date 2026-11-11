@@ -23,6 +23,7 @@ PAGE_TREE: tuple[PageNode, ...] = (
     PageNode("home"),
     PageNode("visit"),
     PageNode("church-history"),
+    PageNode("church-vision"),
     PageNode("posts"),
     PageNode("blogger"),
 )

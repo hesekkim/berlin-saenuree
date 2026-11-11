@@ -152,6 +152,13 @@ export async function fetchEditablePageDocument(
   };
 }
 
+export async function fetchPublicPageContent(
+  slug: string,
+): Promise<EditablePageContent> {
+  const response = await apiClient.get<PageContentResponse>(`/pages/${slug}`);
+  return response.data.content;
+}
+
 export async function fetchPublicChurchHistoryContent(): Promise<EditablePageContent> {
   const response = await apiClient.get<PageContentResponse>(
     '/pages/church-history/public',

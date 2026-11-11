@@ -1,0 +1,92 @@
+{
+  "contentRevision": 2,
+  "content": {
+    "ko": {
+      "heading": "“예배는 선교의 동력이자 선교의 목표”를 중심으로",
+      "goals": [
+        {
+          "id": "worship",
+          "title": "하나님께서 기뻐하시는 참된 예배를 회복시키는 것",
+          "quotation": "형제들아 내가 하나님의 모든 자비하심으로 너희를 권하노니 너희 몸을 하나님이 기뻐하시는 거룩한 산 제물로 드리라 이는 너희가 드릴 영적 예배니라",
+          "reference": "로마서 12장 1절"
+        },
+        {
+          "id": "culture",
+          "title": "하나님께서 기뻐하시는 올바른 기독교 문화를 회복시키는 것",
+          "quotation": "너희는 이 세대를 본받지 말고 오직 마음을 새롭게 함으로 변화를 받아 하나님의 선하시고 기뻐하시고 온전하신 뜻이 무엇인지 분별하도록 하라",
+          "reference": "로마서 12장 2절"
+        },
+        {
+          "id": "healing",
+          "title": "영혼을 치유하며 회복시키는 것",
+          "quotation": "너희의 하나님이 이르시되 너희는 위로하라 내 백성을 위로하라",
+          "reference": "이사야 40장 1절"
+        },
+        {
+          "id": "youth",
+          "title": "새벽 이슬 같은 주의 청년들을 하나님 나라를 위한 신실한 일꾼들로 세우는 것",
+          "quotation": "주의 권능의 날에 주의 백성이 거룩한 옷을 입고 즐거이 헌신하니 새벽 이슬 같은 주의 청년들이 주께 나오는도다",
+          "reference": "시편 110편 3절"
+        }
+      ]
+    },
+    "en": {
+      "heading": "With the conviction that worship is both the driving force and the goal of mission",
+      "goals": [
+        {
+          "id": "worship",
+          "title": "Restore true worship that delights God",
+          "quotation": "Offer your bodies as a living sacrifice, holy and pleasing to God; this is your spiritual worship.",
+          "reference": "Romans 12:1"
+        },
+        {
+          "id": "culture",
+          "title": "Restore a Christian culture that delights God",
+          "quotation": "Do not conform to this age, but be transformed by the renewing of your mind, so that you may discern the good, pleasing, and perfect will of God.",
+          "reference": "Romans 12:2"
+        },
+        {
+          "id": "healing",
+          "title": "Bring healing and restoration to souls",
+          "quotation": "Your God says: Comfort, comfort my people.",
+          "reference": "Isaiah 40:1"
+        },
+        {
+          "id": "youth",
+          "title": "Raise young people, fresh as the morning dew, as faithful workers for God's kingdom",
+          "quotation": "On the day of your power, your people will offer themselves willingly; your young people will come to you like the dew of the morning.",
+          "reference": "Psalm 110:3"
+        }
+      ]
+    },
+    "de": {
+      "heading": "In der Überzeugung, dass Anbetung sowohl die Kraft als auch das Ziel der Mission ist",
+      "goals": [
+        {
+          "id": "worship",
+          "title": "Wahre Anbetung wiederherstellen, die Gott gefällt",
+          "quotation": "Bringt eure Leiber als lebendiges, heiliges und Gott wohlgefälliges Opfer dar; das ist euer geistlicher Gottesdienst.",
+          "reference": "Römer 12,1"
+        },
+        {
+          "id": "culture",
+          "title": "Eine christliche Kultur wiederherstellen, die Gott gefällt",
+          "quotation": "Passt euch nicht dieser Welt an, sondern lasst euch durch die Erneuerung eures Denkens verwandeln, damit ihr Gottes guten, wohlgefälligen und vollkommenen Willen erkennt.",
+          "reference": "Römer 12,2"
+        },
+        {
+          "id": "healing",
+          "title": "Seelen Heilung und Erneuerung bringen",
+          "quotation": "Euer Gott spricht: Tröstet, tröstet mein Volk.",
+          "reference": "Jesaja 40,1"
+        },
+        {
+          "id": "youth",
+          "title": "Junge Menschen, frisch wie der Morgentau, als treue Mitarbeitende für Gottes Reich stärken",
+          "quotation": "Am Tag deiner Macht ist dein Volk voller Hingabe; deine jungen Menschen kommen zu dir wie der Tau am Morgen.",
+          "reference": "Psalm 110,3"
+        }
+      ]
+    }
+  }
+}

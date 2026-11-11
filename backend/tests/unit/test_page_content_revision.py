@@ -1,6 +1,7 @@
 """Page content revisions: optimistic locking, legacy file migration, language cascade."""
 
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -364,6 +365,42 @@ def test_visit_content_round_trips_through_page_api(isolated_data):
     assert response.json()["content"]["en"]["services"] == content["en"]["services"]
 
 
+def test_church_vision_content_round_trips_through_page_api(isolated_data):
+    app.dependency_overrides[require_page_editor] = lambda: {
+        "email": "admin@example.com",
+        "role": "site_admin",
+    }
+    client = TestClient(app)
+    content = {
+        "en": {
+            "heading": "Our vision",
+            "goals": [
+                {
+                    "id": "youth",
+                    "title": "Raise young people",
+                    "quotation": "Your young people will come to you like the dew.",
+                    "reference": "Psalm 110:3",
+                }
+            ],
+        }
+    }
+    try:
+        response = client.put(
+            "/api/v1/pages/church-vision",
+            json={"contentRevision": 0, "content": content},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert page_content_service.is_allowed_slug("church-vision")
+    assert response.status_code == 200
+    assert response.json()["contentRevision"] == 1
+    assert response.json()["content"]["en"]["heading"] == content["en"]["heading"]
+    assert response.json()["content"]["en"]["goals"] == content["en"]["goals"]
+    public = client.get("/api/v1/pages/church-vision")
+    assert public.json()["content"] == content
+
+
 def test_put_preserves_non_home_page_fields(isolated_data):
     app.dependency_overrides[require_page_editor] = lambda: {
         "email": "admin@example.com",
@@ -407,6 +444,35 @@ def test_church_history_seed_contains_all_languages_and_events(isolated_data):
     ]
     assert page_content_service.is_allowed_slug("church-history")
     assert page_content_service.get_page_document("church-history").content == {}
+
+
+def test_tracked_church_vision_document_has_valid_content_shape(
+    isolated_data,
+):
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "data"
+        / "pages"
+        / "church-vision.json"
+    )
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    content = stored["content"]
+
+    assert content
+    for copy in content.values():
+        assert isinstance(copy["heading"], str)
+        assert isinstance(copy["goals"], list)
+        goal_ids = [goal["id"] for goal in copy["goals"]]
+        assert all(isinstance(goal_id, str) and goal_id for goal_id in goal_ids)
+        assert len(goal_ids) == len(set(goal_ids))
+        for goal in copy["goals"]:
+            assert isinstance(goal["title"], str)
+            assert isinstance(goal["quotation"], str)
+            assert isinstance(goal["reference"], str)
+
+    assert stored["contentRevision"] >= 1
+    assert page_content_service.get_page_document("church-vision").revision == 0
+    assert page_content_service.is_allowed_slug("church-vision")
 
 
 def test_public_church_history_api_returns_seed_content(isolated_data):

@@ -9,6 +9,7 @@ backend/data/pages/*
 backend/data/seed/*
 !backend/data/pages/home.json
 !backend/data/pages/visit.json
+!backend/data/pages/church-vision.json
 !backend/data/seed/church-history.json
 # Keep the current editable Visit media in Git without tracking other CMS uploads.
 !backend/data/media/
