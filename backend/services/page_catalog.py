@@ -22,6 +22,7 @@ class PageNode:
 PAGE_TREE: tuple[PageNode, ...] = (
     PageNode("home"),
     PageNode("visit"),
+    PageNode("church-history"),
     PageNode("posts"),
     PageNode("blogger"),
 )

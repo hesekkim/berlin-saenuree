@@ -37,7 +37,7 @@
 - [002-footer-legacy-content.md](./done/002-footer-legacy-content.md): 레거시 교회 정보와 언어별 문구를 사용하는 반응형 Footer 구현
 - [003-home-page-legacy-content.md](./done/003-home-page-legacy-content.md): Home 사진 슬라이드·콘텐츠 및 CMS 편집 기능
 - [004-worship-and-location-page.md](./done/004-worship-and-location-page.md): 예배 및 오시는 길 페이지 통합
+- [005-church-history-page.md](./done/005-church-history-page.md): 고정 연혁과 모든 지원 언어의 CMS 추가 연혁을 제공하는 교회 역사 페이지
 
 ## 대기 중인 티켓
-
-- [005-church-history-page.md](./005-church-history-page.md): 교회 역사 페이지 이관 및 반응형 타임라인
+- 없음

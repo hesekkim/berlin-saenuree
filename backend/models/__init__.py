@@ -1,5 +1,7 @@
 from models.auth import SendCodeRequest, VerifyCodeRequest, TokenResponse
 from models.cms import (
+    ChurchHistoryEventMedia,
+    ChurchHistorySharedMedia,
     CmsMeResponse,
     CmsMeUpdateRequest,
     CmsUserCreateRequest,
@@ -24,6 +26,8 @@ __all__ = [
     "TokenResponse",
     "HomeCopy",
     "HomeSharedMedia",
+    "ChurchHistoryEventMedia",
+    "ChurchHistorySharedMedia",
     "PageContentResponse",
     "PageContentUpdateRequest",
     "SiteSettingsResponse",

@@ -54,6 +54,57 @@ def test_missing_page_starts_at_revision_zero(isolated_data):
     assert document.content == {}
 
 
+def test_church_history_keeps_baseline_events_out_of_cms_content(isolated_data):
+    content = {
+        "en": {
+            "events": [
+                {
+                    "id": "2013-05-12",
+                    "date": "2013.05.12",
+                    "description": "Edited baseline event",
+                },
+                {
+                    "id": "new-event",
+                    "date": "2024.01.01",
+                    "title": "New event",
+                    "description": "A later event",
+                }
+            ]
+        }
+    }
+
+    saved = page_content_service.save_page_content(
+        "church-history", content, expected_revision=0
+    )
+
+    assert saved.content["en"]["events"] == [
+        {
+            "id": "new-event",
+            "date": "2024.01.01",
+            "description": "A later event",
+        }
+    ]
+    stored = json.loads(_page_path("church-history").read_text(encoding="utf-8"))
+    assert stored["content"]["en"]["events"] == saved.content["en"]["events"]
+    assert stored["sharedMedia"] == {"events": {}}
+
+    client = TestClient(app)
+    editable = client.get("/api/v1/pages/church-history")
+    public = client.get("/api/v1/pages/church-history/public")
+
+    assert [event["id"] for event in editable.json()["content"]["en"]["events"]] == [
+        "new-event"
+    ]
+    assert editable.json()["sharedMedia"] == {"events": {}}
+    public_events = public.json()["content"]["en"]["events"]
+    assert len(public_events) == 6
+    assert public_events[0]["id"] == "2013-05-12"
+    assert public_events[0]["description"] == (
+        "The church began with a planting service at the senior pastor’s home in East Berlin."
+    )
+    assert public_events[-1]["id"] == "new-event"
+
+
 def test_each_save_increments_the_revision(isolated_data):
     first = page_content_service.save_page_content("home", {"en": COPY_EN}, expected_revision=0)
     second = page_content_service.save_page_content("home", {"en": COPY_EN}, expected_revision=1)
@@ -292,6 +343,135 @@ def test_put_preserves_non_home_page_fields(isolated_data):
 
     assert response.status_code == 200
     assert response.json()["content"] == content
+
+
+def test_church_history_seed_contains_all_languages_and_events(isolated_data):
+    content = page_content_service.get_church_history_baseline_content()
+
+    assert set(content) == {"ko", "en", "de"}
+    assert {
+        len(copy["events"]) for copy in content.values()
+    } == {5}
+    assert [
+        event["date"] for event in content["ko"]["events"]
+    ] == [
+        "2013.05.12",
+        "2013.10.25",
+        "2015.01.25",
+        "2020.12.13",
+        "2021.07.04",
+    ]
+    assert page_content_service.is_allowed_slug("church-history")
+    assert page_content_service.get_page_document("church-history").content == {}
+
+
+def test_public_church_history_api_returns_seed_content(isolated_data):
+    response = TestClient(app).get("/api/v1/pages/church-history/public")
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert set(content) == {"ko", "en", "de"}
+    assert len(content["en"]["events"]) == 5
+    assert "introduction" not in content["ko"]
+
+
+def test_church_history_media_refs_are_shared_and_cleaned_on_save(isolated_data):
+    event = {
+        "id": "future-event",
+        "date": "2024.01.01",
+        "title": "Founding",
+        "description": "Description",
+        "imageUrl": "",
+        "imageId": "history-image",
+        "sourceFileId": "history-file",
+    }
+    initial = page_content_service.save_page_content(
+        "church-history",
+        {"en": {"introduction": "Intro", "events": [event]}},
+        expected_revision=0,
+    )
+
+    assert initial.revision == 1
+    assert "introduction" not in initial.content["en"]
+    assert "title" not in initial.content["en"]["events"][0]
+    assert initial.content["en"]["events"] == [
+        {
+            "id": "future-event",
+            "date": "2024.01.01",
+            "description": "Description",
+        }
+    ]
+    assert initial.shared_media == {
+        "events": {
+            "future-event": {
+                "imageId": "history-image",
+                "sourceFileId": "history-file",
+            }
+        }
+    }
+    assert is_media_referenced("history-image")
+    assert is_media_referenced("history-file")
+
+    page_content_service.save_page_content(
+        "church-history",
+        {"en": {"introduction": "Intro", "events": []}},
+        expected_revision=1,
+    )
+
+    assert not is_media_referenced("history-image")
+    assert not is_media_referenced("history-file")
+
+
+def test_church_history_legacy_inline_media_is_migrated_to_shared_media(isolated_data):
+    stored_path = _page_path("church-history")
+    stored_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_event = {
+        "id": "future-event",
+        "date": "2024.01.01",
+        "description": "A later event",
+        "imageUrl": "",
+        "imageId": "history-image",
+        "sourceFileId": "history-file",
+    }
+    stored_path.write_text(
+        json.dumps(
+            {
+                "contentRevision": 3,
+                "content": {
+                    language: {"events": [legacy_event]}
+                    for language in ("en", "ko")
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    document = page_content_service.get_page_document("church-history")
+    assert document.content["en"]["events"] == [
+        {
+            "id": "future-event",
+            "date": "2024.01.01",
+            "description": "A later event",
+        }
+    ]
+    assert document.shared_media["events"]["future-event"] == {
+        "imageId": "history-image",
+        "sourceFileId": "history-file",
+    }
+
+    page_content_service.save_page_content(
+        "church-history",
+        document.content,
+        expected_revision=3,
+        shared_media=document.shared_media,
+    )
+    saved_file = json.loads(stored_path.read_text(encoding="utf-8"))
+    assert "imageId" not in saved_file["content"]["en"]["events"][0]
+    assert "imageUrl" not in saved_file["content"]["en"]["events"][0]
+    assert saved_file["sharedMedia"]["events"]["future-event"] == {
+        "imageId": "history-image",
+        "sourceFileId": "history-file",
+    }
 
 
 @pytest.mark.parametrize(

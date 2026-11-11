@@ -5,8 +5,11 @@ __pycache__
 backend/data/*
 !backend/data/pages/
 backend/data/pages/*
+!backend/data/seed/
+backend/data/seed/*
 !backend/data/pages/home.json
 !backend/data/pages/visit.json
+!backend/data/seed/church-history.json
 
 # frontend
 node_modules

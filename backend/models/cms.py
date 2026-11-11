@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 import re
 from urllib.parse import parse_qs, urlparse
 
@@ -40,6 +40,8 @@ class HomeCopy(BaseModel):
 
 
 class HomeSharedMedia(BaseModel):
+    model_config = {"extra": "forbid"}
+
     heroImages: list[HomeImage] = Field(default_factory=list)
     panoramaImageId: str = ""
     panoramaSourceFileId: str = ""
@@ -76,17 +78,30 @@ class HomeSharedMedia(BaseModel):
         return normalized
 
 
+class ChurchHistoryEventMedia(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    imageId: str = ""
+    sourceFileId: str = ""
+
+
+class ChurchHistorySharedMedia(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    events: dict[str, ChurchHistoryEventMedia] = Field(default_factory=dict)
+
+
 class PageContentResponse(BaseModel):
     slug: str
     contentRevision: int
     content: dict[str, HomeCopy]
-    sharedMedia: HomeSharedMedia | None = None
+    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | None = None
 
 
 class PageContentUpdateRequest(BaseModel):
     contentRevision: int = Field(ge=0)
     content: dict[str, HomeCopy]
-    sharedMedia: HomeSharedMedia | None = None
+    sharedMedia: HomeSharedMedia | ChurchHistorySharedMedia | None = None
 
     @model_validator(mode="after")
     def validate_legacy_home_media(self):

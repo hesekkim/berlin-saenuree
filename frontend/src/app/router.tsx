@@ -20,6 +20,7 @@ import ChurchVision from '../pages/ChurchVision/ChurchVision';
 import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
 import Visit from '../pages/Visit/Visit';
 import VisitPageEditor from '../pages/Admin/Pages/Visit/VisitPageEditor';
+import ChurchHistoryPageEditor from '../pages/Admin/Pages/ChurchHistory/ChurchHistoryPageEditor';
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
           {
             path: 'pages/visit',
             element: <VisitPageEditor />,
+          },
+          {
+            path: 'pages/church-history',
+            element: <ChurchHistoryPageEditor />,
           },
           {
             path: 'pages/posts',

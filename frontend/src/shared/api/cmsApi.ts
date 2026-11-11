@@ -15,7 +15,11 @@ export type PageContentResponse = {
     string,
     Partial<HomeContentByLanguage[string]> & { youtubeVideoUrl?: string }
   >;
-  sharedMedia?: Partial<HomeSharedMedia> | null;
+  sharedMedia?: Partial<HomeSharedMedia> | ChurchHistorySharedMedia | null;
+};
+
+export type ChurchHistorySharedMedia = {
+  events: Record<string, { imageId: string; sourceFileId: string }>;
 };
 
 export type PageDocument = {
@@ -28,6 +32,7 @@ export type EditablePageContent = Record<string, Record<string, unknown>>;
 export type EditablePageDocument = {
   contentRevision: number;
   content: EditablePageContent;
+  sharedMedia?: unknown;
 };
 
 export type SiteSettingsResponse = {
@@ -138,7 +143,15 @@ export async function fetchEditablePageDocument(
   return {
     contentRevision: response.data.contentRevision,
     content: response.data.content,
+    sharedMedia: response.data.sharedMedia,
   };
+}
+
+export async function fetchPublicChurchHistoryContent(): Promise<EditablePageContent> {
+  const response = await apiClient.get<PageContentResponse>(
+    '/pages/church-history/public',
+  );
+  return response.data.content;
 }
 
 export async function saveEditablePageDocument(
@@ -148,10 +161,12 @@ export async function saveEditablePageDocument(
   const response = await apiClient.put<PageContentResponse>(`/pages/${slug}`, {
     contentRevision: document.contentRevision,
     content: document.content,
+    ...(document.sharedMedia ? { sharedMedia: document.sharedMedia } : {}),
   });
   return {
     contentRevision: response.data.contentRevision,
     content: response.data.content,
+    sharedMedia: response.data.sharedMedia,
   };
 }
 

@@ -19,6 +19,9 @@ _LANGUAGE_CODE_RE = re.compile(r"^[a-z]{2,3}(-[a-zA-Z0-9]+)*$")
 _REVISION_KEY = "contentRevision"
 _CONTENT_KEY = "content"
 _SHARED_MEDIA_KEY = "sharedMedia"
+_CHURCH_HISTORY_BASELINE_FILE = (
+    Path(__file__).parent.parent / "data" / "seed" / "church-history.json"
+)
 _HOME_TEXT_FIELDS = (
     "yearMotto",
     "bibleVerse",
@@ -53,11 +56,113 @@ def is_allowed_slug(slug: str) -> bool:
 
 def get_default_page_content(_slug: str) -> dict[str, dict[str, Any]]:
     if _slug == "visit":
-        seed_path = Path(__file__).parent.parent / "data" / "pages" / "visit.json"
-        seed_document = _read_document(seed_path, strict=False, slug="visit")
+        seed_path = (
+            Path(__file__).parent.parent
+            / "data"
+            / "pages"
+            / f"{_slug}.json"
+        )
+        seed_document = _read_document(seed_path, strict=False, slug=_slug)
         if seed_document is not None:
             return seed_document.content
     return {}
+
+
+def get_church_history_baseline_content() -> dict[str, dict[str, Any]]:
+    raw = read_json_store(_CHURCH_HISTORY_BASELINE_FILE)
+    if not isinstance(raw, dict):
+        raise RuntimeError("Church History baseline content is unavailable")
+    return normalize_page_content(raw)
+
+
+def _church_history_baseline_ids() -> set[str]:
+    return {
+        str(event.get("id"))
+        for copy in get_church_history_baseline_content().values()
+        for event in copy.get("events", [])
+        if isinstance(event, dict) and event.get("id")
+    }
+
+
+def _normalize_church_history_shared_media(
+    raw: object,
+    content: object,
+) -> dict[str, Any]:
+    media = raw.get("events") if isinstance(raw, dict) else None
+    normalized_events: dict[str, dict[str, str]] = {}
+    if isinstance(media, dict):
+        for event_id, value in media.items():
+            if not isinstance(value, dict):
+                continue
+            image = {
+                field: str(value.get(field) or "")
+                for field in ("imageId", "sourceFileId")
+            }
+            if any(image.values()):
+                normalized_events[str(event_id)] = image
+
+    copies = content.values() if isinstance(content, dict) else []
+    content_event_ids: set[str] = set()
+    for copy in copies:
+        events = copy.get("events") if isinstance(copy, dict) else None
+        if not isinstance(events, list):
+            continue
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            event_id = str(event.get("id") or "")
+            if not event_id:
+                continue
+            content_event_ids.add(event_id)
+            image = normalized_events.setdefault(
+                event_id, {"imageId": "", "sourceFileId": ""}
+            )
+            for field in ("imageId", "sourceFileId"):
+                image[field] = image[field] or str(event.get(field) or "")
+            if not any(image.values()):
+                normalized_events.pop(event_id, None)
+
+    baseline_ids = _church_history_baseline_ids()
+    return {
+        "events": {
+            event_id: image
+            for event_id, image in normalized_events.items()
+            if (
+                event_id in content_event_ids
+                and event_id not in baseline_ids
+                and any(image.values())
+            )
+        }
+    }
+
+
+def get_church_history_public_document() -> PageDocument:
+    editable = get_page_document("church-history")
+    baseline = get_church_history_baseline_content()
+    languages = dict.fromkeys([*baseline, *editable.content])
+    shared_events = editable.shared_media.get("events", {})
+    content = {
+        language: {
+            **baseline.get(language, {}),
+            **editable.content.get(language, {}),
+            "events": [
+                *(baseline.get(language, {}).get("events") or []),
+                *[
+                    {
+                        **event,
+                        **(
+                            shared_events.get(str(event.get("id")), {})
+                            if isinstance(event, dict)
+                            else {}
+                        ),
+                    }
+                    for event in editable.content.get(language, {}).get("events", [])
+                ],
+            ],
+        }
+        for language in languages
+    }
+    return PageDocument(revision=editable.revision, content=content)
 
 
 def _normalize_home_shared_media(raw: object) -> dict[str, Any]:
@@ -140,6 +245,48 @@ def normalize_page_content(
     return normalized
 
 
+def _normalize_content_for_slug(
+    raw: object, slug: str
+) -> dict[str, dict[str, Any]]:
+    content = normalize_page_content(raw, home=slug == "home")
+    if slug != "church-history":
+        return content
+    baseline_ids = _church_history_baseline_ids()
+    return {
+        language: {
+            **{
+                key: value
+                for key, value in copy.items()
+                if key not in {"introduction", "events"}
+            },
+            **(
+                {
+                    "events": [
+                        {
+                            key: value
+                            for key, value in event.items()
+                            if key not in {
+                                "title",
+                                "imageUrl",
+                                "imageId",
+                                "sourceFileId",
+                            }
+                        }
+                        if isinstance(event, dict)
+                        else event
+                        for event in copy["events"]
+                        if not isinstance(event, dict)
+                        or str(event.get("id") or "") not in baseline_ids
+                    ]
+                }
+                if isinstance(copy.get("events"), list)
+                else {}
+            ),
+        }
+        for language, copy in content.items()
+    }
+
+
 def _copy_shared_home_media(copies: dict[str, dict[str, Any]]) -> dict[str, Any]:
     shared: dict[str, Any] = {}
     for fields in (
@@ -179,7 +326,7 @@ def _parse_document(parsed: Any, *, slug: str) -> PageDocument | None:
     revision = parsed.get(_REVISION_KEY)
     content = parsed.get(_CONTENT_KEY)
     if isinstance(revision, int) and isinstance(content, dict):
-        normalized = normalize_page_content(content, home=slug == "home")
+        normalized = _normalize_content_for_slug(content, slug)
         if slug == "home":
             raw_shared = parsed.get(_SHARED_MEDIA_KEY)
             shared_media = (
@@ -193,18 +340,32 @@ def _parse_document(parsed: Any, *, slug: str) -> PageDocument | None:
                 content=normalized,
                 shared_media=shared_media,
             )
+        if slug == "church-history":
+            return PageDocument(
+                revision=max(1, revision),
+                content=normalized,
+                shared_media=_normalize_church_history_shared_media(
+                    parsed.get(_SHARED_MEDIA_KEY), content
+                ),
+            )
         return PageDocument(
             revision=max(1, revision),
             content=normalized,
         )
     # Files written before revisions existed are a bare language map.
-    normalized = normalize_page_content(parsed, home=slug == "home")
+    normalized = _normalize_content_for_slug(parsed, slug)
     if slug == "home":
         shared_media = _copy_shared_home_media(normalized)
         return PageDocument(
             revision=1,
             content=_expand_home_content(normalized, shared_media),
             shared_media=shared_media,
+        )
+    if slug == "church-history":
+        return PageDocument(
+            revision=1,
+            content=normalized,
+            shared_media=_normalize_church_history_shared_media(None, parsed),
         )
     return PageDocument(revision=1, content=normalized)
 
@@ -238,6 +399,10 @@ def _write_document(path: Path, document: PageDocument, *, slug: str) -> None:
         }
         payload[_SHARED_MEDIA_KEY] = _normalize_home_shared_media(
             document.shared_media
+        )
+    elif slug == "church-history":
+        payload[_SHARED_MEDIA_KEY] = _normalize_church_history_shared_media(
+            document.shared_media, document.content
         )
     write_json_store(path, payload)
 
@@ -285,6 +450,23 @@ def get_home_media_refs() -> set[str]:
     return refs
 
 
+def get_church_history_media_refs() -> set[str]:
+    with _page_lock("church-history"):
+        document = _read_document(
+            settings.page_content_file("church-history"),
+            strict=True,
+            slug="church-history",
+        )
+    if document is None:
+        content = get_default_page_content("church-history")
+        shared_media: dict[str, Any] = {}
+    else:
+        content = document.content
+        shared_media = document.shared_media
+    image_ids, file_ids = _page_media_refs(content, shared_media)
+    return image_ids | file_ids
+
+
 def save_page_content(
     slug: str,
     content: dict[str, dict[str, Any]],
@@ -298,7 +480,7 @@ def save_page_content(
             current = _read_document(path, strict=True, slug=slug) or PageDocument(revision=0)
             if expected_revision != current.revision:
                 raise PageContentConflictError(current)
-            normalized_content = normalize_page_content(content, home=slug == "home")
+            normalized_content = _normalize_content_for_slug(content, slug)
             next_shared_media: dict[str, Any] = {}
             if slug == "home":
                 next_shared_media = (
@@ -319,6 +501,22 @@ def save_page_content(
                     }
                     for language, copy in normalized_content.items()
                 }
+            elif slug == "church-history":
+                next_shared_media = _normalize_church_history_shared_media(
+                    shared_media, content
+                )
+                if shared_media is None:
+                    for event_id, image in current.shared_media.get(
+                        "events", {}
+                    ).items():
+                        if any(
+                            event.get("id") == event_id
+                            for copy in normalized_content.values()
+                            for event in copy.get("events", [])
+                        ):
+                            next_shared_media.setdefault("events", {}).setdefault(
+                                event_id, image
+                            )
             saved = PageDocument(
                 revision=current.revision + 1,
                 content=normalized_content,
@@ -358,8 +556,47 @@ def save_page_content(
                 )
             except Exception:
                 logger.exception("Failed to clean up replaced Home media")
+        elif slug == "church-history":
+            old_refs = _page_media_refs(current.content, current.shared_media)
+            new_refs = _page_media_refs(saved.content, saved.shared_media)
+            try:
+                from services.media_refs import cleanup_unused_media
+
+                cleanup_unused_media(
+                    image_ids=old_refs[0] - new_refs[0],
+                    file_ids=old_refs[1] - new_refs[1],
+                )
+            except Exception:
+                logger.exception("Failed to clean up replaced Church History media")
 
         return saved
+
+
+def _page_media_refs(
+    content: dict[str, dict[str, Any]],
+    shared_media: dict[str, Any] | None = None,
+) -> tuple[set[str], set[str]]:
+    image_ids: set[str] = set()
+    file_ids: set[str] = set()
+    for copy in content.values():
+        events = copy.get("events") if isinstance(copy, dict) else None
+        if not isinstance(events, list):
+            continue
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            if event.get("imageId"):
+                image_ids.add(str(event["imageId"]))
+            if event.get("sourceFileId"):
+                file_ids.add(str(event["sourceFileId"]))
+    for image in (shared_media or {}).get("events", {}).values():
+        if not isinstance(image, dict):
+            continue
+        if image.get("imageId"):
+            image_ids.add(str(image["imageId"]))
+        if image.get("sourceFileId"):
+            file_ids.add(str(image["sourceFileId"]))
+    return image_ids, file_ids
 
 
 def _remove_language_from_page(path: Path, slug: str, language: str) -> None:

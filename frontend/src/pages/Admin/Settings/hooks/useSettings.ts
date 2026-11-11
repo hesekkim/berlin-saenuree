@@ -47,6 +47,9 @@ function pageLabel(slug: string, labels: AdminTranslations): string {
   if (node?.labelKey === 'visit') {
     return labels.pageLabelVisit;
   }
+  if (node?.labelKey === 'churchHistory') {
+    return labels.pageLabelChurchHistory;
+  }
   if (node?.labelKey === 'posts') {
     return labels.pageLabelPosts;
   }

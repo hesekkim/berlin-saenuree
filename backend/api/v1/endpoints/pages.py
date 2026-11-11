@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from api.v1.endpoints.auth import require_page_editor
-from models import HomeSharedMedia, PageContentResponse, PageContentUpdateRequest
+from models import (
+    ChurchHistorySharedMedia,
+    HomeSharedMedia,
+    PageContentResponse,
+    PageContentUpdateRequest,
+)
 from services import page_content_service
 from services.page_content_service import PageContentConflictError, PageDocument
 
@@ -18,8 +23,26 @@ def _to_response(slug: str, document: PageDocument) -> PageContentResponse:
         sharedMedia=(
             HomeSharedMedia(**document.shared_media)
             if slug == "home"
-            else None
+            else (
+                ChurchHistorySharedMedia(**document.shared_media)
+                if slug == "church-history"
+                else None
+            )
         ),
+    )
+
+
+@router.get(
+    "/church-history/public",
+    response_model=PageContentResponse,
+    response_model_exclude_unset=True,
+)
+async def get_public_church_history():
+    document = page_content_service.get_church_history_public_document()
+    return PageContentResponse(
+        slug="church-history",
+        contentRevision=document.revision,
+        content=document.content,
     )
 
 
