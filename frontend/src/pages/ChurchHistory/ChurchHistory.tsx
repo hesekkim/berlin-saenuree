@@ -4,6 +4,7 @@ import { useChurchHistoryContent } from './useChurchHistoryContent';
 import { useChurchHistoryReveal } from './useChurchHistoryReveal';
 import { useChurchHistoryBackground } from './useChurchHistoryBackground';
 import { getChurchHistoryLabels } from './churchHistoryLabels';
+import PageHeader from '../../shared/components/PageHeader/PageHeader';
 import styles from './ChurchHistory.module.css';
 
 export default function ChurchHistory() {
@@ -46,10 +47,11 @@ export default function ChurchHistory() {
         <div className={styles.historyBackgroundShade} />
       </div>
       <div className={styles.headerContainer}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>BERLIN SAENUREE CHURCH</p>
-          <h1>{text.tagline}</h1>
-        </header>
+        <PageHeader
+          className={styles.header}
+          headingClassName={styles.heading}
+          title={text.tagline}
+        />
 
         <div className={styles.introSurface}>
           {hasLoadError ? (

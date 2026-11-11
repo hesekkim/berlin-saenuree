@@ -18,6 +18,7 @@ import church1 from './assets/church1.webp';
 import church2 from './assets/church2.webp';
 import church3 from './assets/church3.webp';
 import church4 from './assets/church4.webp';
+import PageHeader from '../../shared/components/PageHeader/PageHeader';
 import styles from './Visit.module.css';
 
 const mapImages = [mapSmall, mapNormal, mapMedium, mapLarge];
@@ -57,10 +58,11 @@ export default function Visit() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <p className={styles.eyebrow}>BERLIN SAENUREE CHURCH</p>
-        <h1 className={styles.heading}>{labels.heading}</h1>
-      </header>
+      <PageHeader
+        className={styles.header}
+        headingClassName={styles.heading}
+        title={labels.heading}
+      />
 
       {hasLoadError ? (
         <p className={styles.loadError} role="alert">
