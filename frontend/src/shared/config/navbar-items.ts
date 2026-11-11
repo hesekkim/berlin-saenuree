@@ -42,7 +42,27 @@ const navbarItems: NavbarItemProps[] = [
       [Language.EN]: 'Saenuree News',
       [Language.DE]: 'Saenuree Nachrichten',
     },
-    link: '/saenuree-news',
+    link: '/saenuree-news/posts',
+    preserveSubmenuWhenSingle: true,
+    subNavbarItems: [
+      {
+        title: {
+          [Language.KO]: '사진 앨범',
+          [Language.EN]: 'Photo Gallery',
+          [Language.DE]: 'Fotogalerie',
+        },
+        link: '/saenuree-news/posts',
+      },
+      {
+        title: {
+          [Language.KO]: '교회 이야기',
+          [Language.EN]: 'Church Stories',
+          [Language.DE]: 'Geschichten aus der Gemeinde',
+        },
+        link: '/saenuree-news/blogger',
+        requiresPublishedBlogger: true,
+      },
+    ],
   },
   {
     title: {

@@ -23,6 +23,19 @@ class BloggerListResponse(BaseModel):
     offset: int
 
 
+class PublicBloggerResponse(BaseModel):
+    id: str
+    createdAt: str
+    copies: dict[str, BloggerCopy] = Field(default_factory=dict)
+
+
+class PublicBloggerListResponse(BaseModel):
+    items: list[PublicBloggerResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 class BloggerUpsertRequest(BaseModel):
     published: bool = True
     contentRevision: int | None = None

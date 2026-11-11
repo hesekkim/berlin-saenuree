@@ -17,7 +17,8 @@ import { isUiLabEnabled } from '../shared/config/features';
 import ChurchHistory from '../pages/ChurchHistory/ChurchHistory';
 import SeniorPastor from '../pages/SeniorPastor/SeniorPastor';
 import ChurchVision from '../pages/ChurchVision/ChurchVision';
-import SaenureeNews from '../pages/SaenureeNews/SaenureeNews';
+import PhotoNews from '../pages/SaenureeNews/PhotoNews';
+import ChurchStories from '../pages/SaenureeNews/ChurchStories';
 import Visit from '../pages/Visit/Visit';
 import VisitPageEditor from '../pages/Admin/Pages/Visit/VisitPageEditor';
 import ChurchHistoryPageEditor from '../pages/Admin/Pages/ChurchHistory/ChurchHistoryPageEditor';
@@ -113,7 +114,19 @@ export const router = createBrowserRouter([
       },
       {
         path: 'saenuree-news',
-        element: <SaenureeNews />,
+        element: <Navigate to="/saenuree-news/posts" replace />,
+      },
+      {
+        path: 'saenuree-news/posts',
+        element: <PhotoNews />,
+      },
+      {
+        path: 'saenuree-news/blogger',
+        element: <ChurchStories />,
+      },
+      {
+        path: 'saenuree-news/blogger/:id',
+        element: <ChurchStories />,
       },
       {
         path: 'visit',

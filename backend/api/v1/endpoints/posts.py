@@ -8,6 +8,8 @@ from models.posts import (
     PostListResponse,
     PostResponse,
     PostUpsertRequest,
+    PublicPostListResponse,
+    PublicPostResponse,
 )
 from services.posts_service import (
     POSTS_PAGE_SLUG,
@@ -31,6 +33,36 @@ from services.posts_trash_service import (
 )
 
 admin_router = APIRouter()
+public_router = APIRouter()
+
+
+@public_router.get("", response_model=PublicPostListResponse)
+async def public_list_posts(
+    limit: int | None = Query(default=None),
+    offset: int | None = Query(default=None),
+):
+    result = list_posts(limit=limit, offset=offset, published=True)
+    return PublicPostListResponse(
+        items=[
+            PublicPostResponse(
+                id=post["id"],
+                createdAt=post["createdAt"],
+                images=[
+                    {
+                        "imageId": image["imageId"],
+                        "width": image["width"],
+                        "height": image["height"],
+                    }
+                    for image in post["images"]
+                ],
+                copies=post["copies"],
+            )
+            for post in result["items"]
+        ],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
 
 
 def get_current_posts_editor(user: dict = Depends(get_current_cms_user)) -> dict:

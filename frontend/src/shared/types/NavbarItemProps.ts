@@ -5,4 +5,6 @@ export interface NavbarItemProps {
   link: string;
   subNavbarItems?: NavbarItemProps[];
   requiresAuth?: boolean;
+  requiresPublishedBlogger?: boolean;
+  preserveSubmenuWhenSingle?: boolean;
 }

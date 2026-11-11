@@ -1,0 +1,311 @@
+.fullscreenOverlay {
+  padding: 0;
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.fullscreenDialog.fullscreenDialog {
+  position: relative;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-bg-primary) 78%, transparent);
+  box-shadow: none;
+}
+
+.dialogHeader.dialogHeader {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  padding: var(--cf-space-12) var(--cf-space-16);
+  border: 0;
+}
+
+.dialogBody {
+  min-height: 0;
+  padding: clamp(0.75rem, 2vh, 1.5rem) clamp(1.5rem, 7vw, 7rem);
+  overflow: hidden;
+}
+
+.viewer {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 96rem;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  margin: auto;
+}
+
+.viewerContent {
+  display: grid;
+  width: min(100%, 90rem);
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 0;
+  justify-self: center;
+  background: color-mix(
+    in srgb,
+    var(--color-bg-primary) 86%,
+    var(--color-primary)
+  );
+}
+
+.viewerPhotoColumn {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+}
+
+.viewerPhoto {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: 0 0 100%;
+  object-fit: contain;
+}
+
+.photoTrack {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  flex: 0 0 200%;
+}
+
+.photoTrack .photo {
+  width: 50%;
+  flex-basis: 50%;
+}
+
+.slideNext {
+  animation: slide-next 260ms ease-out both;
+}
+
+.slidePrevious {
+  transform: translateX(-50%);
+  animation: slide-previous 260ms ease-out both;
+}
+
+@keyframes slide-next {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes slide-previous {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photoTrack {
+    animation: none;
+  }
+}
+
+.viewerDetails {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.caption {
+  margin: 0;
+}
+
+.caption p:first-child {
+  margin-top: 0;
+}
+
+.caption p:last-child {
+  margin-bottom: 0;
+}
+
+.viewerDetails time {
+  margin-top: auto;
+  align-self: flex-end;
+  padding-top: var(--cf-space-24);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.photoNavigation,
+.postNavigation {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.38);
+  color: var(--cf-white);
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition: background-color 0.15s ease;
+}
+
+.photoNavigation:hover,
+.postNavigation:hover {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.photoNavigation span,
+.postNavigation span {
+  display: block;
+  line-height: 1;
+  transform: translateY(-0.06em);
+}
+
+.photoNavigation:focus-visible,
+.postNavigation:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.photoNavigation {
+  top: 50%;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.5rem;
+}
+
+.previousPhoto {
+  left: var(--cf-space-16);
+}
+
+.nextPhoto {
+  right: var(--cf-space-16);
+}
+
+.imageIndicators {
+  position: absolute;
+  right: 0;
+  bottom: var(--cf-space-12);
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: var(--cf-space-8);
+}
+
+.imageIndicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    width 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.activeImageIndicator {
+  width: 1rem;
+  background: var(--cf-white);
+}
+
+.imageIndicator:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.postNavigation {
+  position: fixed;
+  top: 50vh;
+}
+
+.previousPost {
+  left: var(--cf-space-16);
+}
+
+.nextPost {
+  right: var(--cf-space-16);
+}
+
+@media (max-width: 760px) {
+  .dialogBody {
+    padding: var(--cf-space-12) var(--cf-space-8);
+    overflow-y: auto;
+  }
+
+  .viewer {
+    min-height: 100%;
+  }
+
+  .viewerContent {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--cf-space-16);
+    padding: 0 2.5rem;
+  }
+
+  .viewerPhoto {
+    height: 100%;
+  }
+
+  .viewerPhotoColumn {
+    width: min(100%, 58vh, 42rem);
+    height: auto;
+    aspect-ratio: 1;
+    margin-inline: auto;
+  }
+
+  .viewerDetails {
+    height: auto;
+    min-height: 10rem;
+    max-height: 26vh;
+    padding: var(--cf-space-8) var(--cf-space-16);
+  }
+
+  .postNavigation {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .previousPost {
+    left: var(--cf-space-8);
+  }
+
+  .nextPost {
+    right: var(--cf-space-8);
+  }
+}

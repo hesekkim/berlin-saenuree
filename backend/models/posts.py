@@ -33,6 +33,26 @@ class PostListResponse(BaseModel):
     offset: int
 
 
+class PublicPostImage(BaseModel):
+    imageId: str
+    width: int
+    height: int
+
+
+class PublicPostResponse(BaseModel):
+    id: str
+    createdAt: str
+    images: list[PublicPostImage]
+    copies: dict[str, PostCopy] = Field(default_factory=dict)
+
+
+class PublicPostListResponse(BaseModel):
+    items: list[PublicPostResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 class PostUpsertRequest(BaseModel):
     published: bool = True
     pinned: bool = False

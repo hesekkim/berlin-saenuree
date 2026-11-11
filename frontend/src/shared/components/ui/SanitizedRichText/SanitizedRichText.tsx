@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type Ref } from 'react';
 import { mediaFileAbsoluteUrl } from '../../../api/mediaApi';
 import { sanitizeRichHtml } from '../../../lib/richText';
 import styles from './SanitizedRichText.module.css';
@@ -6,12 +6,14 @@ import styles from './SanitizedRichText.module.css';
 type SanitizedRichTextProps = {
   html: string;
   className?: string;
+  ref?: Ref<HTMLDivElement>;
   'aria-label'?: string;
 };
 
 export default function SanitizedRichText({
   html,
   className = '',
+  ref,
   'aria-label': ariaLabel,
 }: SanitizedRichTextProps) {
   const safeHtml = useMemo(() => sanitizeRichHtml(html), [html]);
@@ -36,6 +38,7 @@ export default function SanitizedRichText({
 
   return (
     <div
+      ref={ref}
       className={[styles.root, className].filter(Boolean).join(' ')}
       aria-label={ariaLabel}
       dangerouslySetInnerHTML={{ __html: renderedHtml }}

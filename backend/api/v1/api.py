@@ -28,6 +28,10 @@ api_router.include_router(
     media_images.router, prefix="/media", tags=["media"]
 )
 api_router.include_router(popups.router, prefix="/popups", tags=["popups"])
+api_router.include_router(posts.public_router, prefix="/posts", tags=["posts"])
+api_router.include_router(
+    blogger.public_router, prefix="/blogger", tags=["blogger"]
+)
 api_router.include_router(
     popups.admin_router, prefix="/admin/popups", tags=["admin-popups"]
 )

@@ -42,6 +42,7 @@
 - [007-senior-pastor-page.md](./done/007-senior-pastor-page.md): 정적 콘텐츠 기반 담임목사 소개 페이지
 - [008-visit-admin-editor-tabs.md](./done/008-visit-admin-editor-tabs.md): Visit 관리자 편집기의 예배 일정·위치 정보 탭 분리
 - [009-church-vision-page.md](./done/009-church-vision-page.md): CMS 기반 교회 비전 페이지, 새 URL과 반응형 디자인
+- [010-saenuree-news-posts-blogger.md](./done/010-saenuree-news-posts-blogger.md): CMS Posts 기반 사진 소식과 조건부 Blogger 공개 페이지
 
 ## 대기 중인 티켓
 - 없음

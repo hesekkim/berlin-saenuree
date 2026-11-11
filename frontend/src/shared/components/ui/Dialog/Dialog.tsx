@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useId } from 'react';
 import { IoMdClose } from 'react-icons/io';
@@ -18,6 +18,12 @@ export interface DialogProps {
   closeOnEscape?: boolean;
   /** When false, footer has no top border (default true). */
   showFooterDivider?: boolean;
+  bodyClassName?: string;
+  overlayClassName?: string;
+  headerClassName?: string;
+  showTitle?: boolean;
+  showHeaderDivider?: boolean;
+  onDialogClick?: MouseEventHandler<HTMLDivElement>;
 }
 
 export default function Dialog({
@@ -32,6 +38,12 @@ export default function Dialog({
   closeOnOverlayClick = true,
   closeOnEscape = true,
   showFooterDivider = true,
+  bodyClassName = '',
+  overlayClassName = '',
+  headerClassName = '',
+  showTitle = true,
+  showHeaderDivider = true,
+  onDialogClick,
 }: DialogProps) {
   const titleId = useId();
   useDialog({ isOpen, onClose, closeOnEscape });
@@ -64,7 +76,9 @@ export default function Dialog({
 
   return createPortal(
     <div
-      className={`cms-theme ${styles.overlay}`}
+      className={['cms-theme', styles.overlay, overlayClassName]
+        .filter(Boolean)
+        .join(' ')}
       onClick={handleOverlayClick}
       role="presentation"
     >
@@ -72,13 +86,27 @@ export default function Dialog({
         className={dialogClassName}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
-        onClick={(event) => event.stopPropagation()}
+        aria-labelledby={showTitle ? titleId : undefined}
+        aria-label={showTitle ? undefined : title}
+        onClick={(event) => {
+          event.stopPropagation();
+          onDialogClick?.(event);
+        }}
       >
-        <div className={styles.header}>
-          <h2 id={titleId} className={styles.title}>
-            {title}
-          </h2>
+        <div
+          className={[
+            styles.header,
+            showHeaderDivider ? '' : styles['header--noDivider'],
+            headerClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {showTitle ? (
+            <h2 id={titleId} className={styles.title}>
+              {title}
+            </h2>
+          ) : null}
           <button
             type="button"
             className={styles.closeButton}
@@ -89,7 +117,9 @@ export default function Dialog({
           </button>
         </div>
 
-        <div className={styles.body}>{children}</div>
+        <div className={[styles.body, bodyClassName].filter(Boolean).join(' ')}>
+          {children}
+        </div>
 
         {footer ? <div className={footerClassName}>{footer}</div> : null}
       </div>

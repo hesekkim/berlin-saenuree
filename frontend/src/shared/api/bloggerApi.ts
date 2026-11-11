@@ -34,6 +34,18 @@ export type BloggerListResponse = {
   offset: number;
 };
 
+export type PublicBloggerResponse = Pick<
+  BloggerResponse,
+  'id' | 'createdAt' | 'copies'
+>;
+
+export type PublicBloggerListResponse = {
+  items: PublicBloggerResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type BloggerTrashItem = {
   id: string;
   deletedAt: string;
@@ -69,6 +81,25 @@ export type FetchAdminBloggerParams = {
   to?: string;
   published?: boolean;
 };
+
+export async function fetchPublicBlogger(
+  params: { limit?: number; offset?: number } = {},
+): Promise<PublicBloggerListResponse> {
+  const response = await apiClient.get<PublicBloggerListResponse>(
+    '/blogger',
+    { params },
+  );
+  return response.data;
+}
+
+export async function fetchPublicBloggerItem(
+  id: string,
+): Promise<PublicBloggerResponse> {
+  const response = await apiClient.get<PublicBloggerResponse>(
+    `/blogger/${id}`,
+  );
+  return response.data;
+}
 
 export async function fetchAdminBlogger(
   params: FetchAdminBloggerParams = {},

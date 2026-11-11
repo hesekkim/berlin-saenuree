@@ -1,0 +1,211 @@
+import { useEffect, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { IoCopy } from 'react-icons/io5';
+import Button from '../../shared/components/ui/Button/Button';
+import LoadingSpinner from '../../shared/components/LoadingSpinner/LoadingSpinner';
+import PageHeader from '../../shared/components/PageHeader/PageHeader';
+import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
+import { fetchPublicPosts } from '../../shared/api/postsApi';
+import { useConfig } from '../../shared/context/ConfigContext';
+import { getNewsLabels } from './newsLabels';
+import MobilePost from './MobilePost';
+import PostViewerDialog from './PostViewerDialog';
+import styles from './PhotoNews.module.css';
+
+const POSTS_PAGE_SIZE = 30;
+
+function formatDate(value: string, language: string): string {
+  return new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(
+    new Date(value),
+  );
+}
+
+export default function PhotoNews() {
+  const { language, defaultLanguage } = useConfig();
+  const labels = getNewsLabels(language);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 760px)').matches
+      : false,
+  );
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [loadMoreSentinel, setLoadMoreSentinel] =
+    useState<HTMLDivElement | null>(null);
+  const [isLoadMoreIntersecting, setIsLoadMoreIntersecting] = useState(false);
+  const postsQuery = useInfiniteQuery({
+    queryKey: ['public-posts'],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      fetchPublicPosts({ limit: POSTS_PAGE_SIZE, offset: pageParam }),
+    getNextPageParam: (lastPage) =>
+      lastPage.offset + lastPage.limit < lastPage.total
+        ? lastPage.offset + lastPage.limit
+        : undefined,
+  });
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = postsQuery;
+  const posts = postsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const media = window.matchMedia('(max-width: 760px)');
+    const updateIsMobile = () => setIsMobile(media.matches);
+    updateIsMobile();
+    media.addEventListener('change', updateIsMobile);
+    return () => media.removeEventListener('change', updateIsMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!loadMoreSentinel || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsLoadMoreIntersecting(entry.isIntersecting),
+      { rootMargin: '400px' },
+    );
+    observer.observe(loadMoreSentinel);
+    return () => observer.disconnect();
+  }, [loadMoreSentinel, posts.length]);
+
+  useEffect(() => {
+    if (
+      !isLoadMoreIntersecting ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      isFetchNextPageError
+    ) {
+      return;
+    }
+
+    void fetchNextPage();
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchNextPageError,
+    isFetchingNextPage,
+    isLoadMoreIntersecting,
+  ]);
+
+  const selectedPostIndex = posts.findIndex(
+    (post) => post.id === selectedPostId,
+  );
+  const selectedPost =
+    selectedPostIndex >= 0 ? posts[selectedPostIndex] : null;
+  const selectAdjacentPost = (offset: -1 | 1) => {
+    const adjacentPost = posts[selectedPostIndex + offset];
+    if (adjacentPost) {
+      setSelectedPostId(adjacentPost.id);
+    }
+  };
+
+  return (
+    <main className={styles.page}>
+      <PageHeader className={styles.header} title={labels.photoNewsTitle} />
+
+      {postsQuery.isPending ? (
+        <LoadingSpinner text={labels.loading} />
+      ) : postsQuery.isError && posts.length === 0 ? (
+        <div className={styles.message} role="alert">
+          <p>{labels.loadFailed}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void postsQuery.refetch()}
+          >
+            {labels.retry}
+          </Button>
+        </div>
+      ) : posts.length === 0 ? (
+        <p className={styles.emptyState}>{labels.postsEmpty}</p>
+      ) : (
+        <>
+          {isMobile ? (
+            <section className={styles.mobileFeed} aria-label={labels.photoNews}>
+              {posts.map((post) => (
+                <MobilePost
+                  key={post.id}
+                  post={post}
+                  language={language}
+                  defaultLanguage={defaultLanguage}
+                  labels={labels}
+                />
+              ))}
+            </section>
+          ) : (
+            <section className={styles.postGrid} aria-label={labels.photoNews}>
+              {posts.map((post) => {
+                const cover = post.images[0];
+                return (
+                  <button
+                    type="button"
+                    key={post.id}
+                    className={styles.gridItem}
+                    aria-label={formatDate(post.createdAt, language)}
+                    onClick={() => setSelectedPostId(post.id)}
+                  >
+                    {cover ? (
+                      <img
+                        className={styles.gridPhoto}
+                        src={mediaImageAbsoluteUrl(cover.imageId, 'thumb')}
+                        alt=""
+                        loading="lazy"
+                        width={cover.width}
+                        height={cover.height}
+                      />
+                    ) : null}
+                    {post.images.length > 1 ? (
+                      <IoCopy className={styles.multiImageIcon} aria-hidden />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </section>
+          )}
+
+          {!isMobile && selectedPost ? (
+            <PostViewerDialog
+              key={selectedPost.id}
+              post={selectedPost}
+              postIndex={selectedPostIndex}
+              postCount={posts.length}
+              language={language}
+              defaultLanguage={defaultLanguage}
+              labels={labels}
+              onClose={() => setSelectedPostId(null)}
+              onPreviousPost={() => selectAdjacentPost(-1)}
+              onNextPost={() => selectAdjacentPost(1)}
+            />
+          ) : null}
+
+          {hasNextPage ? (
+            <div ref={setLoadMoreSentinel} className={styles.loadMore}>
+              {isFetchNextPageError ? (
+                <div className={styles.message} role="alert">
+                  <p>{labels.loadMoreFailed}</p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void fetchNextPage()}
+                  >
+                    {labels.retry}
+                  </Button>
+                </div>
+              ) : isFetchingNextPage ? (
+                <LoadingSpinner text={labels.loading} />
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      )}
+    </main>
+  );
+}

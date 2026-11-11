@@ -22,7 +22,11 @@ export default function NavbarItem({
   const displayTitle = title[contentLanguage];
   const submenuId = useId();
   const isSelected =
-    pathname === link || subNavbarItems?.some((item) => item.link === pathname);
+    pathname === link ||
+    subNavbarItems?.some(
+      (item) =>
+        pathname === item.link || pathname.startsWith(`${item.link}/`),
+    );
   const {
     isHover,
     isClicked,
@@ -73,21 +77,25 @@ export default function NavbarItem({
           }`}
         >
           <ul className={styles.submenus} id={submenuId}>
-            {subNavbarItems.map(({ title: subTitle, link: subLink }, index) => (
-              <li className={styles['submenu-wrapper']} key={index}>
-                <Link
-                  to={subLink}
-                  lang={contentLanguage}
-                  className={`${styles.submenu} ${
-                    pathname === subLink ? styles.selected : ''
-                  }`}
-                  onClick={handleSubmenuClick}
-                  aria-current={pathname === subLink ? 'page' : undefined}
-                >
-                  {subTitle[contentLanguage]}
-                </Link>
-              </li>
-            ))}
+            {subNavbarItems.map(({ title: subTitle, link: subLink }, index) => {
+              const isSubItemSelected =
+                pathname === subLink || pathname.startsWith(`${subLink}/`);
+              return (
+                <li className={styles['submenu-wrapper']} key={index}>
+                  <Link
+                    to={subLink}
+                    lang={contentLanguage}
+                    className={`${styles.submenu} ${
+                      isSubItemSelected ? styles.selected : ''
+                    }`}
+                    onClick={handleSubmenuClick}
+                    aria-current={isSubItemSelected ? 'page' : undefined}
+                  >
+                    {subTitle[contentLanguage]}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

@@ -11,6 +11,8 @@ from models.blogger import (
     BloggerListResponse,
     BloggerResponse,
     BloggerUpsertRequest,
+    PublicBloggerListResponse,
+    PublicBloggerResponse,
 )
 from services.blogger_draft_service import (
     delete_draft_for_user,
@@ -43,6 +45,49 @@ from services.blogger_trash_service import (
 )
 
 admin_router = APIRouter()
+public_router = APIRouter()
+
+
+@public_router.get("", response_model=PublicBloggerListResponse)
+async def public_list_blogger(
+    limit: int | None = Query(default=None),
+    offset: int | None = Query(default=None),
+):
+    result = list_blogger(limit=limit, offset=offset, published=True)
+    return PublicBloggerListResponse(
+        items=[
+            PublicBloggerResponse(
+                id=item["id"],
+                createdAt=item["createdAt"],
+                copies=item["copies"],
+            )
+            for item in result["items"]
+        ],
+        total=result["total"],
+        limit=result["limit"],
+        offset=result["offset"],
+    )
+
+
+@public_router.get("/{blogger_id}", response_model=PublicBloggerResponse)
+async def public_get_blogger(blogger_id: str):
+    try:
+        item = get_blogger(blogger_id)
+    except BloggerNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    if not item["published"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Blogger not found",
+        )
+    return PublicBloggerResponse(
+        id=item["id"],
+        createdAt=item["createdAt"],
+        copies=item["copies"],
+    )
 
 
 def get_current_blogger_editor(user: dict = Depends(get_current_cms_user)) -> dict:

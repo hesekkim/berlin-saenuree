@@ -30,6 +30,22 @@ export type PostListResponse = {
   offset: number;
 };
 
+export type PublicPostImage = Pick<PostImage, 'imageId' | 'width' | 'height'>;
+
+export type PublicPostResponse = {
+  id: string;
+  createdAt: string;
+  images: PublicPostImage[];
+  copies: Record<string, PostCopy>;
+};
+
+export type PublicPostListResponse = {
+  items: PublicPostResponse[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export type PostTrashItem = {
   id: string;
   deletedAt: string;
@@ -61,6 +77,15 @@ export type FetchAdminPostsParams = {
   published?: boolean;
   pinned?: boolean;
 };
+
+export async function fetchPublicPosts(
+  params: { limit?: number; offset?: number } = {},
+): Promise<PublicPostListResponse> {
+  const response = await apiClient.get<PublicPostListResponse>('/posts', {
+    params,
+  });
+  return response.data;
+}
 
 export async function fetchAdminPosts(
   params: FetchAdminPostsParams = {},
