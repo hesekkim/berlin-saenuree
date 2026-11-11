@@ -35,7 +35,6 @@
   flex-direction: column;
   gap: var(--cf-space-16);
   padding: var(--cf-space-16);
-  border: 1px solid var(--border-color, var(--cf-neutral-300));
   border-radius: var(--cf-radius-card);
   background-color: var(--cms-surface, var(--cf-white));
 }
