@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
@@ -16,6 +16,10 @@ export default function VisitPageEditor() {
   );
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tabIdPrefix = useId();
+  const pendingFocusRef = useRef<string | null>(null);
+  const inputRefs = useRef(
+    new Map<string, HTMLInputElement | HTMLTextAreaElement>(),
+  );
   const { language: cmsLanguage } = useCmsConfig();
   const uploadLabels = adminTranslations[cmsLanguage];
   const editor = useVisitPageEditor();
@@ -30,6 +34,20 @@ export default function VisitPageEditor() {
     { id: 'services', label: labels.services },
     { id: 'location', label: labels.location },
   ] as const;
+  useEffect(() => {
+    const focusKey = pendingFocusRef.current;
+    if (!focusKey) {
+      return;
+    }
+    const input = inputRefs.current.get(focusKey);
+    if (!input) {
+      return;
+    }
+    pendingFocusRef.current = null;
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  }, [current.services, current.primaryTransit, current.secondaryTransit]);
+
   const handleTabKeyDown = (
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
@@ -118,7 +136,12 @@ export default function VisitPageEditor() {
               aria-label={labels.addService}
               title={labels.addService}
               disabled={disabled}
-              onClick={editor.addService}
+              onClick={() => {
+                const id = editor.addService();
+                if (id) {
+                  pendingFocusRef.current = `service:${id}`;
+                }
+              }}
             >
               <FiPlus aria-hidden />
             </button>
@@ -151,6 +174,13 @@ export default function VisitPageEditor() {
                       label={labels.serviceName}
                       value={service.name}
                       disabled={disabled}
+                      ref={(element) => {
+                        if (element) {
+                          inputRefs.current.set(`service:${service.id}`, element);
+                        } else {
+                          inputRefs.current.delete(`service:${service.id}`);
+                        }
+                      }}
                       onChange={(value) =>
                         editor.updateService(service.id, 'name', value)
                       }
@@ -227,7 +257,12 @@ export default function VisitPageEditor() {
                   aria-label={addLabel}
                   title={addLabel}
                   disabled={disabled}
-                  onClick={() => editor.addTransit(group)}
+                  onClick={() => {
+                    const id = editor.addTransit(group);
+                    if (id) {
+                      pendingFocusRef.current = `${group}:${id}`;
+                    }
+                  }}
                 >
                   <FiPlus aria-hidden />
                 </button>
@@ -262,6 +297,14 @@ export default function VisitPageEditor() {
                           label={labels.type}
                           value={route.type}
                           disabled={disabled}
+                          ref={(element) => {
+                            const key = `${group}:${route.id}`;
+                            if (element) {
+                              inputRefs.current.set(key, element);
+                            } else {
+                              inputRefs.current.delete(key);
+                            }
+                          }}
                           onChange={(value) =>
                             editor.updateTransit(
                               group,

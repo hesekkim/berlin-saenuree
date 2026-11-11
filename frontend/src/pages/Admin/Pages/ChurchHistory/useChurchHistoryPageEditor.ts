@@ -229,6 +229,9 @@ export function useChurchHistoryPageEditor() {
   );
 
   const addEvent = useCallback(() => {
+    if (!isReady) {
+      return null;
+    }
     const id = crypto.randomUUID();
     const event: ChurchHistoryEvent = {
       id,
@@ -239,7 +242,8 @@ export function useChurchHistoryPageEditor() {
       sourceFileId: '',
     };
     updateAllCopies((copy) => ({ ...copy, events: [...copy.events, event] }));
-  }, [updateAllCopies]);
+    return id;
+  }, [isReady, updateAllCopies]);
 
   const updateEvent = useCallback(
     (id: string, field: 'date' | 'description', value: string) => {

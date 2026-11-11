@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
@@ -15,12 +16,30 @@ export default function ChurchHistoryPageEditor() {
   const uploadLabels = adminTranslations[cmsLanguage];
   const editor = useChurchHistoryPageEditor();
   const { labels, current } = editor;
+  const pendingFocusEventId = useRef<string | null>(null);
+  const eventDateRefs = useRef(
+    new Map<string, HTMLInputElement | HTMLTextAreaElement>(),
+  );
   const disabled =
     !editor.isReady ||
     editor.isSaving ||
     editor.isImageUploading ||
     editor.isImageOptimizing ||
     editor.isImageCleaning;
+
+  useEffect(() => {
+    const eventId = pendingFocusEventId.current;
+    if (!eventId) {
+      return;
+    }
+    const input = eventDateRefs.current.get(eventId);
+    if (!input) {
+      return;
+    }
+    pendingFocusEventId.current = null;
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  }, [current.events]);
 
   return (
     <div className={styles.page}>
@@ -61,7 +80,9 @@ export default function ChurchHistoryPageEditor() {
                   aria-label={labels.addEvent}
                   title={labels.addEvent}
                   disabled={disabled}
-                  onClick={editor.addEvent}
+                  onClick={() => {
+                    pendingFocusEventId.current = editor.addEvent();
+                  }}
                 >
                   <FiPlus aria-hidden />
                 </button>
@@ -109,6 +130,13 @@ export default function ChurchHistoryPageEditor() {
                           label={labels.date}
                           value={event.date}
                           disabled={disabled}
+                          ref={(element) => {
+                            if (element) {
+                              eventDateRefs.current.set(event.id, element);
+                            } else {
+                              eventDateRefs.current.delete(event.id);
+                            }
+                          }}
                           onChange={(value) =>
                             editor.updateEvent(event.id, 'date', value)
                           }

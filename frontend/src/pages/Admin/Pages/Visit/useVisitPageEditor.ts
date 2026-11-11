@@ -512,6 +512,9 @@ export function useVisitPageEditor() {
   );
 
   const addService = useCallback(() => {
+    if (!isReady) {
+      return null;
+    }
     const id = crypto.randomUUID();
     updateAllCopies((copy) => ({
       ...copy,
@@ -520,7 +523,8 @@ export function useVisitPageEditor() {
         { id, name: '', day: '', time: '', place: '' },
       ],
     }));
-  }, [updateAllCopies]);
+    return id;
+  }, [isReady, updateAllCopies]);
 
   const removeService = useCallback(
     (id: string) => {
@@ -563,6 +567,9 @@ export function useVisitPageEditor() {
 
   const addTransit = useCallback(
     (group: 'primaryTransit' | 'secondaryTransit') => {
+      if (!isReady) {
+        return null;
+      }
       const id = crypto.randomUUID();
       updateAllCopies((copy) => ({
         ...copy,
@@ -577,8 +584,9 @@ export function useVisitPageEditor() {
           },
         ],
       }));
+      return id;
     },
-    [updateAllCopies],
+    [isReady, updateAllCopies],
   );
 
   const removeTransit = useCallback(

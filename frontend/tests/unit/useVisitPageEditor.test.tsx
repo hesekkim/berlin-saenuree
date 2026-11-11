@@ -138,16 +138,22 @@ describe('useVisitPageEditor', () => {
       englishContent.secondaryTransit,
     );
 
+    let addedServiceId: string | null = null;
+    let addedPrimaryTransitId: string | null = null;
+    let addedSecondaryTransitId: string | null = null;
     act(() => {
-      result.current.addService();
-      result.current.addTransit('primaryTransit');
-      result.current.addTransit('secondaryTransit');
+      addedServiceId = result.current.addService();
+      addedPrimaryTransitId = result.current.addTransit('primaryTransit');
+      addedSecondaryTransitId = result.current.addTransit('secondaryTransit');
     });
 
     const addedService = result.current.current.services.at(-1)!;
     const addedPrimaryRoute = result.current.current.primaryTransit.at(-1)!;
     const addedSecondaryRoute =
       result.current.current.secondaryTransit.at(-1)!;
+    expect(addedServiceId).toBe(addedService.id);
+    expect(addedPrimaryTransitId).toBe(addedPrimaryRoute.id);
+    expect(addedSecondaryTransitId).toBe(addedSecondaryRoute.id);
     expect(addedService).toMatchObject({
       name: '',
       day: '',
