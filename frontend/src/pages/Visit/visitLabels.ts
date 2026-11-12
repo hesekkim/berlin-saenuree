@@ -3,7 +3,7 @@ import { toContentLanguage } from '../../shared/config/siteLanguages';
 
 const labels = {
   [Language.KO]: {
-    heading: '함께 예배드리기 위해 방문하시는 길을 안내합니다.',
+    heading: '함께 예배드리기 위해 방문하시는 길을 안내합니다',
     scheduleTitle: '예배 시간',
     locationTitle: '오시는 길',
     timeLabel: '예배 시간',
@@ -25,7 +25,7 @@ const labels = {
     contentUnavailable: '페이지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
   },
   [Language.EN]: {
-    heading: 'Everything you need to join us for worship.',
+    heading: 'Everything you need to join us for worship',
     scheduleTitle: 'Service Times',
     locationTitle: 'How to Find Us',
     timeLabel: 'Service time',
@@ -47,7 +47,7 @@ const labels = {
     contentUnavailable: 'Could not load page information. Please try again later.',
   },
   [Language.DE]: {
-    heading: 'Alle Informationen für Ihren Besuch beim Gottesdienst.',
+    heading: 'Alle Informationen für Ihren Besuch beim Gottesdienst',
     scheduleTitle: 'Gottesdienstzeiten',
     locationTitle: 'Anfahrt',
     timeLabel: 'Gottesdienstzeit',

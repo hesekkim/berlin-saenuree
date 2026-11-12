@@ -13,8 +13,7 @@ export default function ChurchVision() {
     <main className={styles.page}>
       <PageHeader
         className={styles.header}
-        headingClassName={styles.heading}
-        title={labels.title}
+        title={labels.pageHeading}
       />
 
       {hasLoadError ? (
@@ -24,9 +23,6 @@ export default function ChurchVision() {
       ) : null}
 
       <section className={styles.vision} aria-label={labels.title}>
-        {content.heading ? (
-          <h2 className={styles.introduction}>{content.heading}</h2>
-        ) : null}
         <ol className={styles.goalList}>
           {content.goals.map((goal, index) => (
             <li className={styles.goalRow} key={goal.id}>

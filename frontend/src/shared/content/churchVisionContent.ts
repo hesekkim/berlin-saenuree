@@ -7,7 +7,6 @@ export type ChurchVisionGoal = {
 };
 
 export type ChurchVisionCopy = {
-  heading: string;
   goals: ChurchVisionGoal[];
 };
 
@@ -22,7 +21,7 @@ function text(value: unknown): string {
 }
 
 export function createEmptyChurchVisionCopy(): ChurchVisionCopy {
-  return { heading: '', goals: [] };
+  return { goals: [] };
 }
 
 export function normalizeChurchVisionCopy(value: unknown): ChurchVisionCopy {
@@ -32,7 +31,6 @@ export function normalizeChurchVisionCopy(value: unknown): ChurchVisionCopy {
   const rawGoals = Array.isArray(value.goals) ? value.goals : [];
   const seenIds = new Set<string>();
   return {
-    heading: text(value.heading),
     goals: rawGoals.flatMap((item) => {
       if (
         !isRecord(item) ||
@@ -144,14 +142,11 @@ export function hasCompleteChurchVisionContent(
 }
 
 function hasCopy(copy: ChurchVisionCopy): boolean {
-  return Boolean(
-    copy.heading.trim() ||
-      copy.goals.some(
-        (goal) =>
-          goal.title.trim() ||
-          goal.quotation.trim() ||
-          goal.reference.trim(),
-      ),
+  return copy.goals.some(
+    (goal) =>
+      goal.title.trim() ||
+      goal.quotation.trim() ||
+      goal.reference.trim(),
   );
 }
 

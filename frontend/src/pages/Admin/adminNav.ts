@@ -91,14 +91,6 @@ export const adminPageTree: AdminPageNode[] = [
     children: [],
   },
   {
-    slug: 'visit',
-    labelKey: 'visit',
-    to: '/admin/pages/visit',
-    icon: 'visit',
-    end: true,
-    children: [],
-  },
-  {
     slug: 'posts',
     labelKey: 'posts',
     to: '/admin/pages/posts',
@@ -111,6 +103,14 @@ export const adminPageTree: AdminPageNode[] = [
     labelKey: 'blogger',
     to: '/admin/pages/blogger',
     icon: 'blogger',
+    children: [],
+  },
+  {
+    slug: 'visit',
+    labelKey: 'visit',
+    to: '/admin/pages/visit',
+    icon: 'visit',
+    end: true,
     children: [],
   },
 ];

@@ -373,7 +373,7 @@ def test_church_vision_content_round_trips_through_page_api(isolated_data):
     client = TestClient(app)
     content = {
         "en": {
-            "heading": "Our vision",
+            "heading": "Legacy page introduction",
             "goals": [
                 {
                     "id": "youth",
@@ -395,10 +395,10 @@ def test_church_vision_content_round_trips_through_page_api(isolated_data):
     assert page_content_service.is_allowed_slug("church-vision")
     assert response.status_code == 200
     assert response.json()["contentRevision"] == 1
-    assert response.json()["content"]["en"]["heading"] == content["en"]["heading"]
+    assert "heading" not in response.json()["content"]["en"]
     assert response.json()["content"]["en"]["goals"] == content["en"]["goals"]
     public = client.get("/api/v1/pages/church-vision")
-    assert public.json()["content"] == content
+    assert public.json()["content"] == response.json()["content"]
 
 
 def test_put_preserves_non_home_page_fields(isolated_data):
@@ -460,7 +460,7 @@ def test_tracked_church_vision_document_has_valid_content_shape(
 
     assert content
     for copy in content.values():
-        assert isinstance(copy["heading"], str)
+        assert "heading" not in copy
         assert isinstance(copy["goals"], list)
         goal_ids = [goal["id"] for goal in copy["goals"]]
         assert all(isinstance(goal_id, str) and goal_id for goal_id in goal_ids)

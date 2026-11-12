@@ -2,7 +2,7 @@ import { Language } from '../../shared/types/Language';
 
 const content = {
   [Language.KO]: {
-    pageTitle: '말씀과 기도로 성도와 함께 걷습니다.',
+    pageTitle: '말씀과 기도로 성도와 함께 걷습니다',
     name: '이한주 담임목사',
     role: 'Pastor, Lee Hanju',
     imageAlt: '이한주 담임목사',
@@ -56,7 +56,7 @@ const content = {
     ],
   },
   [Language.EN]: {
-    pageTitle: 'Walking with the church through prayer and the Word.',
+    pageTitle: 'Walking with the church through prayer and the Word',
     name: 'Senior Pastor Lee Hanju',
     role: 'Pastor, Lee Hanju',
     imageAlt: 'Senior Pastor Lee Hanju',
@@ -110,7 +110,7 @@ const content = {
     ],
   },
   [Language.DE]: {
-    pageTitle: 'Mit Gebet und Wort gemeinsam unterwegs.',
+    pageTitle: 'Mit Gebet und Wort gemeinsam unterwegs',
     name: 'Hauptpastor Lee Hanju',
     role: 'Pastor, Lee Hanju',
     imageAlt: 'Hauptpastor Lee Hanju',

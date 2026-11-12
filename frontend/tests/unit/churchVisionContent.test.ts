@@ -11,7 +11,6 @@ import {
 describe('Church Vision content', () => {
   it('preserves any number and order of vision items when normalizing', () => {
     const copy = normalizeChurchVisionCopy({
-      heading: 'Our vision',
       goals: [
         { id: 'youth', title: 'Youth' },
         { id: 'worship', title: 'Worship' },
@@ -74,7 +73,6 @@ describe('Church Vision content', () => {
     const copy = resolveChurchVisionCopy(
       {
         en: {
-          heading: 'Our vision',
           goals: [{ id: 'worship', title: 'Restore worship' }],
         },
         ko: {},
@@ -82,19 +80,18 @@ describe('Church Vision content', () => {
       'ko',
     );
 
-    expect(copy.heading).toBe('Our vision');
     expect(copy.goals[0].title).toBe('Restore worship');
   });
 
   it('prefers content in the selected language', () => {
     const copy = resolveChurchVisionCopy(
       {
-        en: { heading: 'Our vision' },
-        ko: { heading: '교회 비전' },
+        en: { goals: [{ id: 'worship', title: 'Worship' }] },
+        ko: { goals: [{ id: 'worship', title: '예배' }] },
       },
       'ko',
     );
 
-    expect(copy.heading).toBe('교회 비전');
+    expect(copy.goals[0].title).toBe('예배');
   });
 });

@@ -93,22 +93,6 @@ export function useChurchVisionPageEditor() {
     availableLanguages,
   );
 
-  const updateHeading = useCallback(
-    (heading: string) => {
-      if (!isReady) {
-        return;
-      }
-      setDraft((previous) => ({
-        ...previous,
-        [editLanguage]: {
-          ...normalizeChurchVisionCopy(previous[editLanguage]),
-          heading,
-        },
-      }));
-    },
-    [editLanguage, isReady],
-  );
-
   const updateGoal = useCallback(
     (id: ChurchVisionGoalId, field: GoalField, value: string) => {
       if (!isReady) {
@@ -163,7 +147,6 @@ export function useChurchVisionPageEditor() {
           Object.entries(draft).map(([language, copy]) => [
             language,
             {
-              heading: copy.heading,
               goals: copy.goals,
             },
           ]),
@@ -199,7 +182,6 @@ export function useChurchVisionPageEditor() {
     editLanguage,
     editLanguageOptions,
     setLanguage: setEditLanguage,
-    updateHeading,
     updateGoal,
     addGoal,
     removeGoal,

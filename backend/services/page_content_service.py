@@ -271,6 +271,13 @@ def _normalize_content_for_slug(
     raw: object, slug: str
 ) -> dict[str, dict[str, Any]]:
     content = normalize_page_content(raw, home=slug == "home")
+    if slug == "church-vision":
+        return {
+            language: {
+                key: value for key, value in copy.items() if key != "heading"
+            }
+            for language, copy in content.items()
+        }
     if slug != "church-history":
         return content
     baseline_ids = _church_history_baseline_ids()

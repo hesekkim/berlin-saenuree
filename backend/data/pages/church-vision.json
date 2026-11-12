@@ -2,7 +2,6 @@
   "contentRevision": 2,
   "content": {
     "ko": {
-      "heading": "“예배는 선교의 동력이자 선교의 목표”를 중심으로",
       "goals": [
         {
           "id": "worship",
@@ -31,7 +30,6 @@
       ]
     },
     "en": {
-      "heading": "With the conviction that worship is both the driving force and the goal of mission",
       "goals": [
         {
           "id": "worship",
@@ -60,7 +58,6 @@
       ]
     },
     "de": {
-      "heading": "In der Überzeugung, dass Anbetung sowohl die Kraft als auch das Ziel der Mission ist",
       "goals": [
         {
           "id": "worship",

@@ -61,19 +61,7 @@ export default function ChurchVisionPageEditor() {
 
           <div className={styles.fields} aria-busy={!editor.isReady}>
             <section className={styles.group}>
-              <InputField
-                label={labels.heading}
-                value={current.heading}
-                disabled={disabled}
-                multiline
-                rows={2}
-                onChange={editor.updateHeading}
-              />
-            </section>
-
-            <section className={styles.group} aria-labelledby="church-vision-goals">
               <div className={styles.listHeading}>
-                <h2 id="church-vision-goals">{labels.goals}</h2>
                 <button
                   type="button"
                   className={styles.addButton}

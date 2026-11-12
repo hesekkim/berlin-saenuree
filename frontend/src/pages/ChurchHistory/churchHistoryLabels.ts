@@ -3,7 +3,7 @@ import { Language } from '../../shared/types/Language';
 
 const labels = {
   [Language.KO]: {
-    tagline: '창립부터 오늘까지, 예배의 자리를 따라가 봅니다.',
+    tagline: '창립부터 오늘까지, 예배의 자리를 따라가 봅니다',
     timeline: '교회 연혁',
     timelineSubtitle: 'Berlin Saenuree',
     introductionLabel: '교회 소개',
@@ -56,7 +56,7 @@ const labels = {
     ],
   },
   [Language.DE]: {
-    tagline: 'Ein Weg des Glaubens und unserer Gottesdienstorte.',
+    tagline: 'Ein Weg des Glaubens und unserer Gottesdienstorte',
     timeline: 'Unsere Geschichte',
     timelineSubtitle: 'Berlin Saenuree',
     introductionLabel: 'Über die Gemeinde',

@@ -69,7 +69,6 @@
 .group {
   display: flex;
   flex-direction: column;
-  gap: var(--cf-space-16);
   padding: var(--cf-space-16);
   border-radius: var(--cf-radius-card);
   background: var(--cms-surface, var(--cf-white));

@@ -71,9 +71,8 @@ export default function ChurchHistoryPageEditor() {
           </div>
 
           <div className={styles.fields} aria-busy={!editor.isReady}>
-            <section className={styles.group} aria-labelledby="history-events">
+            <section className={styles.group} aria-label={labels.events}>
               <div className={styles.listHeading}>
-                <h2 id="history-events">{labels.events}</h2>
                 <button
                   type="button"
                   className={styles.addButton}
