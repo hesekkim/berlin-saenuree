@@ -330,6 +330,17 @@ export function useSettings() {
     resetUserDialogFields();
   };
 
+  const handleDialogEmailChange = (value: string) => {
+    setDialogEmail(value);
+    if (!editingEmail) {
+      setEmailError(
+        value.trim() && !EMAIL_RE.test(value.trim())
+          ? labels.emailsEmailInvalid
+          : null,
+      );
+    }
+  };
+
   const handleAddDialogPage = (slug: string) => {
     if (
       dialogPages.includes(slug) ||
@@ -538,7 +549,7 @@ export function useSettings() {
     setDialogName,
     nameError,
     dialogEmail,
-    setDialogEmail,
+    setDialogEmail: handleDialogEmailChange,
     emailError,
     dialogRole,
     setDialogRole,

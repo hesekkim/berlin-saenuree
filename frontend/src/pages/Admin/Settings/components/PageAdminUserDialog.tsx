@@ -76,6 +76,7 @@ export default function PageAdminUserDialog({
       onClose={onClose}
       closeLabel={labels.dialogCloseLabel}
       className="cms-theme"
+      closeOnOverlayClick={false}
       footer={
         <>
           <Button
