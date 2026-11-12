@@ -9,7 +9,6 @@ import { useConfig } from '../../context/ConfigContext';
 import { toContentLanguage } from '../../config/siteLanguages';
 import { CHURCH_NAMES } from '../../config/site';
 import { useNavbarChrome } from './useNavbarChrome';
-import churchLogo from '../../../assets/church-logo.png';
 
 export default function Navbar({
   navbarItems,
@@ -40,7 +39,7 @@ export default function Navbar({
             className={`${styles.title} ${styles['brand-title']}`}
             onClick={() => handleSelectMenu('')}
           >
-            <img className={styles['brand-logo']} src={churchLogo} alt="" />
+            <img className={styles['brand-logo']} src="/church-logo.png" alt="" />
             <span lang={Language.KO}>{CHURCH_NAMES[Language.KO]}</span>
           </Link>
         </div>
