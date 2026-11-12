@@ -9,6 +9,7 @@ import {
   FiLayout,
   FiMapPin,
   FiTrash2,
+  FiArchive,
 } from 'react-icons/fi';
 import type { CmsRole } from '../../shared/api/authApi';
 
@@ -21,6 +22,7 @@ export type AdminNavIcon =
   | 'churchVision'
   | 'visit'
   | 'popups'
+  | 'backups'
   | 'trash';
 
 export type AdminNavItem = {
@@ -35,6 +37,7 @@ export type AdminNavItem = {
     | 'blogger'
     | 'settings'
     | 'popups'
+    | 'backups'
     | 'trash';
   icon: AdminNavIcon;
   end?: boolean;
@@ -247,6 +250,13 @@ export function buildAdminNavSections(
       icon: 'popups',
       end: true,
     });
+    settingsItems.push({
+      id: 'backups',
+      to: '/admin/settings/backups',
+      labelKey: 'backups',
+      icon: 'backups',
+      end: true,
+    });
   }
 
   sections.push({
@@ -272,5 +282,6 @@ export const adminNavIcons: Record<AdminNavIcon, IconType> = {
   blogger: FiBookOpen,
   settings: FiSettings,
   popups: FiLayout,
+  backups: FiArchive,
   trash: FiTrash2,
 };

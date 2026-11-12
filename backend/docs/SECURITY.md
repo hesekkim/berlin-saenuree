@@ -49,6 +49,7 @@
 | `PUT /api/v1/pages/{slug}` | JWT + page 권한 |
 | `PUT /api/v1/site-settings` | JWT + site admin |
 | `/api/v1/cms-users*` | JWT + site_admin 또는 page_admin (`APP_PAGE_ADMIN_ENABLED`) |
+| `/api/v1/admin/backups*` | JWT + site admin; 복구·삭제는 백업 비밀번호 추가 확인 |
 
 ## 미디어 (`/api/v1/media`)
 
@@ -78,7 +79,13 @@ JSON으로 사이트 설정·페이지 콘텐츠·CMS 계정·OTP 코드를 저�
 - `data/`는 웹 공개 경로 밖에 두고, **앱 프로세스 유저만** 읽기/쓰기
 - 실데이터는 git에 올리지 않는다 (`backend/data/` ignore)
 - 이 파일을 쓸 수 있으면 이론상 CMS 계정 이메일을 넣을 수 있다. 다만 OTP 수신과 호스트/`APP_JWT_SECRET_KEY` 보호가 본 방어선이다
-- 배포 후 `cms_users.json` 백업을 권장한다
+- 백업 ZIP은 `APP_BACKUP_ROOT`(기본 `APP_DATA_ROOT/backups/`)에 저장한다. 이 경로도 앱만 접근할 수 있는 영구 디스크에 두고 `data/`와 분리한다.
+- ZIP은 암호화되지 않는다. CMS 계정 정보와 페이지 콘텐츠, 게시물, 미디어가 포함되므로 다운로드 파일과 외부 저장 위치를 site admin만 접근할 수 있게 보호한다. `APP_BACKUP_PASSWORD`는 복구·삭제 확인용이며 ZIP 암호화 키가 아니다.
+- ZIP에는 데이터 파일별 SHA-256 manifest가 포함된다. `verification_codes.json`은 제외된다. 가져오기 시 ZIP 경로, 파일 수·크기, 사이트 ID와 해시를 검증하며 업로드 ZIP은 기본 최대 512MB, 압축 해제 결과는 최대 2GB다.
+- 목록·생성·다운로드·업로드 검증·복구·삭제는 모두 site admin 전용이다. 추가 `APP_BACKUP_PASSWORD`는 복구·삭제에만 필요하며 설정하지 않았거나 맞지 않으면 해당 동작을 거부한다. 환경변수는 로그나 백업에 포함하지 않는다.
+- 복구 직전 현재 데이터로 `pre_restore` 안전 백업을 만들고, 성공 후 전체 데이터 디렉터리를 교체한다. OTP는 복원되지 않는다. 안전 백업 생성에 실패하면 복구를 진행하지 않는다.
+- 자동 백업은 UTC 기준 매월 한 번 유지보수 루프에서 확인·생성한다. 자동·수동·복구 전 백업을 합쳐 최대 12개 보관하며 가장 오래된 백업부터 삭제한다.
+- Render 영구 디스크 손실 시 같은 디스크의 백업도 유실될 수 있다. export ZIP을 관리자 PC나 별도 저장소에 보관한다. 복구 시 동일한 `APP_SITE_ID`와 site admin 이메일·로그인 설정이 필요하다.
 
 저장과 손상 처리 (`core/json_store.py`):
 
@@ -86,7 +93,7 @@ JSON으로 사이트 설정·페이지 콘텐츠·CMS 계정·OTP 코드를 저�
 - 파일이 있는데 파싱할 수 없으면(잘림, 수동 편집 오류, `null`, 잘못된 형태) 빈 값으로 대체하지 않고 `JsonStoreCorruptError`를 낸다. 요청은 503(`Data store is temporarily unavailable`)으로 끝나고 원본 파일은 건드리지 않는다. 경로와 원인은 서버 error 로그에만 남는다.
 - 예외 두 가지는 읽기에서 기본값으로 동작한다. `site_settings.json`, `pages/*.json`은 기본값으로 응답하되 저장은 거절한다. `cms_users.json`은 인증 경로에서 page 계정을 "없음"으로 처리하고(접근 거절) site admin 로그인은 계속 가능하다.
 - 미디어 정리는 참조 저장소를 읽지 못하면 삭제를 건너뛴다. 삭제 API는 503으로 실패한다.
-- 복구: 서버를 멈추거나 쓰기를 막은 뒤, error 로그의 파일명을 찾아 마지막 백업으로 되돌리거나 JSON 문법을 고친다. 자동 복구와 백업 로테이션은 없다.
+- 복구는 site admin CMS 설정의 백업 관리 기능을 사용한다. 가져온 ZIP은 검증 후 안전 백업 생성 및 비밀번호 확인을 거쳐 적용한다.
 
 ## Frontend
 
@@ -99,6 +106,7 @@ JSON으로 사이트 설정·페이지 콘텐츠·CMS 계정·OTP 코드를 저�
 - [ ] `APP_JWT_SECRET_KEY` 교체 (32자 이상, 사이트마다 고유한 값)
 - [ ] `APP_SITE_ID` 설정 (사이트마다 다른 값, 비우면 `APP_NAME`의 slug)
 - [ ] `APP_ADMIN_EMAILS` 설정 (최소 1개, 복수 허용)
+- [ ] `APP_BACKUP_PASSWORD` 설정 (복구·삭제 보호용, 강한 임의 값)
 - [ ] CMS 계정(page_admin / page_manager)이 필요하면 `APP_PAGE_ADMIN_ENABLED=true`
 - [ ] `APP_ALLOWED_ORIGINS`를 실제 frontend URL로 제한
 - [ ] HTTPS 사용

@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     media_max_file_bytes: int = 20 * 1024 * 1024
     # Max request body for every endpoint except the media file upload (bytes).
     max_request_body_bytes: int = 5 * 1024 * 1024
+    backup_password: str = ""
+    backup_root: str = ""
+    backup_max_archive_bytes: int = Field(default=512 * 1024 * 1024, gt=0)
+    backup_max_expanded_bytes: int = Field(default=2 * 1024 * 1024 * 1024, gt=0)
 
     @field_validator("admin_emails", mode="before")
     @classmethod
@@ -126,6 +130,10 @@ class Settings(BaseSettings):
     @property
     def data_dir(self) -> Path:
         return self.base_path / "data"
+
+    @property
+    def backup_dir(self) -> Path:
+        return Path(self.backup_root) if self.backup_root else self.base_path / "backups"
 
     @property
     def verification_codes_file(self) -> Path:

@@ -44,6 +44,7 @@
 - [009-church-vision-page.md](./done/009-church-vision-page.md): CMS 기반 교회 비전 페이지, 새 URL과 반응형 디자인
 - [010-saenuree-news-posts-blogger.md](./done/010-saenuree-news-posts-blogger.md): CMS Posts 기반 사진 소식과 조건부 Blogger 공개 페이지
 - [011-church-vision-header-and-cms.md](./done/011-church-vision-header-and-cms.md): 교회 비전 헤더 문구 및 CMS 편집기 정리
+- [012-data-backup-restore.md](./done/012-data-backup-restore.md): 월간·수동 백업, export ZIP 업로드 및 안전 백업을 포함한 복구 기능
 
 ## 대기 중인 티켓
 - 없음

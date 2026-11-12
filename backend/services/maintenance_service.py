@@ -19,7 +19,7 @@ from starlette.concurrency import run_in_threadpool
 from core.config import settings
 from core.json_store import JsonStoreCorruptError, read_json_store
 from core.store_lock import STORE_LOCK
-from services import blogger_trash_service, posts_trash_service
+from services import backups_service, blogger_trash_service, posts_trash_service
 from services.image_optimize_service import (
     ImageOptimizeNotFoundError,
     delete_derivatives,
@@ -189,6 +189,9 @@ def run_maintenance() -> None:
     _run_step("posts trash expiry", posts_trash_service.purge_expired_trash)
     _run_step("blogger trash expiry", blogger_trash_service.purge_expired_trash)
     _run_step("orphan media sweep", _sweep_orphans)
+    if settings.maintenance_enabled:
+        _run_step("monthly backup", backups_service.ensure_monthly_backup)
+        _run_step("expired backup imports", backups_service.purge_expired_imports)
 
 
 async def maintenance_loop() -> None:

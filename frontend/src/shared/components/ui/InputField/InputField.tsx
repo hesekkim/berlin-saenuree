@@ -20,6 +20,7 @@ export interface InputFieldProps {
   clearButtonLabel?: string;
   autoFocus?: boolean;
   id?: string;
+  autoComplete?: string;
   rows?: number;
   name?: string;
   type?: HTMLInputTypeAttribute;
@@ -61,6 +62,7 @@ const InputField = forwardRef<
     onFocus,
     autoFocus = false,
     id,
+    autoComplete,
     rows = 3,
     name,
     type = 'text',
@@ -114,6 +116,7 @@ const InputField = forwardRef<
     name,
     required,
     maxLength,
+    autoComplete,
     'aria-invalid': error,
     onFocus: handleFocus,
     onBlur: handleBlur,

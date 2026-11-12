@@ -19,6 +19,9 @@ def _limit_for(scope: Scope) -> int:
     upload_path = f"/api/{settings.api_version}/media/files"
     if scope["method"] == "POST" and scope["path"] == upload_path:
         return int(settings.media_max_file_bytes) + MULTIPART_OVERHEAD_BYTES
+    backup_upload_path = f"/api/{settings.api_version}/admin/backups/import"
+    if scope["method"] == "POST" and scope["path"] == backup_upload_path:
+        return int(settings.backup_max_archive_bytes) + MULTIPART_OVERHEAD_BYTES
     return int(settings.max_request_body_bytes)
 
 

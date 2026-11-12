@@ -108,4 +108,27 @@ describe('adminNav page_manager', () => {
       }),
     );
   });
+
+  it('shows backup navigation only to site admins', () => {
+    const siteAdminSettings = buildAdminNavSections('site_admin', []).find(
+      (section) => section.id === 'settings',
+    );
+    const pageAdminSettings = buildAdminNavSections('page_admin', []).find(
+      (section) => section.id === 'settings',
+    );
+    const pageManagerSettings = buildAdminNavSections(
+      'page_manager',
+      [],
+    ).find((section) => section.id === 'settings');
+
+    expect(siteAdminSettings?.items.map((item) => item.id)).toContain(
+      'backups',
+    );
+    expect(pageAdminSettings?.items.map((item) => item.id)).not.toContain(
+      'backups',
+    );
+    expect(pageManagerSettings?.items.map((item) => item.id)).not.toContain(
+      'backups',
+    );
+  });
 });

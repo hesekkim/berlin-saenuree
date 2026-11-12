@@ -8,6 +8,7 @@ import AdminLayout, {
 import HomePageEditor from '../pages/Admin/Pages/Home/HomePageEditor';
 import Posts from '../pages/Admin/Pages/Posts/Posts';
 import Settings from '../pages/Admin/Settings/Settings';
+import Backups from '../pages/Admin/Settings/Backups/Backups';
 import Popups from '../pages/Admin/Settings/Popups/Popups';
 import BloggerPage from '../pages/Admin/Pages/Blogger/Blogger';
 import BloggerDocumentEditor from '../pages/Admin/Pages/Blogger/components/BloggerDocumentEditor';
@@ -89,6 +90,10 @@ export const router = createBrowserRouter([
           {
             path: 'settings/popups',
             element: <Popups />,
+          },
+          {
+            path: 'settings/backups',
+            element: <Backups />,
           },
         ],
       },

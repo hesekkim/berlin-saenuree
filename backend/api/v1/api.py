@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from api.v1.endpoints import (
     auth,
+    backups,
     blogger,
     cms_users,
     media_files,
@@ -14,6 +15,9 @@ from api.v1.endpoints import (
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(
+    backups.router, prefix="/admin/backups", tags=["admin-backups"]
+)
 api_router.include_router(pages.router, prefix="/pages", tags=["pages"])
 api_router.include_router(
     site_settings.router, prefix="/site-settings", tags=["site-settings"]

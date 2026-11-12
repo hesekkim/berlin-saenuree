@@ -6,6 +6,7 @@ from middleware.body_size_limit import MULTIPART_OVERHEAD_BYTES
 
 JSON_ENDPOINT = "/api/v1/auth/send-code"
 UPLOAD_ENDPOINT = "/api/v1/media/files"
+BACKUP_UPLOAD_ENDPOINT = "/api/v1/admin/backups/import"
 
 
 def _oversized_json(size: int) -> dict[str, str]:
@@ -67,6 +68,36 @@ def test_upload_endpoint_rejects_body_beyond_media_limit(monkeypatch):
     response = client.post(
         UPLOAD_ENDPOINT,
         files={"file": ("a.png", b"x" * (MULTIPART_OVERHEAD_BYTES + 200), "image/png")},
+    )
+
+    assert response.status_code == 413
+
+
+def test_backup_upload_uses_the_configured_archive_limit(monkeypatch):
+    monkeypatch.setattr(settings, "backup_max_archive_bytes", 100)
+    client = TestClient(app)
+
+    response = client.post(
+        BACKUP_UPLOAD_ENDPOINT,
+        files={"file": ("backup.zip", b"x" * 10, "application/zip")},
+    )
+
+    assert response.status_code == 401
+
+
+def test_backup_upload_rejects_body_beyond_archive_limit(monkeypatch):
+    monkeypatch.setattr(settings, "backup_max_archive_bytes", 100)
+    client = TestClient(app)
+
+    response = client.post(
+        BACKUP_UPLOAD_ENDPOINT,
+        files={
+            "file": (
+                "backup.zip",
+                b"x" * (MULTIPART_OVERHEAD_BYTES + 200),
+                "application/zip",
+            )
+        },
     )
 
     assert response.status_code == 413

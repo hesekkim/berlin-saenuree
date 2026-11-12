@@ -71,6 +71,15 @@ API docs: `https://your-api.example.com/docs`
 - `cms_users.json`·`site_settings.json`·`pages/` 백업 권장
 - 상세·위협 모델은 [SECURITY.md](./SECURITY.md)의 「데이터 파일」
 
+## 백업·복구
+
+- `APP_DATA_ROOT` 아래 `data/`와 `backups/`가 모두 영구 디스크에 있도록 설정한다. `APP_BACKUP_ROOT`로 백업 ZIP 위치를 별도 지정할 수 있으며, `data/` 안에 두지 않는다.
+- `APP_BACKUP_PASSWORD`를 강한 임의 문자열로 설정한다. 비밀번호는 복구 및 백업 삭제에만 사용한다.
+- 자동 백업은 UTC 기준 매월 생성되고 전체 백업은 최대 12개 보관된다. `APP_MAINTENANCE_ENABLED=true`가 필요하다.
+- 내보낸 ZIP은 Render 디스크와 분리된 관리자 PC 또는 별도 저장소에도 보관한다. 같은 디스크의 백업은 디스크 유실을 복구할 수 없다.
+- 새 디스크에서 복구할 때는 동일한 `APP_SITE_ID`, `APP_ADMIN_EMAILS`, 백업 비밀번호 및 이메일 인증 설정을 먼저 구성한다. CMS에 로그인해 설정의 백업 파일 업로드에서 ZIP을 검증한 다음 복구한다. 복구 직전 현재 `data/`의 안전 백업이 생성된다.
+- 업로드 제한은 기본 512MB, 압축 해제 데이터 제한은 기본 2GB이며 `APP_BACKUP_MAX_ARCHIVE_BYTES`, `APP_BACKUP_MAX_EXPANDED_BYTES`로 조정할 수 있다.
+
 ## 참고
 
 - SMTP(Gmail App Password)가 필요하면 free tier에서 포트가 막힐 수 있다

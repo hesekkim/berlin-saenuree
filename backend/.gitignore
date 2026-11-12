@@ -50,6 +50,7 @@ logs/
 # Data (로컬 개발용)
 data/*.json
 !data/.gitkeep
+backups/
 
 # Testing
 .pytest_cache/
@@ -58,4 +59,3 @@ htmlcov/
 
 # Node modules (혹시 있을 경우)
 node_modules/
-

@@ -22,6 +22,10 @@ APP_SMTP_FROM_EMAIL=change-this-admin-email
 APP_SMTP_FROM_NAME=Berlin Saenuree
 APP_SEND_REAL_EMAIL=False
 APP_DATA_ROOT=
+APP_BACKUP_ROOT=
+APP_BACKUP_PASSWORD=<강한 임의 문자열>
+APP_BACKUP_MAX_ARCHIVE_BYTES=536870912
+APP_BACKUP_MAX_EXPANDED_BYTES=2147483648
 APP_POSTS_TRASH_RETENTION_DAYS=30
 APP_BLOGGER_TRASH_RETENTION_DAYS=30
 APP_MEDIA_MAX_FILE_BYTES=20971520
@@ -61,7 +65,17 @@ APP_DEBUG=True
 
 - `APP_MAX_REQUEST_BODY_BYTES`(기본 5MB): 미디어 업로드를 뺀 모든 요청 본문의 상한이다. 초과하면 `413`을 돌려준다.
 - `APP_MEDIA_MAX_FILE_BYTES`(기본 20MB): 미디어 파일 업로드 상한이다. 업로드 endpoint는 이 값에 멀티파트 오버헤드 1MB를 더해 본문을 제한한다.
+- `APP_BACKUP_MAX_ARCHIVE_BYTES`(기본 512MB): 백업 ZIP 업로드 상한이다. 압축 해제 데이터는 `APP_BACKUP_MAX_EXPANDED_BYTES`(기본 2GB)를 넘을 수 없다.
 - FastAPI는 인증 검사 전에 본문을 파싱하므로, 이 제한은 로그인하지 않은 요청에도 적용된다.
+
+## 백업과 복구
+
+- `APP_DATA_ROOT` 아래 `data/`가 실제 데이터, `backups/`가 생성된 백업 ZIP 저장소다. `APP_BACKUP_ROOT`로 저장 경로를 바꿀 수 있다. 두 경로 모두 영구 디스크에 두되 백업 저장소는 `data/` 디렉터리와 분리한다.
+- 자동 백업은 UTC 기준 매월 1회 생성한다. 실행이 누락되면 앱의 정기 유지보수에서 보충한다. 자동·수동·복구 직전 안전 백업을 합쳐 최대 12개를 보관한다.
+- `APP_BACKUP_PASSWORD`는 복구와 백업 삭제에 필요하다. 수동 백업, 목록, 다운로드, ZIP 업로드 검증에는 별도 비밀번호가 필요하지 않으며 모두 site admin 로그인은 필요하다.
+- ZIP 자체는 암호화되지 않으며 CMS 계정 정보와 콘텐츠를 포함한다. 다운로드한 파일과 외부 보관 위치의 접근을 제한한다. 백업 비밀번호는 ZIP을 암호화하지 않는다.
+- Render 디스크 자체가 유실되면 그 안의 백업도 함께 사라질 수 있다. CMS에서 백업 ZIP을 다운로드해 관리자 PC나 별도 저장소에 보관한다. 복원할 때는 동일한 `APP_SITE_ID`와 관리자 로그인 설정을 준비하고 CMS 설정에서 ZIP을 업로드한 뒤 비밀번호로 복구한다.
+- 업로드한 ZIP을 적용하기 전에 현재 데이터의 안전 백업을 생성한다. 안전 백업 생성에 실패하면 복구하지 않는다. OTP 임시 코드는 백업에 포함하지 않는다.
 
 ## 참고
 
