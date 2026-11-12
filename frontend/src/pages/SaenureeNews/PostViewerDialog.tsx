@@ -8,6 +8,7 @@ import styles from './PostViewerDialog.module.css';
 import type { getNewsLabels } from './newsLabels';
 
 type Labels = ReturnType<typeof getNewsLabels>;
+const MAX_VISIBLE_IMAGE_INDICATORS = 7;
 
 type PostViewerDialogProps = {
   post: PublicPostResponse;
@@ -24,6 +25,35 @@ type PostViewerDialogProps = {
 function formatDate(value: string, language: string): string {
   return new Intl.DateTimeFormat(language, { dateStyle: 'medium' }).format(
     new Date(value),
+  );
+}
+
+function ViewerPhoto({
+  image,
+  alt,
+}: {
+  image: PublicPostResponse['images'][number];
+  alt: string;
+}) {
+  const src = mediaImageAbsoluteUrl(image.imageId, 'display');
+
+  return (
+    <div className={styles.photoSlide}>
+      <img
+        className={`${styles.photo} ${styles.photoBackdrop}`}
+        src={src}
+        alt=""
+        aria-hidden="true"
+      />
+      <img
+        className={`${styles.photo} ${styles.photoForeground}`}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        width={image.width}
+        height={image.height}
+      />
+    </div>
   );
 }
 
@@ -50,6 +80,17 @@ export default function PostViewerDialog({
   const positionLabel = labels.imagePosition
     .replace('{current}', String(visibleImageIndex + 1))
     .replace('{total}', String(post.images.length));
+  const indicatorStart = Math.max(
+    0,
+    Math.min(
+      visibleImageIndex - Math.floor(MAX_VISIBLE_IMAGE_INDICATORS / 2),
+      post.images.length - MAX_VISIBLE_IMAGE_INDICATORS,
+    ),
+  );
+  const visibleIndicatorImages = post.images.slice(
+    indicatorStart,
+    indicatorStart + MAX_VISIBLE_IMAGE_INDICATORS,
+  );
   const showImage = (index: number) => {
     if (
       transition ||
@@ -142,26 +183,18 @@ export default function PostViewerDialog({
                     {visibleImages.map((index) => {
                       const item = post.images[index];
                       return (
-                        <img
-                          className={styles.photo}
+                        <ViewerPhoto
                           key={item.imageId}
-                          src={mediaImageAbsoluteUrl(item.imageId, 'display')}
+                          image={item}
                           alt={`${labels.photoNews} ${index + 1} / ${post.images.length}`}
-                          loading="lazy"
-                          width={item.width}
-                          height={item.height}
                         />
                       );
                     })}
                   </div>
                 ) : image ? (
-                  <img
-                    className={styles.photo}
-                    src={mediaImageAbsoluteUrl(image.imageId, 'display')}
+                  <ViewerPhoto
+                    image={image}
                     alt={`${labels.photoNews} ${positionLabel}`}
-                    loading="lazy"
-                    width={image.width}
-                    height={image.height}
                   />
                 ) : null}
                 {visibleImageIndex > 0 ? (
@@ -190,8 +223,10 @@ export default function PostViewerDialog({
                   <div
                     className={styles.imageIndicators}
                     aria-label={positionLabel}
+                    role="group"
                   >
-                    {post.images.map((item, index) => {
+                    {visibleIndicatorImages.map((item, offset) => {
+                      const index = indicatorStart + offset;
                       const indicatorLabel = labels.imagePosition
                         .replace('{current}', String(index + 1))
                         .replace('{total}', String(post.images.length));
@@ -213,21 +248,28 @@ export default function PostViewerDialog({
                         />
                       );
                     })}
+                    {post.images.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
+                      <span className={styles.imageCount} aria-hidden="true">
+                        {visibleImageIndex + 1} / {post.images.length}
+                      </span>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
             ) : null}
           </div>
           <div className={styles.viewerDetails} data-dialog-dismiss-ignore>
-            {copy.body ? (
-              <SanitizedRichText
-                html={copy.body}
-                className={styles.caption}
-              />
-            ) : null}
-            <time dateTime={post.createdAt}>
-              {formatDate(post.createdAt, language)}
-            </time>
+            <div className={styles.detailsContent}>
+              {copy.body ? (
+                <SanitizedRichText
+                  html={copy.body}
+                  className={styles.caption}
+                />
+              ) : null}
+              <time dateTime={post.createdAt}>
+                {formatDate(post.createdAt, language)}
+              </time>
+            </div>
           </div>
         </div>
         {postIndex < postCount - 1 ? (

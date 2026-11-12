@@ -7,6 +7,8 @@ import type { getNewsLabels } from './newsLabels';
 import styles from './MobilePost.module.css';
 
 type Labels = ReturnType<typeof getNewsLabels>;
+const MAX_VISIBLE_IMAGE_INDICATORS = 7;
+const IMAGE_ASPECT_RATIO_TOLERANCE = 0.02;
 
 type MobilePostProps = {
   post: PublicPostResponse;
@@ -39,11 +41,37 @@ export default function MobilePost({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const visibleImageIndex = transition?.to ?? activeImage;
   const image = post.images[visibleImageIndex] ?? post.images[0];
-  const frameImage = post.images[0] ?? image;
+  const firstImage = post.images[0] ?? image;
+  const firstImageAspectRatio = firstImage
+    ? firstImage.width / firstImage.height
+    : 1;
+  const imageAspectRatios = post.images.map(
+    (item) => item.width / item.height,
+  );
+  const hasMixedAspectRatios = imageAspectRatios.some(
+    (aspectRatio) =>
+      Math.abs(aspectRatio - firstImageAspectRatio) /
+        firstImageAspectRatio >
+      IMAGE_ASPECT_RATIO_TOLERANCE,
+  );
+  const frameAspectRatio = hasMixedAspectRatios
+    ? Math.min(...imageAspectRatios)
+    : firstImageAspectRatio;
   const copy = resolvePostCopy(post.copies, language, defaultLanguage);
   const positionLabel = labels.imagePosition
     .replace('{current}', String(visibleImageIndex + 1))
     .replace('{total}', String(post.images.length));
+  const indicatorStart = Math.max(
+    0,
+    Math.min(
+      visibleImageIndex - Math.floor(MAX_VISIBLE_IMAGE_INDICATORS / 2),
+      post.images.length - MAX_VISIBLE_IMAGE_INDICATORS,
+    ),
+  );
+  const visibleIndicatorImages = post.images.slice(
+    indicatorStart,
+    indicatorStart + MAX_VISIBLE_IMAGE_INDICATORS,
+  );
 
   useEffect(() => {
     const caption = captionRef.current;
@@ -140,7 +168,7 @@ export default function MobilePost({
         <div
           className={styles.photoFrame}
           style={{
-            aspectRatio: `${frameImage.width} / ${frameImage.height}`,
+            aspectRatio: String(frameAspectRatio),
           }}
           role="group"
           aria-label={positionLabel}
@@ -158,32 +186,63 @@ export default function MobilePost({
             >
               {visibleImages.map((index) => {
                 const item = post.images[index];
+                const src = mediaImageAbsoluteUrl(item.imageId, 'display');
+                const hasAspectRatioDifference =
+                  Math.abs(item.width / item.height - frameAspectRatio) /
+                    frameAspectRatio >
+                  IMAGE_ASPECT_RATIO_TOLERANCE;
                 return (
-                  <img
-                    className={styles.photo}
-                    key={item.imageId}
-                    src={mediaImageAbsoluteUrl(item.imageId, 'display')}
-                    alt={`${labels.photoNews} ${index + 1} / ${post.images.length}`}
-                    loading="lazy"
-                    width={item.width}
-                    height={item.height}
-                  />
+                  <div className={styles.photoSlide} key={item.imageId}>
+                    {hasAspectRatioDifference ? (
+                      <img
+                        className={`${styles.photo} ${styles.photoBackdrop}`}
+                        src={src}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <img
+                      className={`${styles.photo} ${styles.photoForeground}`}
+                      src={src}
+                      alt={`${labels.photoNews} ${index + 1} / ${post.images.length}`}
+                      loading="lazy"
+                      width={item.width}
+                      height={item.height}
+                    />
+                  </div>
                 );
               })}
             </div>
           ) : image ? (
-            <img
-              className={styles.photo}
-              src={mediaImageAbsoluteUrl(image.imageId, 'display')}
-              alt={`${labels.photoNews} ${positionLabel}`}
-              loading="lazy"
-              width={image.width}
-              height={image.height}
-            />
+            <div className={styles.photoSlide}>
+              {Math.abs(image.width / image.height - frameAspectRatio) /
+                frameAspectRatio >
+              IMAGE_ASPECT_RATIO_TOLERANCE ? (
+                <img
+                  className={`${styles.photo} ${styles.photoBackdrop}`}
+                  src={mediaImageAbsoluteUrl(image.imageId, 'display')}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
+              <img
+                className={`${styles.photo} ${styles.photoForeground}`}
+                src={mediaImageAbsoluteUrl(image.imageId, 'display')}
+                alt={`${labels.photoNews} ${positionLabel}`}
+                loading="lazy"
+                width={image.width}
+                height={image.height}
+              />
+            </div>
           ) : null}
           {post.images.length > 1 ? (
-            <div className={styles.imageIndicators} aria-label={positionLabel}>
-              {post.images.map((item, index) => {
+            <div
+              className={styles.imageIndicators}
+              aria-label={positionLabel}
+              role="group"
+            >
+              {visibleIndicatorImages.map((item, offset) => {
+                const index = indicatorStart + offset;
                 const indicatorLabel = labels.imagePosition
                   .replace('{current}', String(index + 1))
                   .replace('{total}', String(post.images.length));
@@ -204,6 +263,11 @@ export default function MobilePost({
                   />
                 );
               })}
+              {post.images.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
+                <span className={styles.imageCount} aria-hidden="true">
+                  {visibleImageIndex + 1} / {post.images.length}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>
