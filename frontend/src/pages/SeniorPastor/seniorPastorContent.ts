@@ -4,7 +4,7 @@ const content = {
   [Language.KO]: {
     pageTitle: '말씀과 기도로 성도와 함께 걷습니다',
     name: '이한주 담임목사',
-    role: 'Pastor, Lee Hanju',
+    role: '이한주 담임목사',
     imageAlt: '이한주 담임목사',
     testimonyTitle: '소명 간증서',
     introduction: [
@@ -58,7 +58,7 @@ const content = {
   [Language.EN]: {
     pageTitle: 'Walking with the church through prayer and the Word',
     name: 'Senior Pastor Lee Hanju',
-    role: 'Pastor, Lee Hanju',
+    role: 'Pastor Lee Hanju',
     imageAlt: 'Senior Pastor Lee Hanju',
     testimonyTitle: 'My Calling',
     introduction: [
@@ -111,13 +111,13 @@ const content = {
   },
   [Language.DE]: {
     pageTitle: 'Mit Gebet und Wort gemeinsam unterwegs',
-    name: 'Hauptpastor Lee Hanju',
-    role: 'Pastor, Lee Hanju',
-    imageAlt: 'Hauptpastor Lee Hanju',
+    name: 'Gemeindepastor Lee Hanju',
+    role: 'Gemeindepastor Lee Hanju',
+    imageAlt: 'Gemeindepastor Lee Hanju',
     testimonyTitle: 'Mein Ruf',
     introduction: [
       '(M.Div., Daejeon Baptist Theological Seminary)',
-      'Hauptpastor Lee Hanju möchte Gottes Liebe durch sein Leben weitergeben.',
+      'Gemeindepastor Lee Hanju möchte Gottes Liebe durch sein Leben weitergeben.',
       'Mit einem Herzen, das allein Jesus Christus dient, lebt er seinen pastoralen Auftrag.',
       'Ein Diener, der jeden Morgen im Gebet beginnt, um vor Gott aufrecht zu stehen,',
       'ein Seelsorger voller aufrichtiger Liebe zu Jesus',
