@@ -1,3 +1,4 @@
+import { BiLoaderAlt } from 'react-icons/bi';
 import Button from '../../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../../shared/components/ui/Dialog/Dialog';
 import Upload from '../../../../../shared/components/ui/Upload/Upload';
@@ -168,6 +169,12 @@ export default function PostComposerDialog({
                 )}
               </p>
             ) : null}
+            {uploadBusy ? (
+              <p className={styles.processing} role="status" aria-live="polite">
+                <BiLoaderAlt className={styles.processingIcon} aria-hidden />
+                {labels.postsComposerPhotosProcessing}
+              </p>
+            ) : null}
             <Upload
               key={uploadKey}
               multiple
@@ -178,9 +185,7 @@ export default function PostComposerDialog({
               defaultFiles={uploadDefaults}
               retainDefaultRemotes
               retainUploadedRemotes
-              onUploaded={(files) => {
-                void handleUploaded(files);
-              }}
+              onUploaded={handleUploaded}
               onItemsChange={handleUploadItemsChange}
               labels={{
                 dropHint: labels.uploadDropHint,

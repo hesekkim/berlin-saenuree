@@ -68,7 +68,7 @@ export interface UploadProps {
   retainDefaultRemotes?: boolean;
   /** After upload succeeds, skip DELETE on remove (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
-  onUploaded?: (files: MediaFileResponse[]) => void;
+  onUploaded?: (files: MediaFileResponse[]) => void | Promise<void>;
   onItemsChange?: (items: UploadItem[]) => void;
   labels?: Partial<UploadLabels>;
   className?: string;

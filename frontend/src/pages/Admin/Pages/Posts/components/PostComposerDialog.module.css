@@ -21,6 +21,27 @@
   line-height: 1.5;
 }
 
+.processing {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-8);
+  margin: 0;
+  color: var(--cms-primary, var(--cf-blue-63));
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.processingIcon {
+  flex: 0 0 auto;
+  animation: processingSpin 1s linear infinite;
+}
+
+@keyframes processingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .orderStage {
   display: flex;
   flex-direction: column;

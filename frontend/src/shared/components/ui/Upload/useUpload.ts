@@ -41,7 +41,7 @@ export type UseUploadParams = {
   retainDefaultRemotes?: boolean;
   /** After a successful upload, mark the item retainRemote (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
-  onUploaded?: (files: MediaFileResponse[]) => void;
+  onUploaded?: (files: MediaFileResponse[]) => void | Promise<void>;
   onItemsChange?: (items: UploadItem[]) => void;
 };
 
@@ -287,7 +287,31 @@ export function useUpload({
         }
 
         if (newlyUploaded.length > 0) {
-          onUploadedRef.current?.(newlyUploaded);
+          const processing = onUploadedRef.current?.(newlyUploaded);
+          if (processing) {
+            const processingIds = new Set(newlyUploaded.map((file) => file.id));
+            const processingItems = itemsRef.current.map((item) =>
+              item.uploaded && processingIds.has(item.uploaded.id)
+                ? { ...item, status: 'uploading' as const }
+                : item
+            );
+            replaceItems(processingItems);
+            itemsRef.current = processingItems;
+
+            try {
+              await processing;
+            } finally {
+              const completedItems = itemsRef.current.map((item) =>
+                item.uploaded &&
+                processingIds.has(item.uploaded.id) &&
+                item.status === 'uploading'
+                  ? { ...item, status: 'uploaded' as const }
+                  : item
+              );
+              replaceItems(completedItems);
+              itemsRef.current = completedItems;
+            }
+          }
         }
       } while (uploadAgainRef.current);
     } finally {

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   filesFromDataTransfer,
@@ -55,7 +55,7 @@ function pngFile(name = 'photo.png') {
 }
 
 function Harness(props: UseUploadParams) {
-  const { dropzoneRef, isDragging } = useUpload(props);
+  const { dropzoneRef, isDragging, items } = useUpload(props);
   return (
     <div
       ref={dropzoneRef}
@@ -63,6 +63,9 @@ function Harness(props: UseUploadParams) {
       data-dragging={String(isDragging)}
     >
       <span data-testid="child">hint</span>
+      <span data-testid="items">
+        {items.map((item) => `${item.file.name}:${item.status}`).join(',')}
+      </span>
     </div>
   );
 }
@@ -143,6 +146,40 @@ describe('useUpload drag and drop', () => {
     const items = onItemsChange.mock.lastCall?.[0] as UploadItem[];
     expect(items).toHaveLength(1);
     expect(items[0].file.name).toBe('photo.png');
+  });
+
+  it('keeps uploaded items in progress until async processing completes', async () => {
+    let finishProcessing!: () => void;
+    const onUploaded = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishProcessing = resolve;
+        })
+    );
+    const { dropzone } = renderUpload({ onUploaded });
+
+    dispatchDrag(
+      dropzone,
+      'drop',
+      fakeDataTransfer({ files: [pngFile()] })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('items')).toHaveTextContent(
+        'photo.png:uploading'
+      );
+    });
+    expect(onUploaded).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      finishProcessing();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('items')).toHaveTextContent(
+        'photo.png:uploaded'
+      );
+    });
   });
 
   it('does not let a drop outside the dropzone navigate away', () => {
