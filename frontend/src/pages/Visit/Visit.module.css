@@ -316,7 +316,6 @@
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: 0.75rem;
-  background: var(--color-bg-secondary);
   touch-action: pan-y;
 }
 
