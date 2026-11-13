@@ -154,7 +154,7 @@ export function usePostsAdmin() {
           : 'unpublished';
         const imageCountLabel = labels.postsTileMulti.replace(
           '{count}',
-          String(post.images.length),
+          String(post.media.length),
         );
 
         return {
@@ -438,7 +438,7 @@ export function usePostsAdmin() {
         published: detailPost.published,
         pinned: !detailPost.pinned,
         contentRevision: detailPost.contentRevision,
-        images: detailPost.images,
+        media: detailPost.media,
         copies: detailPost.copies,
       });
       applyPostUpdate(updated);

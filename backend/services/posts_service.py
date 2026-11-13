@@ -32,6 +32,8 @@ from services.published_status import normalize_published, read_published
 
 
 MAX_POST_IMAGES = 30
+MAX_POST_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_POST_VIDEO_BYTES = 100 * 1024 * 1024
 DEFAULT_LIST_LIMIT = 30
 MAX_LIST_LIMIT = 100
 POSTS_PAGE_SLUG = "posts"
@@ -128,26 +130,75 @@ def _assert_media_refs(image_id: str, source_file_id: str) -> None:
     except ImageOptimizeNotFoundError as error:
         raise PostsValidationError("imageId not found") from error
     try:
-        get_file_record(source_file_id)
+        source_file = get_file_record(source_file_id)
     except MediaFilesNotFoundError as error:
         raise PostsValidationError("sourceFileId not found") from error
+    try:
+        source_size = int(source_file["meta"].get("sizeBytes") or 0)
+    except (KeyError, TypeError, ValueError) as error:
+        raise PostsValidationError("image source file has an invalid size") from error
+    if source_size < 0 or source_size > MAX_POST_IMAGE_BYTES:
+        raise PostsValidationError("image exceeds maximum size")
     meta_source = str(record["meta"].get("sourceFileId") or "").strip()
     if meta_source and meta_source != source_file_id:
         raise PostsValidationError("sourceFileId does not match image")
 
 
-def _normalize_images(raw: object) -> list[dict[str, Any]]:
+def _normalize_media(raw: object) -> list[dict[str, Any]]:
     if not isinstance(raw, list):
-        raise PostsValidationError("images must be a list")
+        raise PostsValidationError("media must be a list")
     if len(raw) < 1:
-        raise PostsValidationError("at least one image is required")
+        raise PostsValidationError("at least one media item is required")
     if len(raw) > MAX_POST_IMAGES:
-        raise PostsValidationError(f"at most {MAX_POST_IMAGES} images are allowed")
+        raise PostsValidationError(f"at most {MAX_POST_IMAGES} media items are allowed")
 
-    images: list[dict[str, Any]] = []
+    media: list[dict[str, Any]] = []
+    video_count = 0
     for item in raw:
         if not isinstance(item, dict):
-            raise PostsValidationError("each image must be an object")
+            raise PostsValidationError("each media item must be an object")
+        media_type = str(item.get("type") or "image").strip().lower()
+        if media_type == "video":
+            video_count += 1
+            if video_count > 1:
+                raise PostsValidationError("at most one video is allowed per post")
+            file_id = str(item.get("fileId") or "").strip()
+            if not file_id:
+                raise PostsValidationError("video requires fileId")
+            try:
+                record = get_file_record(file_id)
+            except MediaFilesNotFoundError as error:
+                raise PostsValidationError("video fileId not found") from error
+            meta = record["meta"]
+            if (
+                str(meta.get("contentType") or "").strip().lower() != "video/mp4"
+                or not str(meta.get("originalName") or "").lower().endswith(".mp4")
+            ):
+                raise PostsValidationError("video must be an MP4 file")
+            if int(meta.get("sizeBytes") or 0) > min(
+                MAX_POST_VIDEO_BYTES, int(settings.media_max_file_bytes)
+            ):
+                raise PostsValidationError("video exceeds maximum size")
+            try:
+                width = int(item.get("width"))
+                height = int(item.get("height"))
+            except (TypeError, ValueError) as error:
+                raise PostsValidationError(
+                    "video requires integer width and height"
+                ) from error
+            if width < 1 or height < 1:
+                raise PostsValidationError("video dimensions must be positive")
+            media.append(
+                {
+                    "type": "video",
+                    "fileId": file_id,
+                    "width": width,
+                    "height": height,
+                }
+            )
+            continue
+        if media_type != "image":
+            raise PostsValidationError("media type must be image or video")
         image_id = str(item.get("imageId") or "").strip()
         source_file_id = str(item.get("sourceFileId") or "").strip()
         if not image_id or not source_file_id:
@@ -164,15 +215,16 @@ def _normalize_images(raw: object) -> list[dict[str, Any]]:
             ) from error
         if width < 1 or height < 1:
             raise PostsValidationError("image width and height must be positive")
-        images.append(
+        media.append(
             {
+                "type": "image",
                 "imageId": image_id,
                 "sourceFileId": source_file_id,
                 "width": width,
                 "height": height,
             }
         )
-    return images
+    return media
 
 
 def _normalize_post(raw: dict[str, Any]) -> dict[str, Any] | None:
@@ -186,12 +238,37 @@ def _normalize_post(raw: dict[str, Any]) -> dict[str, Any] | None:
         content_revision = int(raw.get("contentRevision", 1))
     except (TypeError, ValueError):
         return None
-    images_raw = raw.get("images")
-    if not isinstance(images_raw, list) or not images_raw:
+    media_raw = raw.get("media", raw.get("images"))
+    if not isinstance(media_raw, list) or not media_raw:
         return None
-    images: list[dict[str, Any]] = []
-    for item in images_raw:
+    media: list[dict[str, Any]] = []
+    video_count = 0
+    for item in media_raw:
         if not isinstance(item, dict):
+            return None
+        media_type = str(item.get("type") or "image").strip().lower()
+        if media_type == "video":
+            file_id = str(item.get("fileId") or "").strip()
+            try:
+                width = int(item.get("width"))
+                height = int(item.get("height"))
+            except (TypeError, ValueError):
+                return None
+            if not file_id or width < 1 or height < 1:
+                return None
+            video_count += 1
+            if video_count > 1:
+                return None
+            media.append(
+                {
+                    "type": "video",
+                    "fileId": file_id,
+                    "width": width,
+                    "height": height,
+                }
+            )
+            continue
+        if media_type != "image":
             return None
         image_id = str(item.get("imageId") or "").strip()
         source_file_id = str(item.get("sourceFileId") or "").strip()
@@ -204,8 +281,9 @@ def _normalize_post(raw: dict[str, Any]) -> dict[str, Any] | None:
             return None
         if width < 1 or height < 1:
             return None
-        images.append(
+        media.append(
             {
+                "type": "image",
                 "imageId": image_id,
                 "sourceFileId": source_file_id,
                 "width": width,
@@ -220,7 +298,7 @@ def _normalize_post(raw: dict[str, Any]) -> dict[str, Any] | None:
         "createdAt": created_at,
         "updatedAt": updated_at,
         "contentRevision": max(1, content_revision),
-        "images": images,
+        "media": media,
         "copies": _normalize_copies(raw.get("copies")),
     }
 
@@ -302,9 +380,9 @@ def filter_posts(
 def _media_ids_from_post(post: dict[str, Any]) -> tuple[set[str], set[str]]:
     image_ids: set[str] = set()
     file_ids: set[str] = set()
-    for image in post.get("images") or []:
-        image_id = image.get("imageId")
-        source_file_id = image.get("sourceFileId")
+    for item in post.get("media", post.get("images")) or []:
+        image_id = item.get("imageId")
+        source_file_id = item.get("sourceFileId") or item.get("fileId")
         if image_id:
             image_ids.add(str(image_id))
         if source_file_id:
@@ -399,7 +477,7 @@ def create_post(
         raise PostsValidationError("createdBy is required")
 
     with STORE_LOCK:
-        images = _normalize_images(payload.get("images"))
+        media = _normalize_media(payload.get("media", payload.get("images")))
         copies = _normalize_copies(
             payload.get("copies"), max_length=MAX_RICH_HTML_LENGTH
         )
@@ -416,7 +494,7 @@ def create_post(
             "createdAt": now,
             "updatedAt": now,
             "contentRevision": 1,
-            "images": images,
+            "media": media,
             "copies": copies,
         }
         current = _list_posts_unlocked()
@@ -449,7 +527,7 @@ def update_post(
         if expected != int(existing["contentRevision"]):
             raise PostsConflictError("contentRevision mismatch", dict(existing))
 
-        images = _normalize_images(payload.get("images"))
+        media = _normalize_media(payload.get("media", payload.get("images")))
         copies = _normalize_copies(
             payload.get("copies"), max_length=MAX_RICH_HTML_LENGTH
         )
@@ -468,7 +546,7 @@ def update_post(
             "createdAt": existing["createdAt"],
             "updatedAt": _utc_now_iso(),
             "contentRevision": int(existing["contentRevision"]) + 1,
-            "images": images,
+            "media": media,
             "copies": copies,
         }
         current[index] = updated

@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Dialog from '../../shared/components/ui/Dialog/Dialog';
+import LoadingSpinner from '../../shared/components/LoadingSpinner/LoadingSpinner';
 import SanitizedRichText from '../../shared/components/ui/SanitizedRichText/SanitizedRichText';
-import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
-import type { PublicPostResponse } from '../../shared/api/postsApi';
+import {
+  mediaImageAbsoluteUrl,
+} from '../../shared/api/mediaApi';
+import type {
+  PublicPostMedia,
+  PublicPostResponse,
+} from '../../shared/api/postsApi';
 import { resolvePostCopy } from '../../shared/content/resolvePostCopy';
+import PostVideo from './PostVideo';
 import styles from './PostViewerDialog.module.css';
 import type { getNewsLabels } from './newsLabels';
 
@@ -28,31 +35,47 @@ function formatDate(value: string, language: string): string {
   );
 }
 
-function ViewerPhoto({
-  image,
+function ViewerMedia({
+  media,
   alt,
+  controls = true,
+  onVideoPreviewReady,
+  onVideoError,
 }: {
-  image: PublicPostResponse['images'][number];
+  media: PublicPostMedia;
   alt: string;
+  controls?: boolean;
+  onVideoPreviewReady?: () => void;
+  onVideoError?: () => void;
 }) {
-  const src = mediaImageAbsoluteUrl(image.imageId, 'display');
-
   return (
     <div className={styles.photoSlide}>
-      <img
-        className={`${styles.photo} ${styles.photoBackdrop}`}
-        src={src}
-        alt=""
-        aria-hidden="true"
-      />
-      <img
-        className={`${styles.photo} ${styles.photoForeground}`}
-        src={src}
-        alt={alt}
-        loading="lazy"
-        width={image.width}
-        height={image.height}
-      />
+      {media.type === 'image' ? (
+        <>
+          <img
+            className={`${styles.photo} ${styles.photoBackdrop}`}
+            src={mediaImageAbsoluteUrl(media.imageId, 'display')}
+            alt=""
+            aria-hidden="true"
+          />
+          <img
+            className={`${styles.photo} ${styles.photoForeground}`}
+            src={mediaImageAbsoluteUrl(media.imageId, 'display')}
+            alt={alt}
+            loading="lazy"
+            width={media.width}
+            height={media.height}
+          />
+        </>
+      ) : (
+        <PostVideo
+          fileId={media.fileId}
+          className={`${styles.photo} ${styles.photoForeground}`}
+          controls={controls}
+          onPreviewReady={onVideoPreviewReady}
+          onError={onVideoError}
+        />
+      )}
     </div>
   );
 }
@@ -74,36 +97,54 @@ export default function PostViewerDialog({
     to: number;
     direction: 'next' | 'previous';
   } | null>(null);
-  const visibleImageIndex = transition?.to ?? activeImage;
-  const image = post.images[visibleImageIndex] ?? post.images[0];
+  const [pendingVideoIndex, setPendingVideoIndex] = useState<number | null>(
+    null,
+  );
+  const [pendingVideoReady, setPendingVideoReady] = useState(false);
+  const [pendingVideoTransition, setPendingVideoTransition] = useState(false);
+  const visibleImageIndex =
+    pendingVideoIndex ?? transition?.to ?? activeImage;
+  const isChangingVideo = pendingVideoIndex !== null;
+  const media = post.media;
+  const activeMedia = media[visibleImageIndex] ?? media[0];
   const copy = resolvePostCopy(post.copies, language, defaultLanguage);
   const positionLabel = labels.imagePosition
     .replace('{current}', String(visibleImageIndex + 1))
-    .replace('{total}', String(post.images.length));
+    .replace('{total}', String(media.length));
   const indicatorStart = Math.max(
     0,
     Math.min(
       visibleImageIndex - Math.floor(MAX_VISIBLE_IMAGE_INDICATORS / 2),
-      post.images.length - MAX_VISIBLE_IMAGE_INDICATORS,
+      media.length - MAX_VISIBLE_IMAGE_INDICATORS,
     ),
   );
-  const visibleIndicatorImages = post.images.slice(
+  const visibleIndicatorImages = media.slice(
     indicatorStart,
     indicatorStart + MAX_VISIBLE_IMAGE_INDICATORS,
   );
   const showImage = (index: number) => {
     if (
       transition ||
+      isChangingVideo ||
       index === activeImage ||
       index < 0 ||
-      index >= post.images.length
+      index >= media.length
     ) {
       return;
     }
 
+    if (media[index]?.type === 'video' && media[activeImage]?.type !== 'video') {
+      setPendingVideoIndex(index);
+      setPendingVideoReady(false);
+      setPendingVideoTransition(false);
+      return;
+    }
+
     if (
-      typeof window.matchMedia === 'function' &&
+      media[activeImage]?.type === 'video' ||
+      (typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      )
     ) {
       setActiveImage(index);
       return;
@@ -127,6 +168,42 @@ export default function PostViewerDialog({
       ? [transition.from, transition.to]
       : [transition.to, transition.from]
     : [activeImage];
+  const finishVideoTransition = () => {
+    if (pendingVideoIndex === null || !pendingVideoTransition) {
+      return;
+    }
+    setActiveImage(pendingVideoIndex);
+    setPendingVideoIndex(null);
+    setPendingVideoReady(false);
+    setPendingVideoTransition(false);
+  };
+  const startVideoTransition = () => {
+    setPendingVideoTransition(true);
+  };
+  const cancelPendingVideo = () => {
+    setPendingVideoIndex(null);
+    setPendingVideoReady(false);
+    setPendingVideoTransition(false);
+  };
+
+  useEffect(() => {
+    if (!pendingVideoTransition || pendingVideoIndex === null) {
+      return;
+    }
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timeout = window.setTimeout(
+      () => {
+        setActiveImage(pendingVideoIndex);
+        setPendingVideoIndex(null);
+        setPendingVideoReady(false);
+        setPendingVideoTransition(false);
+      },
+      prefersReducedMotion ? 20 : 300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [pendingVideoIndex, pendingVideoTransition]);
 
   return (
     <Dialog
@@ -164,11 +241,9 @@ export default function PostViewerDialog({
         ) : null}
         <div className={styles.viewerContent}>
           <div className={styles.viewerPhotoColumn}>
-            {image ? (
+            {activeMedia ? (
               <div
                 className={styles.viewerPhoto}
-                role="group"
-                aria-label={positionLabel}
                 data-dialog-dismiss-ignore
               >
                 {transition ? (
@@ -181,45 +256,107 @@ export default function PostViewerDialog({
                     onAnimationEnd={handleSlideAnimationEnd}
                   >
                     {visibleImages.map((index) => {
-                      const item = post.images[index];
+                      const item = media[index];
+                      const mediaId =
+                        item.type === 'image' ? item.imageId : item.fileId;
                       return (
-                        <ViewerPhoto
-                          key={item.imageId}
-                          image={item}
-                          alt={`${labels.photoNews} ${index + 1} / ${post.images.length}`}
+                        <ViewerMedia
+                          key={mediaId}
+                          media={item}
+                          alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
                         />
                       );
                     })}
                   </div>
-                ) : image ? (
-                  <ViewerPhoto
-                    image={image}
-                    alt={`${labels.photoNews} ${positionLabel}`}
-                  />
+                ) : activeMedia ? (
+                  <>
+                    {[
+                      { index: activeImage, isPending: false },
+                      ...(pendingVideoIndex === null
+                        ? []
+                        : [{ index: pendingVideoIndex, isPending: true }]),
+                    ].map(({ index, isPending }) => {
+                      const item = media[index];
+                      const mediaId =
+                        item.type === 'image' ? item.imageId : item.fileId;
+                      return (
+                        <div
+                          key={mediaId}
+                          className={`${styles.mediaLayer} ${
+                            isPending
+                              ? pendingVideoReady
+                                ? pendingVideoTransition
+                                  ? index > activeImage
+                                    ? styles.mediaLayerSlideInNext
+                                    : styles.mediaLayerSlideInPrevious
+                                  : ''
+                                : styles.mediaLayerPending
+                              : pendingVideoTransition
+                                ? (pendingVideoIndex ?? activeImage) >
+                                  activeImage
+                                  ? styles.mediaLayerSlideOutNext
+                                  : styles.mediaLayerSlideOutPrevious
+                                : ''
+                          }`}
+                          onAnimationEnd={
+                            isPending && pendingVideoTransition
+                              ? finishVideoTransition
+                              : undefined
+                          }
+                        >
+                          <ViewerMedia
+                            media={item}
+                            alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
+                            controls={!isPending}
+                            onVideoPreviewReady={
+                              isPending
+                                ? () => {
+                                    setPendingVideoReady(true);
+                                    startVideoTransition();
+                                  }
+                                : undefined
+                            }
+                            onVideoError={
+                              isPending ? cancelPendingVideo : undefined
+                            }
+                          />
+                        </div>
+                      );
+                    })}
+                    {pendingVideoIndex !== null && !pendingVideoReady ? (
+                      <div className={styles.videoLoading} role="status" aria-live="polite">
+                        <LoadingSpinner
+                          size="medium"
+                          text={labels.videoLoading}
+                          className={styles.videoLoadingSpinner}
+                        />
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
                 {visibleImageIndex > 0 ? (
                   <button
                     type="button"
                     className={`${styles.photoNavigation} ${styles.previousPhoto}`}
                     aria-label={labels.previousImage}
-                    disabled={Boolean(transition)}
+                    disabled={Boolean(transition) || isChangingVideo}
                     onClick={() => showImage(visibleImageIndex - 1)}
                   >
                     <span aria-hidden="true">‹</span>
                   </button>
                 ) : null}
-                {visibleImageIndex < post.images.length - 1 ? (
+                {visibleImageIndex < media.length - 1 ? (
                   <button
                     type="button"
                     className={`${styles.photoNavigation} ${styles.nextPhoto}`}
                     aria-label={labels.nextImage}
-                    disabled={Boolean(transition)}
+                    disabled={Boolean(transition) || isChangingVideo}
                     onClick={() => showImage(visibleImageIndex + 1)}
                   >
                     <span aria-hidden="true">›</span>
                   </button>
                 ) : null}
-                {post.images.length > 1 ? (
+                {media.length > 1 ? (
                   <div
                     className={styles.imageIndicators}
                     aria-label={positionLabel}
@@ -229,11 +366,13 @@ export default function PostViewerDialog({
                       const index = indicatorStart + offset;
                       const indicatorLabel = labels.imagePosition
                         .replace('{current}', String(index + 1))
-                        .replace('{total}', String(post.images.length));
+                        .replace('{total}', String(media.length));
                       return (
                         <button
                           type="button"
-                          key={item.imageId}
+                          key={
+                            item.type === 'image' ? item.imageId : item.fileId
+                          }
                           className={`${styles.imageIndicator} ${
                             index === visibleImageIndex
                               ? styles.activeImageIndicator
@@ -243,14 +382,14 @@ export default function PostViewerDialog({
                           aria-current={
                               index === visibleImageIndex ? 'true' : undefined
                           }
-                          disabled={Boolean(transition)}
+                          disabled={Boolean(transition) || isChangingVideo}
                           onClick={() => showImage(index)}
                         />
                       );
                     })}
-                    {post.images.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
+                    {media.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
                       <span className={styles.imageCount} aria-hidden="true">
-                        {visibleImageIndex + 1} / {post.images.length}
+                        {visibleImageIndex + 1} / {media.length}
                       </span>
                     ) : null}
                   </div>

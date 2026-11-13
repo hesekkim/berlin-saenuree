@@ -27,8 +27,8 @@ export default function PostComposerDialog({
 }: PostComposerDialogProps) {
   const {
     step,
-    images,
-    setImages,
+    media,
+    setMedia,
     copies,
     editLanguage,
     setEditLanguage,
@@ -44,11 +44,12 @@ export default function PostComposerDialog({
     canPublish,
     dialogTitle,
     siteLanguages,
-    imageAccept,
-    imageMaxBytes,
+    mediaAccept,
+    mediaMaxBytes,
+    perFileMaxBytes,
     handleUploaded,
     handleUploadItemsChange,
-    removeImage,
+    removeMedia,
     goNext,
     goBack,
     addPhotosFromFiles,
@@ -104,7 +105,7 @@ export default function PostComposerDialog({
           type="button"
           variant="primary"
           onClick={goNext}
-          disabled={images.length < 1 || busy}
+          disabled={media.length < 1 || busy}
         >
           {labels.postsComposerNext}
         </Button>
@@ -161,14 +162,15 @@ export default function PostComposerDialog({
 
         {step === 1 ? (
           <>
-            {images.length > 0 ? (
+            {media.length > 0 ? (
               <p className={styles.hint}>
                 {labels.postsComposerSelectedCount.replace(
                   '{count}',
-                  String(images.length),
+                  String(media.length),
                 )}
               </p>
             ) : null}
+            <p className={styles.hint}>{labels.postsComposerMediaHint}</p>
             {uploadBusy ? (
               <p className={styles.processing} role="status" aria-live="polite">
                 <BiLoaderAlt className={styles.processingIcon} aria-hidden />
@@ -178,8 +180,9 @@ export default function PostComposerDialog({
             <Upload
               key={uploadKey}
               multiple
-              accept={imageAccept}
-              maxSizeBytes={imageMaxBytes}
+              accept={mediaAccept}
+              maxSizeBytes={mediaMaxBytes}
+              maxSizeBytesForFile={perFileMaxBytes}
               autoUpload
               disabled={busy}
               defaultFiles={uploadDefaults}
@@ -212,9 +215,9 @@ export default function PostComposerDialog({
 
         {step === 2 ? (
           <PostImageOrderList
-            images={images}
-            onReorder={setImages}
-            onRemove={removeImage}
+            media={media}
+            onReorder={setMedia}
+            onRemove={removeMedia}
             onAddFiles={(files) => {
               void addPhotosFromFiles(files);
             }}

@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import SanitizedRichText from '../../shared/components/ui/SanitizedRichText/SanitizedRichText';
-import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
-import type { PublicPostResponse } from '../../shared/api/postsApi';
+import {
+  mediaImageAbsoluteUrl,
+} from '../../shared/api/mediaApi';
+import type {
+  PublicPostMedia,
+  PublicPostResponse,
+} from '../../shared/api/postsApi';
 import { resolvePostCopy } from '../../shared/content/resolvePostCopy';
+import LoadingSpinner from '../../shared/components/LoadingSpinner/LoadingSpinner';
+import PostVideo from './PostVideo';
 import type { getNewsLabels } from './newsLabels';
 import styles from './MobilePost.module.css';
 
@@ -23,6 +30,60 @@ function formatDate(value: string, language: string): string {
   );
 }
 
+function MobilePostMedia({
+  media,
+  alt,
+  frameAspectRatio,
+  onVideoPreviewReady,
+  onVideoError,
+  controls = true,
+}: {
+  media: PublicPostMedia;
+  alt: string;
+  frameAspectRatio: number;
+  onVideoPreviewReady?: () => void;
+  onVideoError?: () => void;
+  controls?: boolean;
+}) {
+  const aspectRatio = media.width / media.height;
+  const hasAspectRatioDifference =
+    Math.abs(aspectRatio - frameAspectRatio) / frameAspectRatio >
+    IMAGE_ASPECT_RATIO_TOLERANCE;
+
+  return (
+    <div className={styles.photoSlide}>
+      {media.type === 'image' ? (
+        <>
+          {hasAspectRatioDifference ? (
+            <img
+              className={`${styles.photo} ${styles.photoBackdrop}`}
+              src={mediaImageAbsoluteUrl(media.imageId, 'display')}
+              alt=""
+              aria-hidden="true"
+            />
+          ) : null}
+          <img
+            className={`${styles.photo} ${styles.photoForeground}`}
+            src={mediaImageAbsoluteUrl(media.imageId, 'display')}
+            alt={alt}
+            loading="lazy"
+            width={media.width}
+            height={media.height}
+          />
+        </>
+      ) : (
+        <PostVideo
+          fileId={media.fileId}
+          className={`${styles.photo} ${styles.photoForeground}`}
+          controls={controls}
+          onPreviewReady={onVideoPreviewReady}
+          onError={onVideoError}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function MobilePost({
   post,
   language,
@@ -35,19 +96,25 @@ export default function MobilePost({
     to: number;
     direction: 'next' | 'previous';
   } | null>(null);
+  const [pendingVideoIndex, setPendingVideoIndex] = useState<number | null>(
+    null,
+  );
+  const [pendingVideoReady, setPendingVideoReady] = useState(false);
+  const [pendingVideoTransition, setPendingVideoTransition] = useState(false);
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
   const [hasExpandableCaption, setHasExpandableCaption] = useState(false);
   const captionRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const visibleImageIndex = transition?.to ?? activeImage;
-  const image = post.images[visibleImageIndex] ?? post.images[0];
-  const firstImage = post.images[0] ?? image;
+  const visibleImageIndex =
+    pendingVideoIndex ?? transition?.to ?? activeImage;
+  const isChangingVideo = pendingVideoIndex !== null;
+  const media = post.media;
+  const activeMedia = media[visibleImageIndex] ?? media[0];
+  const firstImage = media[0] ?? activeMedia;
   const firstImageAspectRatio = firstImage
     ? firstImage.width / firstImage.height
     : 1;
-  const imageAspectRatios = post.images.map(
-    (item) => item.width / item.height,
-  );
+  const imageAspectRatios = media.map((item) => item.width / item.height);
   const hasMixedAspectRatios = imageAspectRatios.some(
     (aspectRatio) =>
       Math.abs(aspectRatio - firstImageAspectRatio) /
@@ -60,15 +127,15 @@ export default function MobilePost({
   const copy = resolvePostCopy(post.copies, language, defaultLanguage);
   const positionLabel = labels.imagePosition
     .replace('{current}', String(visibleImageIndex + 1))
-    .replace('{total}', String(post.images.length));
+    .replace('{total}', String(media.length));
   const indicatorStart = Math.max(
     0,
     Math.min(
       visibleImageIndex - Math.floor(MAX_VISIBLE_IMAGE_INDICATORS / 2),
-      post.images.length - MAX_VISIBLE_IMAGE_INDICATORS,
+      media.length - MAX_VISIBLE_IMAGE_INDICATORS,
     ),
   );
-  const visibleIndicatorImages = post.images.slice(
+  const visibleIndicatorImages = media.slice(
     indicatorStart,
     indicatorStart + MAX_VISIBLE_IMAGE_INDICATORS,
   );
@@ -105,16 +172,26 @@ export default function MobilePost({
   const showImage = (index: number) => {
     if (
       transition ||
+      isChangingVideo ||
       index === activeImage ||
       index < 0 ||
-      index >= post.images.length
+      index >= media.length
     ) {
       return;
     }
 
+    if (media[index]?.type === 'video' && media[activeImage]?.type !== 'video') {
+      setPendingVideoIndex(index);
+      setPendingVideoReady(false);
+      setPendingVideoTransition(false);
+      return;
+    }
+
     if (
-      typeof window.matchMedia === 'function' &&
+      media[activeImage]?.type === 'video' ||
+      (typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      )
     ) {
       setActiveImage(index);
       return;
@@ -162,16 +239,52 @@ export default function MobilePost({
       : [transition.to, transition.from]
     : [activeImage];
 
+  const finishVideoTransition = () => {
+    if (pendingVideoIndex === null || !pendingVideoTransition) {
+      return;
+    }
+    setActiveImage(pendingVideoIndex);
+    setPendingVideoIndex(null);
+    setPendingVideoReady(false);
+    setPendingVideoTransition(false);
+  };
+
+  const startVideoTransition = () => {
+    setPendingVideoTransition(true);
+  };
+  const cancelPendingVideo = () => {
+    setPendingVideoIndex(null);
+    setPendingVideoReady(false);
+    setPendingVideoTransition(false);
+  };
+
+  useEffect(() => {
+    if (!pendingVideoTransition || pendingVideoIndex === null) {
+      return;
+    }
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timeout = window.setTimeout(
+      () => {
+        setActiveImage(pendingVideoIndex);
+        setPendingVideoIndex(null);
+        setPendingVideoReady(false);
+        setPendingVideoTransition(false);
+      },
+      prefersReducedMotion ? 20 : 300,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [pendingVideoIndex, pendingVideoTransition]);
+
   return (
     <article className={styles.post}>
-      {image ? (
+      {activeMedia ? (
         <div
           className={styles.photoFrame}
           style={{
             aspectRatio: String(frameAspectRatio),
           }}
-          role="group"
-          aria-label={positionLabel}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -185,57 +298,86 @@ export default function MobilePost({
               onAnimationEnd={handleSlideAnimationEnd}
             >
               {visibleImages.map((index) => {
-                const item = post.images[index];
-                const src = mediaImageAbsoluteUrl(item.imageId, 'display');
-                const hasAspectRatioDifference =
-                  Math.abs(item.width / item.height - frameAspectRatio) /
-                    frameAspectRatio >
-                  IMAGE_ASPECT_RATIO_TOLERANCE;
+                const item = media[index];
+                const mediaId =
+                  item.type === 'image' ? item.imageId : item.fileId;
                 return (
-                  <div className={styles.photoSlide} key={item.imageId}>
-                    {hasAspectRatioDifference ? (
-                      <img
-                        className={`${styles.photo} ${styles.photoBackdrop}`}
-                        src={src}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                    ) : null}
-                    <img
-                      className={`${styles.photo} ${styles.photoForeground}`}
-                      src={src}
-                      alt={`${labels.photoNews} ${index + 1} / ${post.images.length}`}
-                      loading="lazy"
-                      width={item.width}
-                      height={item.height}
+                  <MobilePostMedia
+                    key={mediaId}
+                    media={item}
+                    alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
+                    frameAspectRatio={frameAspectRatio}
+                    />
+                );
+              })}
+            </div>
+          ) : activeMedia ? (
+            <>
+              {[
+                { index: activeImage, isPending: false },
+                ...(pendingVideoIndex === null
+                  ? []
+                  : [{ index: pendingVideoIndex, isPending: true }]),
+              ].map(({ index, isPending }) => {
+                const item = media[index];
+                const mediaId =
+                  item.type === 'image' ? item.imageId : item.fileId;
+                return (
+                  <div
+                    key={mediaId}
+                    className={`${styles.mediaLayer} ${
+                      isPending
+                        ? pendingVideoReady
+                          ? pendingVideoTransition
+                            ? index > activeImage
+                              ? styles.mediaLayerSlideInNext
+                              : styles.mediaLayerSlideInPrevious
+                            : ''
+                          : styles.mediaLayerPending
+                        : pendingVideoTransition
+                          ? (pendingVideoIndex ?? activeImage) > activeImage
+                            ? styles.mediaLayerSlideOutNext
+                            : styles.mediaLayerSlideOutPrevious
+                          : ''
+                    }`}
+                    onAnimationEnd={
+                      isPending && pendingVideoTransition
+                        ? () => finishVideoTransition()
+                        : undefined
+                    }
+                  >
+                    <MobilePostMedia
+                      media={item}
+                      alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
+                      frameAspectRatio={frameAspectRatio}
+                      controls={!isPending}
+                      onVideoPreviewReady={
+                        isPending
+                          ? () => {
+                              setPendingVideoReady(true);
+                              startVideoTransition();
+                            }
+                          : undefined
+                      }
+                      onVideoError={
+                        isPending ? cancelPendingVideo : undefined
+                      }
                     />
                   </div>
                 );
               })}
-            </div>
-          ) : image ? (
-            <div className={styles.photoSlide}>
-              {Math.abs(image.width / image.height - frameAspectRatio) /
-                frameAspectRatio >
-              IMAGE_ASPECT_RATIO_TOLERANCE ? (
-                <img
-                  className={`${styles.photo} ${styles.photoBackdrop}`}
-                  src={mediaImageAbsoluteUrl(image.imageId, 'display')}
-                  alt=""
-                  aria-hidden="true"
-                />
+              {pendingVideoIndex !== null && !pendingVideoReady ? (
+                <div className={styles.videoLoading} role="status" aria-live="polite">
+                  <LoadingSpinner
+                    size="medium"
+                    text={labels.videoLoading}
+                    className={styles.videoLoadingSpinner}
+                  />
+                </div>
               ) : null}
-              <img
-                className={`${styles.photo} ${styles.photoForeground}`}
-                src={mediaImageAbsoluteUrl(image.imageId, 'display')}
-                alt={`${labels.photoNews} ${positionLabel}`}
-                loading="lazy"
-                width={image.width}
-                height={image.height}
-              />
-            </div>
+            </>
           ) : null}
-          {post.images.length > 1 ? (
+          {media.length > 1 ? (
             <div
               className={styles.imageIndicators}
               aria-label={positionLabel}
@@ -245,11 +387,11 @@ export default function MobilePost({
                 const index = indicatorStart + offset;
                 const indicatorLabel = labels.imagePosition
                   .replace('{current}', String(index + 1))
-                  .replace('{total}', String(post.images.length));
+                  .replace('{total}', String(media.length));
                 return (
                   <button
                     type="button"
-                    key={item.imageId}
+                    key={item.type === 'image' ? item.imageId : item.fileId}
                     className={`${styles.imageIndicator} ${
                       index === visibleImageIndex
                         ? styles.activeImageIndicator
@@ -259,13 +401,14 @@ export default function MobilePost({
                     aria-current={
                       index === visibleImageIndex ? 'true' : undefined
                     }
+                    disabled={Boolean(transition) || isChangingVideo}
                     onClick={() => showImage(index)}
                   />
                 );
               })}
-              {post.images.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
+              {media.length > MAX_VISIBLE_IMAGE_INDICATORS ? (
                 <span className={styles.imageCount} aria-hidden="true">
-                  {visibleImageIndex + 1} / {post.images.length}
+                  {visibleImageIndex + 1} / {media.length}
                 </span>
               ) : null}
             </div>

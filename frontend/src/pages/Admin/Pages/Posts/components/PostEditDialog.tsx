@@ -32,16 +32,19 @@ export default function PostEditDialog({
   const {
     state,
     isSaving,
+    isUploadingMedia,
+    uploadProgress,
     formError,
     conflictPost,
     currentLanguageOptions,
     canSave,
-    setImages,
+    setMedia,
     setPublished,
     updateCopyBody,
     updateEditLanguage,
-    removeImage,
+    removeMedia,
     addPhotosFromFiles,
+    cancelUpload,
     save,
     close,
     applyLatestConflict,
@@ -66,15 +69,20 @@ export default function PostEditDialog({
       onClose={() => void close()}
       closeLabel={labels.dialogCloseLabel}
       size="md"
-      className="cms-theme"
+      className={`${styles.uploadBlockingDialog} cms-theme`}
       closeOnOverlayClick={false}
       closeOnEscape={false}
       footer={
-        <div className={styles.footer}>
+        <div
+          className={styles.footer}
+          inert={isUploadingMedia}
+          aria-hidden={isUploadingMedia}
+        >
           <Button
             type="button"
             variant="secondary"
             onClick={() => void close()}
+            disabled={isUploadingMedia || isSaving}
           >
             {labels.postsComposerCancel}
           </Button>
@@ -89,7 +97,11 @@ export default function PostEditDialog({
         </div>
       }
     >
-      <div className={styles.form}>
+      <div
+        className={styles.form}
+        inert={isUploadingMedia}
+        aria-hidden={isUploadingMedia}
+      >
         {formError ? (
           <p className={styles.formError} role="alert">
             {formError}
@@ -116,12 +128,13 @@ export default function PostEditDialog({
         </div>
 
         <PostImageOrderList
-          images={state.images}
-          onReorder={setImages}
-          onRemove={removeImage}
+          media={state.media}
+          onReorder={setMedia}
+          onRemove={removeMedia}
           onAddFiles={(files) => {
             void addPhotosFromFiles(files);
           }}
+          disabled={isUploadingMedia || isSaving}
           labels={{
             removeAria: labels.postsComposerRemoveImage,
             addAria: labels.postsComposerAddPhotos,
@@ -156,6 +169,51 @@ export default function PostEditDialog({
           showEnabledHint={false}
         />
       </div>
+      {uploadProgress ? (
+        <div className={styles.uploadBlockingOverlay}>
+          <div
+            className={styles.uploadBlockingContent}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={styles.uploadSpinner} aria-hidden="true" />
+            <h3>{labels.postsMediaUploadTitle}</h3>
+            <p>
+              {uploadProgress.processing
+                ? labels.postsMediaProcessing
+                : labels.postsMediaUploading
+                    .replace('{fileName}', uploadProgress.fileName)
+                    .replace(
+                      '{fileIndex}',
+                      String(uploadProgress.fileIndex),
+                    )
+                    .replace(
+                      '{fileCount}',
+                      String(uploadProgress.fileCount),
+                    )}
+            </p>
+            <progress
+              max={100}
+              value={
+                uploadProgress.processing
+                  ? undefined
+                  : uploadProgress.percent ?? undefined
+              }
+              aria-label={labels.postsMediaUploadTitle}
+            />
+            {uploadProgress.percent !== null ? (
+              <span>{uploadProgress.percent}%</span>
+            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={cancelUpload}
+            >
+              {labels.postsMediaCancel}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </Dialog>
   );
 }

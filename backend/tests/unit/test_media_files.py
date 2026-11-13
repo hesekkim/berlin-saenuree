@@ -218,6 +218,20 @@ def test_get_serves_image_inline_with_its_type(isolated_data):
     assert response.headers["x-content-type-options"] == "nosniff"
 
 
+def test_get_serves_mp4_inline_with_its_type(isolated_data):
+    content = b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00"
+    saved = save_file(
+        content,
+        original_name="clip.mp4",
+        content_type="video/mp4",
+    )
+    response = TestClient(app).get(f"/api/v1/media/files/{saved['id']}")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "video/mp4"
+    assert response.headers["content-disposition"].lower().startswith("inline")
+    assert response.content == content
+
+
 def test_get_serves_pdf_inline(isolated_data):
     saved = save_file(PDF_BYTES, original_name="doc.pdf", content_type="application/pdf")
     response = TestClient(app).get(f"/api/v1/media/files/{saved['id']}")

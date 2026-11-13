@@ -2,8 +2,12 @@ import { useMemo, type KeyboardEvent } from 'react';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import Button from '../../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../../shared/components/ui/Dialog/Dialog';
-import { mediaImageAbsoluteUrl } from '../../../../../shared/api/mediaApi';
+import {
+  mediaFileAbsoluteUrl,
+  mediaImageAbsoluteUrl,
+} from '../../../../../shared/api/mediaApi';
 import type { PostResponse } from '../../../../../shared/api/postsApi';
+import { seekVideoToPreviewFrame } from '../../../../../shared/lib/videoPreview';
 import { useConfig } from '../../../../../shared/context/ConfigContext';
 import {
   richHtmlHasText,
@@ -60,8 +64,8 @@ export default function PostDetailDialog({
   purgeLabel = 'Delete',
 }: PostDetailDialogProps) {
   const { defaultLanguage } = useConfig();
-  const images = post?.images ?? [];
-  const slideCount = images.length;
+  const media = post?.media ?? [];
+  const slideCount = media.length;
   const { trackRef, index, goPrev, goNext, canGoPrev, canGoNext } =
     usePostCarousel(slideCount);
 
@@ -151,19 +155,35 @@ export default function PostDetailDialog({
             onKeyDown={handleCarouselKeyDown}
           >
             <div ref={trackRef} className={styles.track}>
-              {images.map((image, slideIndex) => (
+              {media.map((item, slideIndex) => (
                 <div
-                  key={`${image.imageId}-${slideIndex}`}
+                  key={`${item.type === 'image' ? item.imageId : item.fileId}-${slideIndex}`}
                   className={styles.slide}
                   data-slide-index={slideIndex}
                 >
-                  <img
-                    className={styles.image}
-                    src={mediaImageAbsoluteUrl(image.imageId, 'display')}
-                    alt=""
-                    draggable={false}
-                    loading={slideIndex === 0 ? 'eager' : 'lazy'}
-                  />
+                  {item.type === 'image' ? (
+                    <img
+                      className={`${styles.image} ${styles.video}`}
+                      src={mediaImageAbsoluteUrl(item.imageId, 'display')}
+                      alt=""
+                      draggable={false}
+                      loading={slideIndex === 0 ? 'eager' : 'lazy'}
+                    />
+                  ) : (
+                    <video
+                      className={styles.image}
+                      src={mediaFileAbsoluteUrl(
+                        `/api/v1/media/files/${item.fileId}`,
+                      )}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(event) =>
+                        seekVideoToPreviewFrame(event.currentTarget)
+                      }
+                    />
+                  )}
                 </div>
               ))}
             </div>

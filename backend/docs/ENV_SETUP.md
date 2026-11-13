@@ -28,7 +28,7 @@ APP_BACKUP_MAX_ARCHIVE_BYTES=536870912
 APP_BACKUP_MAX_EXPANDED_BYTES=2147483648
 APP_POSTS_TRASH_RETENTION_DAYS=30
 APP_BLOGGER_TRASH_RETENTION_DAYS=30
-APP_MEDIA_MAX_FILE_BYTES=20971520
+APP_MEDIA_MAX_FILE_BYTES=104857600
 APP_MAX_REQUEST_BODY_BYTES=5242880
 APP_MAINTENANCE_ENABLED=True
 APP_MEDIA_GC_DRY_RUN=True
@@ -64,7 +64,7 @@ APP_DEBUG=True
 ## 요청 크기 제한
 
 - `APP_MAX_REQUEST_BODY_BYTES`(기본 5MB): 미디어 업로드를 뺀 모든 요청 본문의 상한이다. 초과하면 `413`을 돌려준다.
-- `APP_MEDIA_MAX_FILE_BYTES`(기본 20MB): 미디어 파일 업로드 상한이다. 업로드 endpoint는 이 값에 멀티파트 오버헤드 1MB를 더해 본문을 제한한다.
+- `APP_MEDIA_MAX_FILE_BYTES`(기본 100MiB): 미디어 파일 업로드 상한이다. 업로드 endpoint는 이 값에 멀티파트 오버헤드 1MiB를 더해 본문을 제한한다. Posts MP4 동영상은 최대 100MiB까지 허용하며, 사진은 Posts 화면에서 파일당 10MiB로 제한한다. 배포 환경에서 이 변수를 별도로 설정했다면 업로드 상한에 맞춰 갱신해야 한다.
 - `APP_BACKUP_MAX_ARCHIVE_BYTES`(기본 512MB): 백업 ZIP 업로드 상한이다. 압축 해제 데이터는 `APP_BACKUP_MAX_EXPANDED_BYTES`(기본 2GB)를 넘을 수 없다.
 - FastAPI는 인증 검사 전에 본문을 파싱하므로, 이 제한은 로그인하지 않은 요청에도 적용된다.
 

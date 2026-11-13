@@ -19,8 +19,9 @@ def test_public_posts_return_only_published_content_fields(monkeypatch):
                     "createdAt": "2026-01-02T03:04:05+00:00",
                     "updatedAt": "2026-01-03T03:04:05+00:00",
                     "contentRevision": 4,
-                    "images": [
+                    "media": [
                         {
+                            "type": "image",
                             "imageId": "image-1",
                             "sourceFileId": "private-file-id",
                             "width": 640,
@@ -46,8 +47,13 @@ def test_public_posts_return_only_published_content_fields(monkeypatch):
             {
                 "id": "post-1",
                 "createdAt": "2026-01-02T03:04:05+00:00",
-                "images": [
-                    {"imageId": "image-1", "width": 640, "height": 480}
+                "media": [
+                    {
+                        "type": "image",
+                        "imageId": "image-1",
+                        "width": 640,
+                        "height": 480,
+                    }
                 ],
                 "copies": {"en": {"body": "<p>Public caption</p>"}},
             }

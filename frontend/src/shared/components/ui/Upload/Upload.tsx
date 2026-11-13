@@ -12,6 +12,7 @@ import {
   downloadMediaFile,
   type MediaFileResponse,
 } from '../../../api/mediaApi';
+import { seekVideoToPreviewFrame } from '../../../lib/videoPreview';
 
 export type UploadLabels = {
   /** Lead text including conjunction, e.g. "Drag and drop files here, or". */
@@ -68,8 +69,12 @@ export interface UploadProps {
   retainDefaultRemotes?: boolean;
   /** After upload succeeds, skip DELETE on remove (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
-  onUploaded?: (files: MediaFileResponse[]) => void | Promise<void>;
+  onUploaded?: (
+    files: MediaFileResponse[],
+    items: UploadItem[],
+  ) => void | Promise<void>;
   onItemsChange?: (items: UploadItem[]) => void;
+  maxSizeBytesForFile?: (file: File) => number;
   labels?: Partial<UploadLabels>;
   className?: string;
 }
@@ -102,6 +107,7 @@ function errorMessage(item: UploadItem, labels: UploadLabels): string | null {
 export default function Upload({
   accept,
   maxSizeBytes,
+  maxSizeBytesForFile,
   multiple = false,
   disabled = false,
   autoUpload = true,
@@ -130,6 +136,7 @@ export default function Upload({
   } = useUpload({
     accept,
     maxSizeBytes,
+    maxSizeBytesForFile,
     multiple,
     disabled,
     autoUpload,
@@ -235,10 +242,21 @@ export default function Upload({
           {items.map((item) => {
             const message = errorMessage(item, labels);
             const canDownload = item.status === 'uploaded' && Boolean(item.uploaded);
-            const showImagePreview = Boolean(item.previewUrl);
+            const showMediaPreview = Boolean(item.previewUrl);
             return (
               <li key={item.key} className={styles.item}>
-                {showImagePreview ? (
+                {showMediaPreview && item.file.type === 'video/mp4' ? (
+                  <video
+                    src={item.previewUrl}
+                    className={styles.preview}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={(event) =>
+                      seekVideoToPreviewFrame(event.currentTarget)
+                    }
+                  />
+                ) : showMediaPreview ? (
                   <img
                     src={item.previewUrl}
                     alt=""

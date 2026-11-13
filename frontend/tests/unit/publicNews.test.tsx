@@ -5,6 +5,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -46,19 +47,20 @@ const posts: PublicPostResponse[] = [
   {
     id: 'post-1',
     createdAt: '2026-06-01T10:00:00Z',
-    images: [
-      { imageId: 'image-1', width: 640, height: 480 },
-      { imageId: 'image-1-second', width: 640, height: 480 },
+    media: [
+      { type: 'image', imageId: 'image-1', width: 640, height: 480 },
+      { type: 'image', imageId: 'image-1-second', width: 640, height: 480 },
     ],
     copies: { en: { body: '<p>First caption</p>' } },
   },
   {
     id: 'post-2',
     createdAt: '2026-06-02T10:00:00Z',
-    images: [{ imageId: 'image-2', width: 640, height: 480 }],
+    media: [{ type: 'video', fileId: 'video-2', width: 1280, height: 720 }],
     copies: { en: { body: '<p>Second caption</p>' } },
   },
 ];
+const firstPostImages = posts[0].media;
 
 const story: PublicBloggerResponse = {
   id: 'story-1',
@@ -81,7 +83,9 @@ function renderWithQueries(element: React.ReactNode) {
 
 describe('Saenuree News public pages', () => {
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
+    posts[0].media = [...firstPostImages];
     mocks.fetchPosts.mockResolvedValue({
       items: posts,
       total: posts.length,
@@ -110,6 +114,65 @@ describe('Saenuree News public pages', () => {
 
     const updatedDialog = await screen.findByRole('dialog');
     expect(within(updatedDialog).getByText('Second caption')).toBeInTheDocument();
+    const video = updatedDialog.querySelector('video');
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveAttribute('autoplay');
+    expect(video).toHaveProperty('muted', true);
+    expect(video).toHaveAttribute('playsinline');
+    expect(video).toHaveAttribute('controls');
+  });
+
+  it('keeps the current photo visible until the next video frame is ready', async () => {
+    posts[0].media = [
+      ...firstPostImages,
+      { type: 'video', fileId: 'video-next', width: 640, height: 480 },
+    ];
+
+    renderWithQueries(<PhotoNews />);
+    fireEvent.click(
+      (await screen.findAllByRole('button', { name: 'Jun 1, 2026' }))[0],
+    );
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: '3 / 3' }));
+
+    const video = dialog.querySelector('video');
+    expect(video).toBeInTheDocument();
+    expect(video).not.toHaveAttribute('controls');
+    expect(within(dialog).getByRole('status')).toBeInTheDocument();
+    expect(dialog.querySelector('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('image-1'),
+    );
+
+    if (!video) {
+      throw new Error('Expected the next video to be mounted');
+    }
+    Object.defineProperties(video, {
+      duration: { configurable: true, value: 8 },
+      currentTime: { configurable: true, writable: true, value: 0 },
+      readyState: { configurable: true, value: 1 },
+      requestVideoFrameCallback: {
+        configurable: true,
+        value: (callback: () => void) => callback(),
+      },
+    });
+    fireEvent.loadedMetadata(video);
+    expect(video.currentTime).toBe(1.2);
+    fireEvent.seeked(video);
+
+    const videoLayer = video.closest('[class*="mediaLayer"]');
+    expect(videoLayer).not.toBeNull();
+    await waitFor(() => {
+      expect(videoLayer?.className).toContain('mediaLayerSlideInNext');
+    });
+    expect(
+      dialog.querySelector('img')?.parentElement?.parentElement?.className,
+    ).toContain('mediaLayerSlideOutNext');
+
+    await waitFor(() => {
+      expect(dialog.querySelector('video')).toHaveAttribute('controls');
+    }, { timeout: 1500 });
+    expect(dialog.querySelector('img')).not.toBeInTheDocument();
   });
 
   it('shows photo indicators and only the available carousel direction', async () => {

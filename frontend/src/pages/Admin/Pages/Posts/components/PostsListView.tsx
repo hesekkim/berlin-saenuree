@@ -74,7 +74,7 @@ export default function PostsListView({
         />
         {items.map((item) => {
           const { post } = item;
-          const cover = post.images[0];
+          const cover = post.media[0];
 
           return (
             <AdminListRow
@@ -83,7 +83,9 @@ export default function PostsListView({
               author={post.createdBy}
               date={item.date}
               thumbnailUrl={
-                cover ? mediaImageAbsoluteUrl(cover.imageId, 'thumb') : undefined
+                cover?.type === 'image'
+                  ? mediaImageAbsoluteUrl(cover.imageId, 'thumb')
+                  : undefined
               }
               metadata={
                 <>

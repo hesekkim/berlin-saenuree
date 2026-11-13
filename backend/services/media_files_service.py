@@ -35,6 +35,7 @@ INLINE_CONTENT_TYPES = frozenset(
         "image/png",
         "image/webp",
         "image/gif",
+        "video/mp4",
         "application/pdf",
     }
 )
@@ -135,6 +136,8 @@ def resolve_max_size_bytes(requested_max: int | None) -> int:
 
 
 def sniff_content_type(content: bytes) -> str | None:
+    if len(content) >= 12 and content[4:8] == b"ftyp":
+        return "video/mp4"
     if content.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
     if content.startswith(b"\xff\xd8\xff"):
@@ -165,6 +168,7 @@ def assert_content_type_plausible(content: bytes, content_type: str) -> None:
         "image/gif",
         "image/webp",
         "application/pdf",
+        "video/mp4",
     }
     if normalized in sniffable:
         if sniffed != normalized:
@@ -292,6 +296,8 @@ def save_file(
         )
 
     normalized_type = normalize_content_type(content_type)
+    if normalized_type == DEFAULT_CONTENT_TYPE and sniff_content_type(content) == "video/mp4":
+        normalized_type = "video/mp4"
     name = normalize_original_name(original_name)
     assert_content_type_plausible(content, normalized_type)
     if not matches_accept(

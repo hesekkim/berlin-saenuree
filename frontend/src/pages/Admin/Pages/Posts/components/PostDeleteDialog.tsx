@@ -34,9 +34,9 @@ export default function PostDeleteDialog({
 
   const message = labels.postsDeleteConfirm
     ? labels.postsDeleteConfirm
-        .replace('{count}', String(post.images.length))
+        .replace('{count}', String(post.media.length))
         .replace('{createdAt}', formatCreatedAt(post.createdAt, language))
-    : `Move this post to trash? It includes ${post.images.length} photo(s).`;
+    : `Move this post to trash? It includes ${post.media.length} media item(s).`;
 
   return (
     <ConfirmDialog

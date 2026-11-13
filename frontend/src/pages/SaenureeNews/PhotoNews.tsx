@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { IoCopy } from 'react-icons/io5';
+import { IoCopy, IoVideocam } from 'react-icons/io5';
 import Button from '../../shared/components/ui/Button/Button';
 import LoadingSpinner from '../../shared/components/LoadingSpinner/LoadingSpinner';
 import PageHeader from '../../shared/components/PageHeader/PageHeader';
-import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
+import {
+  mediaFileAbsoluteUrl,
+  mediaImageAbsoluteUrl,
+} from '../../shared/api/mediaApi';
 import { fetchPublicPosts } from '../../shared/api/postsApi';
 import { useConfig } from '../../shared/context/ConfigContext';
 import { getNewsLabels } from './newsLabels';
+import { seekVideoToPreviewFrame } from '../../shared/lib/videoPreview';
 import MobilePost from './MobilePost';
 import PostViewerDialog from './PostViewerDialog';
 import styles from './PhotoNews.module.css';
@@ -143,7 +147,7 @@ export default function PhotoNews() {
           ) : (
             <section className={styles.postGrid} aria-label={labels.photoNews}>
               {posts.map((post) => {
-                const cover = post.images[0];
+                const cover = post.media[0];
                 return (
                   <button
                     type="button"
@@ -152,7 +156,7 @@ export default function PhotoNews() {
                     aria-label={formatDate(post.createdAt, language)}
                     onClick={() => setSelectedPostId(post.id)}
                   >
-                    {cover ? (
+                    {cover?.type === 'image' ? (
                       <img
                         className={styles.gridPhoto}
                         src={mediaImageAbsoluteUrl(cover.imageId, 'thumb')}
@@ -161,8 +165,28 @@ export default function PhotoNews() {
                         width={cover.width}
                         height={cover.height}
                       />
+                    ) : cover?.type === 'video' ? (
+                      <video
+                        className={styles.gridPhoto}
+                        src={mediaFileAbsoluteUrl(
+                          `/api/v1/media/files/${cover.fileId}`,
+                        )}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        onLoadedMetadata={(event) =>
+                          seekVideoToPreviewFrame(event.currentTarget)
+                        }
+                      />
                     ) : null}
-                    {post.images.length > 1 ? (
+                    {post.media.some((item) => item.type === 'video') ? (
+                      <span
+                        className={styles.videoIndicator}
+                        aria-hidden="true"
+                      >
+                        <IoVideocam className={styles.videoIcon} />
+                      </span>
+                    ) : post.media.length > 1 ? (
                       <IoCopy className={styles.multiImageIcon} aria-hidden />
                     ) : null}
                   </button>

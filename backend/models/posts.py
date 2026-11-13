@@ -1,11 +1,24 @@
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class PostImage(BaseModel):
+    type: Literal["image"] = "image"
     imageId: str
     sourceFileId: str
     width: int
     height: int
+
+
+class PostVideo(BaseModel):
+    type: Literal["video"]
+    fileId: str
+    width: int
+    height: int
+
+
+PostMedia = PostImage | PostVideo
 
 
 class PostCopy(BaseModel):
@@ -22,7 +35,7 @@ class PostResponse(BaseModel):
     createdAt: str
     updatedAt: str
     contentRevision: int
-    images: list[PostImage]
+    media: list[PostMedia]
     copies: dict[str, PostCopy] = Field(default_factory=dict)
 
 
@@ -34,15 +47,26 @@ class PostListResponse(BaseModel):
 
 
 class PublicPostImage(BaseModel):
+    type: Literal["image"] = "image"
     imageId: str
     width: int
     height: int
 
 
+class PublicPostVideo(BaseModel):
+    type: Literal["video"]
+    fileId: str
+    width: int
+    height: int
+
+
+PublicPostMedia = PublicPostImage | PublicPostVideo
+
+
 class PublicPostResponse(BaseModel):
     id: str
     createdAt: str
-    images: list[PublicPostImage]
+    media: list[PublicPostMedia]
     copies: dict[str, PostCopy] = Field(default_factory=dict)
 
 
@@ -58,5 +82,9 @@ class PostUpsertRequest(BaseModel):
     pinned: bool = False
     # Required on PUT (optimistic lock). Ignored on POST.
     contentRevision: int | None = None
-    images: list[PostImage] = Field(min_length=1, max_length=30)
+    media: list[PostMedia] = Field(
+        min_length=1,
+        max_length=30,
+        validation_alias=AliasChoices("media", "images"),
+    )
     copies: dict[str, PostCopy] = Field(default_factory=dict)

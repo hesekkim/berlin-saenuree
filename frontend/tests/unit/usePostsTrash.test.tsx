@@ -42,7 +42,7 @@ function makePost(id: string): PostResponse {
     createdAt: '2026-09-11T12:00:00+00:00',
     updatedAt: '2026-09-11T12:00:00+00:00',
     contentRevision: 1,
-    images: [],
+    media: [],
     copies: {},
   };
 }

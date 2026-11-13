@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { BsPinAngleFill } from 'react-icons/bs';
-import { IoCopy } from 'react-icons/io5';
+import { IoCopy, IoVideocam } from 'react-icons/io5';
 import Button from '../../../../shared/components/ui/Button/Button';
 import LoadingSpinner from '../../../../shared/components/LoadingSpinner/LoadingSpinner';
-import { mediaImageAbsoluteUrl } from '../../../../shared/api/mediaApi';
+import {
+  mediaFileAbsoluteUrl,
+  mediaImageAbsoluteUrl,
+} from '../../../../shared/api/mediaApi';
 import { useConfig } from '../../../../shared/context/ConfigContext';
 import StatusTag from '../../../../shared/components/ui/StatusTag/StatusTag';
 import type { PostResponse } from '../../../../shared/api/postsApi';
+import { seekVideoToPreviewFrame } from '../../../../shared/lib/videoPreview';
 import PostComposerDialog from './components/PostComposerDialog';
 import PostDeleteDialog from './components/PostDeleteDialog';
 import PostDetailDialog from './components/PostDetailDialog';
@@ -30,9 +34,9 @@ function tileAriaLabel(
   if (post.pinned) {
     parts.push(labels.postsTilePinned);
   }
-  if (post.images.length > 1) {
+  if (post.media.length > 1) {
     parts.push(
-      labels.postsTileMulti.replace('{count}', String(post.images.length)),
+      labels.postsTileMulti.replace('{count}', String(post.media.length)),
     );
   }
   if (!post.published) {
@@ -220,10 +224,7 @@ export default function Posts() {
             <>
               <ul className={styles.grid}>
                 {posts.map((post) => {
-                  const cover = post.images[0];
-                  const thumbUrl = cover
-                    ? mediaImageAbsoluteUrl(cover.imageId, 'thumb')
-                    : '';
+                  const cover = post.media[0];
                   const tileClass = [
                     styles.tile,
                     !post.published ? styles.tileDisabled : '',
@@ -239,23 +240,43 @@ export default function Posts() {
                         aria-label={tileAriaLabel(post, labels)}
                         onClick={() => openDetail(post)}
                       >
-                        {thumbUrl ? (
+                        {cover?.type === 'image' ? (
                           <img
                             className={styles.thumb}
-                            src={thumbUrl}
+                            src={mediaImageAbsoluteUrl(cover.imageId, 'thumb')}
                             alt=""
                             draggable={false}
                             loading="lazy"
                           />
+                        ) : cover?.type === 'video' ? (
+                          <video
+                            className={styles.thumb}
+                            src={mediaFileAbsoluteUrl(
+                              `/api/v1/media/files/${cover.fileId}`,
+                            )}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            onLoadedMetadata={(event) =>
+                              seekVideoToPreviewFrame(event.currentTarget)
+                            }
+                          />
+                        ) : null}
+                        {post.media.some((item) => item.type === 'video') ? (
+                          <span
+                            className={styles.videoIndicator}
+                            aria-hidden="true"
+                          >
+                            <IoVideocam className={styles.videoIcon} />
+                          </span>
+                        ) : post.media.length > 1 ? (
+                          <IoCopy className={styles.multiIcon} aria-hidden />
                         ) : null}
                         {post.pinned ? (
                           <BsPinAngleFill
                             className={styles.pinIcon}
                             aria-hidden
                           />
-                        ) : null}
-                        {post.images.length > 1 ? (
-                          <IoCopy className={styles.multiIcon} aria-hidden />
                         ) : null}
                         {!post.published ? (
                           <StatusTag

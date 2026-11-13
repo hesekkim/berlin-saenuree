@@ -16,6 +16,7 @@ from services.posts_service import (
     _cleanup_unused_media,
     _list_posts_unlocked,
     _media_ids_from_post,
+    _normalize_post,
 )
 from services.published_status import normalize_published
 
@@ -157,7 +158,16 @@ def list_trash(*, role: str, email: str) -> dict[str, Any]:
             reverse=True,
         )
         return {
-            "items": [_with_expiration(item) for item in items],
+            "items": [
+                _with_expiration(
+                    {
+                        **item,
+                        "post": _normalize_post(item.get("post") or {})
+                        or item.get("post"),
+                    }
+                )
+                for item in items
+            ],
             "total": len(items),
         }
 

@@ -1,11 +1,21 @@
 import { apiClient } from '../lib/axios';
 
 export type PostImage = {
+  type: 'image';
   imageId: string;
   sourceFileId: string;
   width: number;
   height: number;
 };
+
+export type PostVideo = {
+  type: 'video';
+  fileId: string;
+  width: number;
+  height: number;
+};
+
+export type PostMedia = PostImage | PostVideo;
 
 export type PostCopy = {
   body: string;
@@ -19,7 +29,7 @@ export type PostResponse = {
   updatedAt: string;
   contentRevision: number;
   published: boolean;
-  images: PostImage[];
+  media: PostMedia[];
   copies: Record<string, PostCopy>;
 };
 
@@ -30,12 +40,17 @@ export type PostListResponse = {
   offset: number;
 };
 
-export type PublicPostImage = Pick<PostImage, 'imageId' | 'width' | 'height'>;
+export type PublicPostImage = Pick<
+  PostImage,
+  'type' | 'imageId' | 'width' | 'height'
+>;
+export type PublicPostVideo = PostVideo;
+export type PublicPostMedia = PublicPostImage | PublicPostVideo;
 
 export type PublicPostResponse = {
   id: string;
   createdAt: string;
-  images: PublicPostImage[];
+  media: PublicPostMedia[];
   copies: Record<string, PostCopy>;
 };
 
@@ -63,7 +78,7 @@ export type PostUpsert = {
   published: boolean;
   pinned: boolean;
   contentRevision?: number | null;
-  images: PostImage[];
+  media: PostMedia[];
   copies: Record<string, PostCopy>;
 };
 

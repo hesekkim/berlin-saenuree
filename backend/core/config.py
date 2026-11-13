@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     # When true, the orphan sweep only logs candidates; set false after reviewing the logs.
     media_gc_dry_run: bool = True
     # Default max upload size for media files (bytes). Request may set a lower cap.
-    media_max_file_bytes: int = 20 * 1024 * 1024
+    media_max_file_bytes: int = 100 * 1024 * 1024
     # Max request body for every endpoint except the media file upload (bytes).
     max_request_body_bytes: int = 5 * 1024 * 1024
     backup_password: str = ""

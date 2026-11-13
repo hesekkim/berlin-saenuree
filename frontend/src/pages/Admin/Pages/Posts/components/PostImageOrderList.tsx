@@ -4,17 +4,21 @@ import { createPortal } from 'react-dom';
 import { IoMdAdd, IoMdClose } from 'react-icons/io';
 import Button from '../../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../../shared/components/ui/Dialog/Dialog';
-import { mediaImageAbsoluteUrl } from '../../../../../shared/api/mediaApi';
-import type { PostImage } from '../../../../../shared/api/postsApi';
+import {
+  mediaFileAbsoluteUrl,
+  mediaImageAbsoluteUrl,
+} from '../../../../../shared/api/mediaApi';
+import type { PostMedia } from '../../../../../shared/api/postsApi';
 import { usePointerReorder } from '../../../../../shared/hooks/usePointerReorder';
-import { IMAGE_ACCEPT, MAX_POST_IMAGES } from '../hooks/usePostComposer';
+import { MAX_POST_MEDIA, POST_MEDIA_ACCEPT } from '../utils/postMedia';
 import { usePostImageOrderSelection } from '../hooks/usePostImageOrderSelection';
+import { seekVideoToPreviewFrame } from '../../../../../shared/lib/videoPreview';
 import styles from './PostComposerDialog.module.css';
 
 export type PostImageOrderListProps = {
-  images: PostImage[];
-  onReorder: (images: PostImage[]) => void;
-  onRemove: (imageId: string) => void;
+  media: PostMedia[];
+  onReorder: (media: PostMedia[]) => void;
+  onRemove: (mediaId: string) => void;
   onAddFiles: (files: File[]) => void;
   labels: {
     removeAria: string;
@@ -31,13 +35,13 @@ export type PostImageOrderListProps = {
   disabled?: boolean;
 };
 
-function getImageId(image: PostImage): string {
-  return image.imageId;
+function getMediaId(item: PostMedia): string {
+  return item.type === 'image' ? item.imageId : item.fileId;
 }
 
-/** Step-2 / edit-form image preview + strip — no wizard step dependency. */
+/** Step-2 / edit-form media preview + strip — no wizard step dependency. */
 export default function PostImageOrderList({
-  images,
+  media,
   onReorder,
   onRemove,
   onAddFiles,
@@ -46,19 +50,19 @@ export default function PostImageOrderList({
 }: PostImageOrderListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stripRef = useRef<HTMLUListElement>(null);
-  const imageIds = useMemo(() => images.map(getImageId), [images]);
-  const { trackRef, index, goTo } = usePostImageOrderSelection(imageIds);
+  const mediaIds = useMemo(() => media.map(getMediaId), [media]);
+  const { trackRef, index, goTo } = usePostImageOrderSelection(mediaIds);
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
 
-  const selectedImage = images[index] ?? images[0] ?? null;
+  const selectedImage = media[index] ?? media[0] ?? null;
 
   const { draggingId, dragPoint, onPointerDown, dataAttribute } =
     usePointerReorder({
-      items: images,
-      getId: getImageId,
+      items: media,
+      getId: getMediaId,
       onReorder,
       onTap: (id) => {
-        const target = images.findIndex((image) => image.imageId === id);
+        const target = media.findIndex((item) => getMediaId(item) === id);
         if (target >= 0) {
           goTo(target);
         }
@@ -69,12 +73,12 @@ export default function PostImageOrderList({
       scrollContainerRef: stripRef,
     });
 
-  const draggingImage =
-    images.find((image) => image.imageId === draggingId) ?? null;
-  const canAdd = !disabled && images.length < MAX_POST_IMAGES;
-  const canRemove = !disabled && images.length > 1;
+  const draggingMedia =
+    media.find((item) => getMediaId(item) === draggingId) ?? null;
+  const canAdd = !disabled && media.length < MAX_POST_MEDIA;
+  const canRemove = !disabled && media.length > 1;
   const pendingRemoveImage = pendingRemoveId
-    ? (images.find((image) => image.imageId === pendingRemoveId) ?? null)
+    ? (media.find((item) => getMediaId(item) === pendingRemoveId) ?? null)
     : null;
 
   // Reveal the selected thumb without re-centering, so the strip never
@@ -96,7 +100,7 @@ export default function PostImageOrderList({
     } else if (overflowRight > 0) {
       strip.scrollLeft += overflowRight;
     }
-  }, [draggingId, imageIds, index]);
+  }, [draggingId, mediaIds, index]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -108,7 +112,7 @@ export default function PostImageOrderList({
 
   return (
     <div className={styles.orderStage}>
-      {images.length > 0 ? (
+      {media.length > 0 ? (
         <div className={styles.orderMain}>
           <div
             ref={trackRef}
@@ -117,14 +121,28 @@ export default function PostImageOrderList({
             aria-roledescription="carousel"
             aria-label={labels.carouselAria}
           >
-            {images.map((image) => (
-              <div key={image.imageId} className={styles.orderSlide}>
-                <img
-                  className={styles.orderMainImage}
-                  src={mediaImageAbsoluteUrl(image.imageId, 'display')}
-                  alt=""
-                  draggable={false}
-                />
+            {media.map((item) => (
+              <div key={getMediaId(item)} className={styles.orderSlide}>
+                {item.type === 'image' ? (
+                  <img
+                    className={styles.orderMainImage}
+                    src={mediaImageAbsoluteUrl(item.imageId, 'display')}
+                    alt=""
+                    draggable={false}
+                  />
+                ) : (
+                  <video
+                    className={`${styles.orderMainImage} ${styles.orderMainVideo}`}
+                    src={mediaFileAbsoluteUrl(`/api/v1/media/files/${item.fileId}`)}
+                    controls
+                    muted
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={(event) =>
+                      seekVideoToPreviewFrame(event.currentTarget)
+                    }
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -136,7 +154,7 @@ export default function PostImageOrderList({
               aria-label={labels.removeAria}
               onClick={() => {
                 if (canRemove) {
-                  setPendingRemoveId(selectedImage.imageId);
+                  setPendingRemoveId(getMediaId(selectedImage));
                 }
               }}
             >
@@ -148,9 +166,10 @@ export default function PostImageOrderList({
 
       <div className={styles.orderStripRow}>
         <ul ref={stripRef} className={styles.orderList}>
-          {images.map((image, thumbIndex) => {
+          {media.map((item, thumbIndex) => {
+            const mediaId = getMediaId(item);
             const isSelected = thumbIndex === index;
-            const isDragging = draggingId === image.imageId;
+            const isDragging = draggingId === mediaId;
             const itemClass = [
               styles.orderItem,
               isSelected ? styles.orderItemSelected : '',
@@ -162,9 +181,9 @@ export default function PostImageOrderList({
 
             return (
               <li
-                key={image.imageId}
+                key={mediaId}
                 className={itemClass}
-                {...{ [dataAttribute]: image.imageId }}
+                {...{ [dataAttribute]: mediaId }}
               >
                 <button
                   type="button"
@@ -175,7 +194,7 @@ export default function PostImageOrderList({
                     String(thumbIndex + 1),
                   )}
                   aria-current={isSelected ? 'true' : undefined}
-                  onPointerDown={(event) => onPointerDown(image.imageId, event)}
+                  onPointerDown={(event) => onPointerDown(mediaId, event)}
                   onKeyDown={(event) => {
                     if (event.key !== 'Enter' && event.key !== ' ') {
                       return;
@@ -184,12 +203,25 @@ export default function PostImageOrderList({
                     goTo(thumbIndex);
                   }}
                 >
-                  <img
-                    className={styles.orderThumb}
-                    src={mediaImageAbsoluteUrl(image.imageId, 'thumb')}
-                    alt=""
-                    draggable={false}
-                  />
+                  {item.type === 'image' ? (
+                    <img
+                      className={styles.orderThumb}
+                      src={mediaImageAbsoluteUrl(item.imageId, 'thumb')}
+                      alt=""
+                      draggable={false}
+                    />
+                  ) : (
+                    <video
+                      className={styles.orderThumb}
+                      src={mediaFileAbsoluteUrl(`/api/v1/media/files/${item.fileId}`)}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(event) =>
+                        seekVideoToPreviewFrame(event.currentTarget)
+                      }
+                    />
+                  )}
                 </button>
               </li>
             );
@@ -200,7 +232,7 @@ export default function PostImageOrderList({
             ref={fileInputRef}
             type="file"
             className={styles.hiddenFileInput}
-            accept={IMAGE_ACCEPT}
+            accept={POST_MEDIA_ACCEPT}
             multiple
             disabled={!canAdd}
             onChange={handleFileChange}
@@ -217,16 +249,29 @@ export default function PostImageOrderList({
         </div>
       </div>
 
-      {draggingImage && dragPoint
+      {draggingMedia && dragPoint
         ? createPortal(
-            <img
-              className={styles.dragPreview}
-              style={{ left: dragPoint.x, top: dragPoint.y }}
-              src={mediaImageAbsoluteUrl(draggingImage.imageId, 'thumb')}
-              alt=""
-              aria-hidden
-              draggable={false}
-            />,
+            draggingMedia.type === 'image' ? (
+              <img
+                className={styles.dragPreview}
+                style={{ left: dragPoint.x, top: dragPoint.y }}
+                src={mediaImageAbsoluteUrl(draggingMedia.imageId, 'thumb')}
+                alt=""
+                aria-hidden
+                draggable={false}
+              />
+            ) : (
+              <video
+                className={styles.dragPreview}
+                style={{ left: dragPoint.x, top: dragPoint.y }}
+                src={mediaFileAbsoluteUrl(
+                  `/api/v1/media/files/${draggingMedia.fileId}`,
+                )}
+                muted
+                playsInline
+                aria-hidden
+              />
+            ),
             document.body,
           )
         : null}
@@ -253,7 +298,7 @@ export default function PostImageOrderList({
               variant="danger"
               onClick={() => {
                 if (pendingRemoveImage && canRemove) {
-                  onRemove(pendingRemoveImage.imageId);
+                  onRemove(getMediaId(pendingRemoveImage));
                 }
                 setPendingRemoveId(null);
               }}

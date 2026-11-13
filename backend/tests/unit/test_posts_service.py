@@ -15,6 +15,7 @@ from services import posts_service
 from services.image_optimize_service import optimize_image_bytes
 from services.media_files_service import save_file
 from services.posts_service import (
+    MAX_POST_IMAGE_BYTES,
     MAX_POST_IMAGES,
     PostsConflictError,
     PostsNotFoundError,
@@ -114,6 +115,20 @@ def _make_image() -> dict:
         "sourceFileId": stored["id"],
         "width": optimized["width"],
         "height": optimized["height"],
+    }
+
+
+def _make_video(content: bytes = b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00") -> dict:
+    stored = save_file(
+        content,
+        original_name="clip.mp4",
+        content_type="video/mp4",
+    )
+    return {
+        "type": "video",
+        "fileId": stored["id"],
+        "width": 640,
+        "height": 360,
     }
 
 
@@ -243,6 +258,76 @@ def test_images_count_validation(isolated_data):
     with pytest.raises(PostsValidationError):
         create_post(
             {"enabled": True, "images": too_many, "copies": {}},
+            created_by="admin@example.com",
+            role="site_admin",
+        )
+
+
+def test_image_source_size_validation(isolated_data, monkeypatch):
+    image = _make_image()
+    get_file_record = posts_service.get_file_record
+
+    def oversized_file(file_id):
+        record = get_file_record(file_id)
+        if file_id == image["sourceFileId"]:
+            record["meta"]["sizeBytes"] = MAX_POST_IMAGE_BYTES + 1
+        return record
+
+    monkeypatch.setattr(posts_service, "get_file_record", oversized_file)
+
+    with pytest.raises(PostsValidationError, match="image exceeds maximum size"):
+        create_post(
+            {"published": True, "media": [image], "copies": {}},
+            created_by="admin@example.com",
+            role="site_admin",
+        )
+
+
+def test_image_source_at_size_limit_is_accepted(isolated_data, monkeypatch):
+    image = _make_image()
+    get_file_record = posts_service.get_file_record
+
+    def maximum_size_file(file_id):
+        record = get_file_record(file_id)
+        if file_id == image["sourceFileId"]:
+            record["meta"]["sizeBytes"] = MAX_POST_IMAGE_BYTES
+        return record
+
+    monkeypatch.setattr(posts_service, "get_file_record", maximum_size_file)
+
+    created = create_post(
+        {"published": True, "media": [image], "copies": {}},
+        created_by="admin@example.com",
+        role="site_admin",
+    )
+
+    assert created["media"] == [{"type": "image", **image}]
+
+
+def test_video_media_validation_and_file_references(isolated_data, monkeypatch):
+    video = _make_video()
+    created = create_post(
+        {"published": True, "media": [video], "copies": {}},
+        created_by="admin@example.com",
+        role="site_admin",
+    )
+
+    assert created["media"] == [video]
+    assert video["fileId"] in active_media_refs()
+    public = TestClient(app).get("/api/v1/posts").json()
+    assert public["items"][0]["media"] == [video]
+
+    with pytest.raises(PostsValidationError, match="one video"):
+        create_post(
+            {"published": True, "media": [video, _make_video()], "copies": {}},
+            created_by="admin@example.com",
+            role="site_admin",
+        )
+
+    monkeypatch.setattr(settings, "media_max_file_bytes", 8)
+    with pytest.raises(PostsValidationError, match="maximum size"):
+        create_post(
+            {"published": True, "media": [video], "copies": {}},
             created_by="admin@example.com",
             role="site_admin",
         )
@@ -553,8 +638,8 @@ def test_posts_trash_moves_and_restores(isolated_data):
         email="manager@example.com",
     )
     assert list_trash(role="page_manager", email="manager@example.com")["items"] == []
-    assert not Path(settings.media_image_dir(second["images"][0]["imageId"])).exists()
-    assert not Path(settings.media_file_dir(second["images"][0]["sourceFileId"])).exists()
+    assert not Path(settings.media_image_dir(second["media"][0]["imageId"])).exists()
+    assert not Path(settings.media_file_dir(second["media"][0]["sourceFileId"])).exists()
 
 
 def test_posts_trash_api_maps_permission_and_conflict_errors(isolated_data):

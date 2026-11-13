@@ -3,7 +3,10 @@ import type { PostTrashItem } from '../../../../../shared/api/postsApi';
 import Button from '../../../../../shared/components/ui/Button/Button';
 import ConfirmDialog from '../../../../../shared/components/ui/ConfirmDialog/ConfirmDialog';
 import LoadingSpinner from '../../../../../shared/components/LoadingSpinner/LoadingSpinner';
-import { mediaImageAbsoluteUrl } from '../../../../../shared/api/mediaApi';
+import {
+  mediaFileAbsoluteUrl,
+  mediaImageAbsoluteUrl,
+} from '../../../../../shared/api/mediaApi';
 import type { AdminTranslations } from '../../../translations';
 import PostDetailDialog from '../../Posts/components/PostDetailDialog';
 import { usePostsTrash } from '../hooks/usePostsTrash';
@@ -85,10 +88,13 @@ export default function PostsTrashPanel({ labels, language }: Props) {
     <>
       <ul className={styles.list}>
         {pageItems.map((item) => {
-          const cover = item.post.images[0];
-          const thumb = cover
-            ? mediaImageAbsoluteUrl(cover.imageId, 'thumb')
-            : '';
+          const cover = item.post.media[0];
+          const thumb =
+            cover?.type === 'image'
+              ? mediaImageAbsoluteUrl(cover.imageId, 'thumb')
+              : cover?.type === 'video'
+                ? mediaFileAbsoluteUrl(`/api/v1/media/files/${cover.fileId}`)
+                : '';
           const remainingDays = formatRelativeDays(item.expiresAt, language);
           const captionText = formatCaptionText(
             item.post.copies[language]?.body ??
@@ -105,7 +111,15 @@ export default function PostsTrashPanel({ labels, language }: Props) {
                 onClick={() => setSelectedTrashItem(item)}
                 aria-label={labels.postsDetailTitle}
               >
-                {thumb ? (
+                {cover?.type === 'video' ? (
+                  <video
+                    className={styles.thumb}
+                    src={thumb}
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : thumb ? (
                   <img className={styles.thumb} src={thumb} alt="" />
                 ) : (
                   <div className={styles.thumbPlaceholder} />

@@ -10,7 +10,7 @@ import {
 } from '../../../../../shared/api/mediaApi';
 import {
   type PostCopy,
-  type PostImage,
+  type PostMedia,
   type PostResponse,
   updateAdminPost,
 } from '../../../../../shared/api/postsApi';
@@ -20,11 +20,15 @@ import {
   sanitizeRichHtml,
 } from '../../../../../shared/lib/richText';
 import type { AdminTranslations } from '../../../translations';
-
-export const MAX_POST_EDITOR_IMAGES = 30;
+import {
+  getPostMediaMaxBytes,
+  MAX_POST_MEDIA,
+  POST_MEDIA_ACCEPT,
+  readVideoDimensions,
+} from '../utils/postMedia';
 
 export type PostEditorState = {
-  images: PostImage[];
+  media: PostMedia[];
   copies: Record<string, PostCopy>;
   editLanguage: string;
   published: boolean;
@@ -41,7 +45,7 @@ export function buildInitialPostEditorState(
     'en';
 
   return {
-    images: post.images.map((image) => ({ ...image })),
+    media: post.media.map((item) => ({ ...item })),
     copies: Object.fromEntries(
       Object.entries(post.copies ?? {}).map(([code, copy]) => [
         code,
@@ -57,10 +61,7 @@ export function buildInitialPostEditorState(
 
 export function stablePostEditorSnapshot(state: PostEditorState): string {
   return JSON.stringify({
-    images: state.images.map((image) => ({
-      imageId: image.imageId,
-      sourceFileId: image.sourceFileId,
-    })),
+    media: state.media,
     copies: Object.fromEntries(
       Object.entries(state.copies).map(([code, copy]) => [
         code,
@@ -114,6 +115,13 @@ export function usePostEditor({
 
   const [state, setState] = useState<PostEditorState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    fileName: string;
+    percent: number | null;
+    processing: boolean;
+    fileIndex: number;
+    fileCount: number;
+  } | null>(null);
   const [formError, setFormError] = useState('');
   const [conflictPost, setConflictPost] = useState<PostResponse | null>(null);
   const [isClosing, setIsClosing] = useState(false);
@@ -123,6 +131,7 @@ export function usePostEditor({
   const [sessionFileIds, setSessionFileIds] = useState<Set<string>>(new Set());
 
   const baseSnapshotRef = useRef('');
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
 
   const siteLanguages = useMemo(
     () => (availableLanguages.length > 0 ? availableLanguages : ['en']),
@@ -157,10 +166,14 @@ export function usePostEditor({
   }, [resetSessionTracking, sessionFileIds, sessionImageIds]);
 
   const cleanupSavedSessionMedia = useCallback(
-    async (images: PostImage[]) => {
-      const retainedImageIds = new Set(images.map((image) => image.imageId));
+    async (media: PostMedia[]) => {
+      const retainedImageIds = new Set(
+        media.flatMap((item) => (item.type === 'image' ? [item.imageId] : [])),
+      );
       const retainedFileIds = new Set(
-        images.map((image) => image.sourceFileId),
+        media.map((item) =>
+          item.type === 'image' ? item.sourceFileId : item.fileId,
+        ),
       );
       const imageIds = [...sessionImageIds].filter(
         (imageId) => !retainedImageIds.has(imageId),
@@ -209,8 +222,8 @@ export function usePostEditor({
     return computePostEditorDirty(state, baseSnapshotRef.current);
   }, [state]);
 
-  const setImages = useCallback((next: PostImage[]) => {
-    setState((current) => (current ? { ...current, images: next } : current));
+  const setMedia = useCallback((next: PostMedia[]) => {
+    setState((current) => (current ? { ...current, media: next } : current));
   }, []);
 
   const updateCopyBody = useCallback((body: string) => {
@@ -235,23 +248,97 @@ export function usePostEditor({
   }, []);
 
   const handleUpload = useCallback(
-    async (files: MediaFileResponse[]) => {
+    async (
+      files: MediaFileResponse[],
+      sourceFiles: Map<string, File>,
+      signal: AbortSignal,
+      createdImageIds: Set<string>,
+    ) => {
       if (!state || files.length === 0) {
         return;
       }
-      const room = Math.max(0, MAX_POST_EDITOR_IMAGES - state.images.length);
-      const accepted = files.slice(0, room);
+      const room = Math.max(0, MAX_POST_MEDIA - state.media.length);
+      let videoCount = state.media.filter((item) => item.type === 'video').length;
+      let rejectedVideo = false;
+      const mediaLimitRejected = files.length > room;
+      const accepted = files.slice(0, room).filter((file) => {
+        if (file.contentType !== 'video/mp4') {
+          return true;
+        }
+        if (videoCount >= 1) {
+          rejectedVideo = true;
+          return false;
+        }
+        videoCount += 1;
+        return true;
+      });
       if (accepted.length < files.length) {
-        toastRef.current.warning(labels.postsImageLimitWarning);
+        if (rejectedVideo) {
+          toastRef.current.warning(labels.postsVideoLimitWarning);
+        }
+        if (mediaLimitRejected) {
+          toastRef.current.warning(labels.postsImageLimitWarning);
+        }
       }
 
       for (const file of accepted) {
+        if (signal.aborted) {
+          throw new DOMException('Media processing was aborted', 'AbortError');
+        }
+        if (file.contentType === 'video/mp4') {
+          const sourceFile = sourceFiles.get(file.id);
+          if (!sourceFile) {
+            toastRef.current.error(labels.uploadUploadFailed);
+            await deleteMediaFile(file.id);
+            continue;
+          }
+          try {
+            const dimensions = await readVideoDimensions(sourceFile, signal);
+            if (signal.aborted) {
+              throw new DOMException(
+                'Media processing was aborted',
+                'AbortError',
+              );
+            }
+            setSessionFileIds((prev) => new Set(prev).add(file.id));
+            setState((current) => {
+              if (!current || current.media.some((item) => item.type === 'video')) {
+                return current;
+              }
+              return {
+                ...current,
+                media: [
+                  ...current.media,
+                  { type: 'video', fileId: file.id, ...dimensions },
+                ],
+              };
+            });
+          } catch {
+            if (signal.aborted) {
+              throw new DOMException(
+                'Media processing was aborted',
+                'AbortError',
+              );
+            }
+            toastRef.current.error(labels.uploadUploadFailed);
+            await deleteMediaFile(file.id);
+          }
+          continue;
+        }
         try {
           const optimized = await optimizeMediaImage(file.id, [
             'display',
             'thumb',
-          ]);
-          const nextEntry = {
+          ], { signal });
+          createdImageIds.add(optimized.imageId);
+          if (signal.aborted) {
+            throw new DOMException(
+              'Media processing was aborted',
+              'AbortError',
+            );
+          }
+          const nextEntry: PostMedia = {
+            type: 'image',
             imageId: optimized.imageId,
             sourceFileId: optimized.sourceFileId || file.id,
             width: optimized.width,
@@ -266,18 +353,26 @@ export function usePostEditor({
               return current;
             }
             if (
-              current.images.some(
-                (image) => image.imageId === nextEntry.imageId,
+              current.media.some(
+                (item) =>
+                  item.type === 'image' &&
+                  item.imageId === nextEntry.imageId,
               )
             ) {
               return current;
             }
             return {
               ...current,
-              images: [...current.images, nextEntry],
+              media: [...current.media, nextEntry],
             };
           });
         } catch {
+          if (signal.aborted) {
+            throw new DOMException(
+              'Media processing was aborted',
+              'AbortError',
+            );
+          }
           toastRef.current.error(labels.postsOptimizeFailed);
         }
       }
@@ -285,25 +380,31 @@ export function usePostEditor({
     [labels, state],
   );
 
-  const removeImage = useCallback(
-    (imageId: string) => {
+  const removeMedia = useCallback(
+    (mediaId: string) => {
       setState((current) => {
         if (!current) {
           return current;
         }
-        if (current.images.length <= 1) {
+        if (current.media.length <= 1) {
           toastRef.current.warning(labels.postsMinImageWarning);
           return current;
         }
-        const target = current.images.find(
-          (image) => image.imageId === imageId,
+        const target = current.media.find((item) =>
+          item.type === 'image'
+            ? item.imageId === mediaId
+            : item.fileId === mediaId,
         );
         if (!target) {
           return current;
         }
         return {
           ...current,
-          images: current.images.filter((image) => image.imageId !== imageId),
+          media: current.media.filter((item) =>
+            item.type === 'image'
+              ? item.imageId !== mediaId
+              : item.fileId !== mediaId,
+          ),
         };
       });
     },
@@ -315,32 +416,173 @@ export function usePostEditor({
       if (!state || files.length === 0) {
         return;
       }
-      const room = Math.max(0, MAX_POST_EDITOR_IMAGES - state.images.length);
-      const accepted = files.slice(0, room);
+      const room = Math.max(0, MAX_POST_MEDIA - state.media.length);
+      let videoCount = state.media.filter((item) => item.type === 'video').length;
+      let rejectedVideo = false;
+      const mediaLimitRejected = files.length > room;
+      const accepted = files
+        .slice(0, room)
+        .filter((file) => {
+          const isVideo =
+            file.type === 'video/mp4' ||
+            file.name.toLowerCase().endsWith('.mp4');
+          if (!isVideo) {
+            return true;
+          }
+          if (videoCount >= 1) {
+            rejectedVideo = true;
+            return false;
+          }
+          videoCount += 1;
+          return true;
+        });
       if (accepted.length < files.length) {
-        toastRef.current.warning(labels.postsImageLimitWarning);
-      }
-      const uploaded: MediaFileResponse[] = [];
-      for (const file of accepted) {
-        try {
-          const media = await uploadMediaFile(file, {
-            accept: 'image/jpeg,image/png,image/webp',
-            maxSizeBytes: 10 * 1024 * 1024,
-          });
-          uploaded.push(media);
-        } catch {
-          toastRef.current.error(labels.uploadUploadFailed);
+        if (rejectedVideo) {
+          toastRef.current.warning(labels.postsVideoLimitWarning);
+        }
+        if (mediaLimitRejected) {
+          toastRef.current.warning(labels.postsImageLimitWarning);
         }
       }
-      if (uploaded.length > 0) {
-        await handleUpload(uploaded);
+      const uploaded: MediaFileResponse[] = [];
+      const sourceFiles = new Map<string, File>();
+      const createdImageIds = new Set<string>();
+      if (accepted.length === 0) {
+        return;
+      }
+      const controller = new AbortController();
+      uploadAbortControllerRef.current = controller;
+      setUploadProgress({
+        fileName: accepted[0].name,
+        percent: 0,
+        processing: false,
+        fileIndex: 1,
+        fileCount: accepted.length,
+      });
+      try {
+        for (const [index, file] of accepted.entries()) {
+          if (controller.signal.aborted) {
+            break;
+          }
+          const maxSizeBytes = getPostMediaMaxBytes(file);
+          if (file.size > maxSizeBytes) {
+            toastRef.current.error(labels.uploadSizeExceeded);
+            continue;
+          }
+          setUploadProgress({
+            fileName: file.name,
+            percent: Math.round((index / accepted.length) * 100),
+            processing: false,
+            fileIndex: index + 1,
+            fileCount: accepted.length,
+          });
+          try {
+            const media = await uploadMediaFile(file, {
+              accept: POST_MEDIA_ACCEPT,
+              maxSizeBytes,
+              signal: controller.signal,
+              onUploadProgress: ({ loaded, total }) => {
+                const filePercent =
+                  total && total > 0
+                    ? Math.min(100, Math.round((loaded / total) * 100))
+                    : null;
+                setUploadProgress({
+                  fileName: file.name,
+                  percent:
+                    filePercent === null
+                      ? null
+                      : Math.round(
+                          ((index + filePercent / 100) / accepted.length) *
+                            100,
+                        ),
+                  processing: false,
+                  fileIndex: index + 1,
+                  fileCount: accepted.length,
+                });
+              },
+            });
+            uploaded.push(media);
+            sourceFiles.set(media.id, file);
+          } catch {
+            if (controller.signal.aborted) {
+              break;
+            }
+            toastRef.current.error(labels.uploadUploadFailed);
+          }
+        }
+        if (!controller.signal.aborted && uploaded.length > 0) {
+          setUploadProgress({
+            fileName: '',
+            percent: null,
+            processing: true,
+            fileIndex: accepted.length,
+            fileCount: accepted.length,
+          });
+          await handleUpload(
+            uploaded,
+            sourceFiles,
+            controller.signal,
+            createdImageIds,
+          );
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          throw error;
+        }
+      } finally {
+        if (controller.signal.aborted) {
+          const uploadedFileIds = new Set(uploaded.map((file) => file.id));
+          setState((current) =>
+            current
+              ? {
+                  ...current,
+                  media: current.media.filter(
+                    (item) =>
+                      !uploadedFileIds.has(
+                        item.type === 'image' ? item.sourceFileId : item.fileId,
+                      ),
+                  ),
+                }
+              : current,
+          );
+          setSessionFileIds(
+            (current) =>
+              new Set([...current].filter((id) => !uploadedFileIds.has(id))),
+          );
+          setSessionImageIds(
+            (current) =>
+              new Set([...current].filter((id) => !createdImageIds.has(id))),
+          );
+          await Promise.all([
+            ...[...createdImageIds].map(async (imageId) => {
+              try {
+                await deleteOptimizedImage(imageId);
+              } catch {
+                // Best-effort cleanup after cancelling an upload.
+              }
+            }),
+            ...[...uploadedFileIds].map(async (fileId) => {
+              try {
+                await deleteMediaFile(fileId);
+              } catch {
+                // Best-effort cleanup after cancelling an upload.
+              }
+            }),
+          ]);
+        }
+        uploadAbortControllerRef.current = null;
+        setUploadProgress(null);
       }
     },
     [handleUpload, labels, state],
   );
 
+  const cancelUpload = useCallback(() => {
+    uploadAbortControllerRef.current?.abort();
+  }, []);
+
   const save = useCallback(async () => {
-    if (!post || !state || !isDirty) {
+    if (!post || !state || !isDirty || uploadProgress) {
       return;
     }
     const copiesToSave = sanitizeCopies(state.copies);
@@ -355,14 +597,14 @@ export function usePostEditor({
         published: state.published,
         pinned: state.pinned,
         contentRevision: state.contentRevision,
-        images: state.images,
+        media: state.media,
         copies: copiesToSave,
       });
       baseSnapshotRef.current = stablePostEditorSnapshot(
         buildInitialPostEditorState(updated),
       );
       setState(buildInitialPostEditorState(updated));
-      await cleanupSavedSessionMedia(updated.images);
+      await cleanupSavedSessionMedia(updated.media);
       await onSaved(updated);
       toastRef.current.info(labels.postsSaveSuccess ?? 'Saved');
       onClose();
@@ -396,10 +638,11 @@ export function usePostEditor({
     onSaved,
     post,
     state,
+    uploadProgress,
   ]);
 
   const applyLatestConflict = useCallback(async () => {
-    if (!conflictPost || isClosing || isSaving) {
+    if (!conflictPost || isClosing || isSaving || uploadProgress) {
       return;
     }
     await discardSessionMedia();
@@ -408,10 +651,10 @@ export function usePostEditor({
     baseSnapshotRef.current = stablePostEditorSnapshot(nextState);
     setConflictPost(null);
     setFormError('');
-  }, [conflictPost, discardSessionMedia, isClosing, isSaving]);
+  }, [conflictPost, discardSessionMedia, isClosing, isSaving, uploadProgress]);
 
   const close = useCallback(async () => {
-    if (isClosing || isSaving) {
+    if (isClosing || isSaving || uploadProgress) {
       return;
     }
     setIsClosing(true);
@@ -427,7 +670,7 @@ export function usePostEditor({
     } finally {
       setIsClosing(false);
     }
-  }, [discardSessionMedia, isClosing, isSaving, onClose, post]);
+  }, [discardSessionMedia, isClosing, isSaving, onClose, post, uploadProgress]);
 
   const currentLanguageOptions = siteLanguages.map((code) => ({
     value: code,
@@ -438,16 +681,21 @@ export function usePostEditor({
     state,
     isDirty,
     isSaving,
+    isUploadingMedia: Boolean(uploadProgress),
+    uploadProgress,
     formError,
     conflictPost,
     siteLanguages,
     currentLanguageOptions,
-    canSave: Boolean(state && isDirty && !isSaving && !conflictPost),
-    setImages,
+    canSave: Boolean(
+      state && isDirty && !isSaving && !uploadProgress && !conflictPost,
+    ),
+    setMedia,
     updateCopyBody,
     updateEditLanguage,
-    removeImage,
+    removeMedia,
     addPhotosFromFiles,
+    cancelUpload,
     save,
     applyLatestConflict,
     close,

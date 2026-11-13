@@ -41,8 +41,12 @@ export type UseUploadParams = {
   retainDefaultRemotes?: boolean;
   /** After a successful upload, mark the item retainRemote (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
-  onUploaded?: (files: MediaFileResponse[]) => void | Promise<void>;
+  onUploaded?: (
+    files: MediaFileResponse[],
+    items: UploadItem[],
+  ) => void | Promise<void>;
   onItemsChange?: (items: UploadItem[]) => void;
+  maxSizeBytesForFile?: (file: File) => number;
 };
 
 function createItemKey(file: File): string {
@@ -58,6 +62,8 @@ function itemFromMediaFile(
   });
   const previewUrl = file.contentType.startsWith('image/')
     ? mediaFileAbsoluteUrl(file.url)
+    : file.contentType === 'video/mp4'
+      ? mediaFileAbsoluteUrl(file.url)
     : undefined;
   return {
     key: `remote-${file.id}`,
@@ -135,6 +141,7 @@ export function useUpload({
   retainUploadedRemotes = false,
   onUploaded,
   onItemsChange,
+  maxSizeBytesForFile,
 }: UseUploadParams) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -180,8 +187,12 @@ export function useUpload({
 
   const buildItemsFromFiles = (fileList: File[]): UploadItem[] => {
     return fileList.map((file) => {
-      const validation = validateUploadFile(file, { accept, maxSizeBytes });
-      const previewUrl = file.type.startsWith('image/')
+      const validation = validateUploadFile(file, {
+        accept,
+        maxSizeBytes: maxSizeBytesForFile?.(file) ?? maxSizeBytes,
+      });
+      const previewUrl =
+        file.type.startsWith('image/') || file.type === 'video/mp4'
         ? URL.createObjectURL(file)
         : undefined;
       if (!validation.ok) {
@@ -212,7 +223,7 @@ export function useUpload({
     try {
       const uploaded = await uploadMediaFile(item.file, {
         accept,
-        maxSizeBytes,
+        maxSizeBytes: maxSizeBytesForFile?.(item.file) ?? maxSizeBytes,
       });
       return {
         ...item,
@@ -287,7 +298,15 @@ export function useUpload({
         }
 
         if (newlyUploaded.length > 0) {
-          const processing = onUploadedRef.current?.(newlyUploaded);
+          const uploadedItems = itemsRef.current.filter(
+            (item) =>
+              item.uploaded &&
+              newlyUploaded.some((file) => file.id === item.uploaded?.id),
+          );
+          const processing = onUploadedRef.current?.(
+            newlyUploaded,
+            uploadedItems,
+          );
           if (processing) {
             const processingIds = new Set(newlyUploaded.map((file) => file.id));
             const processingItems = itemsRef.current.map((item) =>

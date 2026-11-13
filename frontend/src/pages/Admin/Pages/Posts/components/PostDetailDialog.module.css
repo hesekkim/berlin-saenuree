@@ -89,7 +89,11 @@
   width: auto;
   height: auto;
   object-fit: contain;
-  pointer-events: none;
+}
+
+.video {
+  object-fit: contain;
+  pointer-events: auto;
 }
 
 @media (min-width: 60rem) {

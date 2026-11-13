@@ -47,13 +47,23 @@ async def public_list_posts(
             PublicPostResponse(
                 id=post["id"],
                 createdAt=post["createdAt"],
-                images=[
-                    {
-                        "imageId": image["imageId"],
-                        "width": image["width"],
-                        "height": image["height"],
-                    }
-                    for image in post["images"]
+                media=[
+                    (
+                        {
+                            "type": "image",
+                            "imageId": item["imageId"],
+                            "width": item["width"],
+                            "height": item["height"],
+                        }
+                        if item["type"] == "image"
+                        else {
+                            "type": "video",
+                            "fileId": item["fileId"],
+                            "width": item["width"],
+                            "height": item["height"],
+                        }
+                    )
+                    for item in post["media"]
                 ],
                 copies=post["copies"],
             )

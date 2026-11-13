@@ -11,6 +11,8 @@ export type MediaFileResponse = {
 export type UploadMediaFileOptions = {
   accept?: string;
   maxSizeBytes?: number;
+  signal?: AbortSignal;
+  onUploadProgress?: (progress: { loaded: number; total?: number }) => void;
 };
 
 export async function uploadMediaFile(
@@ -33,6 +35,7 @@ export async function uploadMediaFile(
     formData,
     {
       params,
+      signal: options.signal,
       transformRequest: [
         (data, headers) => {
           if (data instanceof FormData && headers) {
@@ -41,6 +44,12 @@ export async function uploadMediaFile(
           return data;
         },
       ],
+      onUploadProgress: (event) => {
+        options.onUploadProgress?.({
+          loaded: event.loaded,
+          total: event.total,
+        });
+      },
     },
   );
   return response.data;
@@ -99,10 +108,12 @@ export type OptimizeImageVariants =
 export async function optimizeMediaImage(
   fileId: string,
   variants: OptimizeImageVariants = ['display'],
+  options: { signal?: AbortSignal } = {},
 ): Promise<OptimizedImageResponse> {
   const response = await apiClient.post<OptimizedImageResponse>(
     '/media/images/optimize',
     { fileId, variants },
+    { signal: options.signal },
   );
   return response.data;
 }
