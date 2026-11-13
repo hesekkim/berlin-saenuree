@@ -1,7 +1,10 @@
 """media_files_service (ticket 022)."""
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from api.v1.endpoints.auth import get_current_cms_user
 from core.config import settings
@@ -9,11 +12,13 @@ from main import app
 from services.media_files_service import (
     MediaFilesNotFoundError,
     MediaFilesValidationError,
+    copy_upload_limited,
     delete_file,
     get_file_record,
     normalize_content_type,
     resolve_max_size_bytes,
     save_file,
+    save_file_from_path,
 )
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8
@@ -69,6 +74,23 @@ def test_save_and_get_file(isolated_data):
     assert (isolated_data / "data" / "media" / "files" / saved["id"] / "meta.json").is_file()
 
 
+def test_save_file_from_path_does_not_load_content_into_memory(isolated_data, tmp_path):
+    source_path = tmp_path / "source.mp4"
+    content = b"\x00\x00\x00\x18ftypisom original"
+    source_path.write_bytes(content)
+
+    saved = save_file_from_path(
+        source_path,
+        original_name="clip.mp4",
+        content_type="video/mp4",
+    )
+
+    record = get_file_record(saved["id"])
+    assert record["path"].read_bytes() == content
+    assert saved["sizeBytes"] == len(content)
+    assert not source_path.exists()
+
+
 def test_normalize_collapses_duplicate_extension(isolated_data):
     saved = save_file(
         PDF_BYTES,
@@ -111,6 +133,30 @@ def test_request_max_size_clamped_to_server_cap(isolated_data, monkeypatch):
         max_size_bytes=500,
     )
     assert saved["sizeBytes"] == 90
+
+
+def test_video_upload_limit_defaults_to_200_mib(monkeypatch):
+    monkeypatch.setattr(settings, "media_max_file_bytes", 200 * 1024 * 1024)
+    assert resolve_max_size_bytes(None) == 200 * 1024 * 1024
+
+
+def test_video_upload_is_copied_to_disk_with_size_limit(tmp_path):
+    class Upload:
+        def __init__(self, content):
+            self.content = content
+
+        async def read(self, size):
+            chunk, self.content = self.content[:size], self.content[size:]
+            return chunk
+
+    content = b"x" * (2 * 1024 * 1024 + 17)
+    destination = tmp_path / "source.mp4"
+    copied_size = asyncio.run(
+        copy_upload_limited(Upload(content), destination, len(content))
+    )
+
+    assert copied_size == len(content)
+    assert destination.stat().st_size == len(content)
 
 
 def test_accept_mime_filter(isolated_data):
@@ -397,6 +443,105 @@ def test_upload_api_rejects_oversize_without_full_buffer(isolated_data):
         )
         assert response.status_code == 400
         assert "maximum size" in response.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_upload_api_stores_original_video(isolated_data):
+    original = b"\x00\x00\x00\x18ftypisom original"
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files",
+            files={"file": ("clip.mp4", original, "video/mp4")},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["contentType"] == "video/mp4"
+        assert body["sizeBytes"] == len(original)
+        assert client.get(body["url"]).content == original
+        record = get_file_record(body["id"])
+        assert record["path"].read_bytes() == original
+        assert not list(
+            settings.media_upload_temp_dir.glob("saenuree-video-upload-*")
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_streamed_video_api_stores_original_without_multipart(isolated_data):
+    original = b"\x00\x00\x00\x18ftypisom original"
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files/video",
+            content=original,
+            headers={"Content-Type": "video/mp4"},
+            params={
+                "filename": "clip.mp4",
+                "accept": "video/mp4,.mp4",
+            },
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["contentType"] == "video/mp4"
+        assert body["sizeBytes"] == len(original)
+        assert client.get(body["url"]).content == original
+        assert settings.media_upload_temp_dir.parent == settings.base_path
+        assert not list(settings.media_upload_temp_dir.iterdir())
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_cancelled_streamed_video_upload_is_not_persisted(isolated_data, monkeypatch):
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+
+    async def disconnected(_self):
+        return True
+
+    monkeypatch.setattr(Request, "is_disconnected", disconnected)
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files/video",
+            content=b"\x00\x00\x00\x18ftypisom original",
+            headers={"Content-Type": "video/mp4"},
+            params={"filename": "clip.mp4"},
+        )
+
+        assert response.status_code == 499
+        assert not list((isolated_data / "data" / "media" / "files").glob("*"))
+        assert not list(settings.media_upload_temp_dir.iterdir())
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_cancelled_video_upload_is_not_persisted(isolated_data, monkeypatch):
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+
+    async def disconnected(_self):
+        return True
+
+    monkeypatch.setattr(Request, "is_disconnected", disconnected)
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files",
+            files={
+                "file": (
+                    "clip.mp4",
+                    b"\x00\x00\x00\x18ftypisom original",
+                    "video/mp4",
+                )
+            },
+        )
+        assert response.status_code == 499
+        assert not list((isolated_data / "data" / "media" / "files").glob("*"))
+        assert not list(settings.media_upload_temp_dir.iterdir())
     finally:
         app.dependency_overrides.clear()
 

@@ -1,8 +1,21 @@
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+import tempfile
+from pathlib import Path
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
 from api.v1.endpoints.auth import get_current_cms_user
+from core.config import settings
 from models.media import MediaFileResponse
 from services.media_access_service import (
     MediaDeleteForbiddenError,
@@ -10,16 +23,23 @@ from services.media_access_service import (
     delete_media_file,
 )
 from services.media_files_service import (
+    DEFAULT_CONTENT_TYPE,
     MediaFilesError,
     MediaFilesNotFoundError,
     MediaFilesValidationError,
+    copy_upload_limited,
+    copy_stream_limited,
     get_file_record,
     must_force_attachment,
+    normalize_content_type,
     normalize_original_name,
     read_upload_limited,
     resolve_max_size_bytes,
     save_file,
+    save_file_from_path,
     served_content_type,
+    sniff_content_type,
+    VIDEO_UPLOAD_TEMP_PREFIX,
 )
 
 router = APIRouter()
@@ -44,6 +64,7 @@ def _http_error(error: MediaFilesError) -> HTTPException:
 
 @router.post("/files", response_model=MediaFileResponse)
 async def upload_media_file(
+    request: Request,
     file: UploadFile = File(...),
     accept: str | None = Query(
         default=None,
@@ -58,16 +79,92 @@ async def upload_media_file(
 ):
     try:
         limit = resolve_max_size_bytes(max_size_bytes)
-        content = await read_upload_limited(file, limit)
-        saved = await run_in_threadpool(
-            save_file,
-            content,
-            original_name=file.filename or "file",
-            content_type=file.content_type,
-            max_size_bytes=limit,
-            accept=accept,
-            uploaded_by=user["email"],
-        )
+        content_type = normalize_content_type(file.content_type)
+        is_video = content_type == "video/mp4" or (
+            file.filename or ""
+        ).lower().endswith(".mp4")
+        if is_video:
+            content_type = "video/mp4"
+            with tempfile.TemporaryDirectory(
+                prefix=VIDEO_UPLOAD_TEMP_PREFIX,
+                dir=settings.media_upload_temp_dir,
+            ) as temp_dir:
+                source_path = Path(temp_dir) / "source.mp4"
+                await copy_upload_limited(file, source_path, limit)
+                await file.close()
+                if await request.is_disconnected():
+                    raise HTTPException(
+                        status_code=499,
+                        detail="Upload was cancelled",
+                    )
+                saved = await run_in_threadpool(
+                    save_file_from_path,
+                    source_path,
+                    original_name=file.filename or "file",
+                    content_type=content_type,
+                    max_size_bytes=limit,
+                    accept=accept,
+                    uploaded_by=user["email"],
+                )
+        else:
+            content = await read_upload_limited(file, limit)
+            if (
+                content_type == DEFAULT_CONTENT_TYPE
+                and sniff_content_type(content) == "video/mp4"
+            ):
+                content_type = "video/mp4"
+            saved = await run_in_threadpool(
+                save_file,
+                content,
+                original_name=file.filename or "file",
+                content_type=content_type,
+                max_size_bytes=limit,
+                accept=accept,
+                uploaded_by=user["email"],
+            )
+    except MediaFilesError as error:
+        raise _http_error(error) from error
+
+    return MediaFileResponse.model_validate(saved)
+
+
+@router.post("/files/video", response_model=MediaFileResponse)
+async def upload_video_file(
+    request: Request,
+    filename: str = Query(..., min_length=1),
+    accept: str | None = Query(
+        default=None,
+        description="Comma-separated MIME and/or extension patterns",
+    ),
+    max_size_bytes: int | None = Query(
+        default=None,
+        ge=1,
+        description="Per-request size cap (cannot exceed server default)",
+    ),
+    user: dict = Depends(get_current_cms_user),
+):
+    try:
+        limit = resolve_max_size_bytes(max_size_bytes)
+        with tempfile.TemporaryDirectory(
+            prefix=VIDEO_UPLOAD_TEMP_PREFIX,
+            dir=settings.media_upload_temp_dir,
+        ) as temp_dir:
+            source_path = Path(temp_dir) / "source.mp4"
+            await copy_stream_limited(request.stream(), source_path, limit)
+            if await request.is_disconnected():
+                raise HTTPException(
+                    status_code=499,
+                    detail="Upload was cancelled",
+                )
+            saved = await run_in_threadpool(
+                save_file_from_path,
+                source_path,
+                original_name=filename,
+                content_type="video/mp4",
+                max_size_bytes=limit,
+                accept=accept,
+                uploaded_by=user["email"],
+            )
     except MediaFilesError as error:
         raise _http_error(error) from error
 

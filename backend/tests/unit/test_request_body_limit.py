@@ -6,6 +6,7 @@ from middleware.body_size_limit import MULTIPART_OVERHEAD_BYTES
 
 JSON_ENDPOINT = "/api/v1/auth/send-code"
 UPLOAD_ENDPOINT = "/api/v1/media/files"
+VIDEO_UPLOAD_ENDPOINT = "/api/v1/media/files/video"
 BACKUP_UPLOAD_ENDPOINT = "/api/v1/admin/backups/import"
 
 
@@ -68,6 +69,33 @@ def test_upload_endpoint_rejects_body_beyond_media_limit(monkeypatch):
     response = client.post(
         UPLOAD_ENDPOINT,
         files={"file": ("a.png", b"x" * (MULTIPART_OVERHEAD_BYTES + 200), "image/png")},
+    )
+
+    assert response.status_code == 413
+
+
+def test_streamed_video_upload_uses_the_media_limit(monkeypatch):
+    monkeypatch.setattr(settings, "max_request_body_bytes", 100)
+    monkeypatch.setattr(settings, "media_max_file_bytes", 4096)
+    client = TestClient(app)
+
+    response = client.post(
+        VIDEO_UPLOAD_ENDPOINT,
+        content=b"x" * 2048,
+        headers={"Content-Type": "video/mp4"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_streamed_video_upload_rejects_body_beyond_media_limit(monkeypatch):
+    monkeypatch.setattr(settings, "media_max_file_bytes", 100)
+    client = TestClient(app)
+
+    response = client.post(
+        VIDEO_UPLOAD_ENDPOINT,
+        content=b"x" * 101,
+        headers={"Content-Type": "video/mp4"},
     )
 
     assert response.status_code == 413

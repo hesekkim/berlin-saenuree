@@ -33,7 +33,7 @@ from services.published_status import normalize_published, read_published
 
 MAX_POST_IMAGES = 30
 MAX_POST_IMAGE_BYTES = 10 * 1024 * 1024
-MAX_POST_VIDEO_BYTES = 100 * 1024 * 1024
+MAX_POST_VIDEO_BYTES = 200 * 1024 * 1024
 DEFAULT_LIST_LIMIT = 30
 MAX_LIST_LIMIT = 100
 POSTS_PAGE_SLUG = "posts"

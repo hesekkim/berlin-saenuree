@@ -180,7 +180,9 @@ export default function PostEditDialog({
             <h3>{labels.postsMediaUploadTitle}</h3>
             <p>
               {uploadProgress.processing
-                ? labels.postsMediaProcessing
+                ? uploadProgress.optimizingImages
+                  ? labels.postsMediaOptimizingImages
+                  : labels.postsMediaSaving
                 : labels.postsMediaUploading
                     .replace('{fileName}', uploadProgress.fileName)
                     .replace(
@@ -192,16 +194,14 @@ export default function PostEditDialog({
                       String(uploadProgress.fileCount),
                     )}
             </p>
-            <progress
-              max={100}
-              value={
-                uploadProgress.processing
-                  ? undefined
-                  : uploadProgress.percent ?? undefined
-              }
-              aria-label={labels.postsMediaUploadTitle}
-            />
-            {uploadProgress.percent !== null ? (
+            {!uploadProgress.processing ? (
+              <progress
+                max={100}
+                value={uploadProgress.percent ?? undefined}
+                aria-label={labels.postsMediaUploadTitle}
+              />
+            ) : null}
+            {!uploadProgress.processing && uploadProgress.percent !== null ? (
               <span>{uploadProgress.percent}%</span>
             ) : null}
             <Button

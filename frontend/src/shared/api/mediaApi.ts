@@ -15,14 +15,21 @@ export type UploadMediaFileOptions = {
   onUploadProgress?: (progress: { loaded: number; total?: number }) => void;
 };
 
+const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60 * 1000;
+
 export async function uploadMediaFile(
   file: File,
   options: UploadMediaFileOptions = {},
 ): Promise<MediaFileResponse> {
+  const isVideo =
+    file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4');
   const formData = new FormData();
   formData.append('file', file);
 
   const params: Record<string, string | number> = {};
+  if (isVideo) {
+    params.filename = file.name;
+  }
   if (options.accept) {
     params.accept = options.accept;
   }
@@ -31,11 +38,13 @@ export async function uploadMediaFile(
   }
 
   const response = await apiClient.post<MediaFileResponse>(
-    '/media/files',
-    formData,
+    isVideo ? '/media/files/video' : '/media/files',
+    isVideo ? file : formData,
     {
       params,
       signal: options.signal,
+      headers: isVideo ? { 'Content-Type': 'video/mp4' } : undefined,
+      timeout: isVideo ? VIDEO_UPLOAD_TIMEOUT_MS : undefined,
       transformRequest: [
         (data, headers) => {
           if (data instanceof FormData && headers) {

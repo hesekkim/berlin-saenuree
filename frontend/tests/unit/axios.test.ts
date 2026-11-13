@@ -63,6 +63,28 @@ describe('apiClient authentication', () => {
     expect(localStorage.getItem('auth_token')).toBe('new-token');
   });
 
+  it('clears an expired token when a media upload returns 401', async () => {
+    localStorage.setItem('auth_token', 'expired-token');
+    await expect(
+      apiClient.post('/media/files/video', {}, {
+        adapter: async (config) => {
+          throw {
+            config,
+            response: {
+              status: 401,
+              data: {},
+              headers: new AxiosHeaders(),
+              config,
+            },
+            isAxiosError: true,
+          };
+        },
+      }),
+    ).rejects.toBeDefined();
+
+    expect(localStorage.getItem('auth_token')).toBeNull();
+  });
+
   it.each(['/auth/send-code', '/auth/verify-code'])(
     'does not retry a rate-limited login request (%s)',
     async (url) => {
@@ -79,6 +101,28 @@ describe('apiClient authentication', () => {
                 headers: new AxiosHeaders({ 'retry-after': '60' }),
                 config,
               },
+              isAxiosError: true,
+            };
+          },
+        }),
+      ).rejects.toBeDefined();
+
+      expect(attempts).toBe(1);
+    },
+  );
+
+  it.each(['/media/files', '/media/files/video'])(
+    'does not retry media uploads after a network timeout (%s)',
+    async (url) => {
+      let attempts = 0;
+      await expect(
+        apiClient.post(url, {}, {
+          adapter: async (config) => {
+            attempts += 1;
+            throw {
+              config,
+              code: 'ECONNABORTED',
+              message: 'timeout',
               isAxiosError: true,
             };
           },

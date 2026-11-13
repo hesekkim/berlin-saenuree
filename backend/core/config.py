@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     # When true, the orphan sweep only logs candidates; set false after reviewing the logs.
     media_gc_dry_run: bool = True
     # Default max upload size for media files (bytes). Request may set a lower cap.
-    media_max_file_bytes: int = 100 * 1024 * 1024
+    media_max_file_bytes: int = 200 * 1024 * 1024
     # Max request body for every endpoint except the media file upload (bytes).
     max_request_body_bytes: int = 5 * 1024 * 1024
     backup_password: str = ""
@@ -130,6 +130,12 @@ class Settings(BaseSettings):
     @property
     def data_dir(self) -> Path:
         return self.base_path / "data"
+
+    @property
+    def media_upload_temp_dir(self) -> Path:
+        path = self.base_path / ".media-upload-tmp"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @property
     def backup_dir(self) -> Path:

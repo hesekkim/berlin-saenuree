@@ -11,6 +11,8 @@ from core.config import settings
 from services import maintenance_service
 from services.maintenance_service import (
     ORPHAN_GRACE_SECONDS,
+    VIDEO_UPLOAD_TEMP_GRACE_SECONDS,
+    cleanup_stale_video_uploads,
     run_maintenance,
     sweep_orphan_media,
 )
@@ -196,6 +198,41 @@ def test_non_uuid_directories_are_never_touched(isolated_data, live_refs):
     sweep_orphan_media(dry_run=False)
 
     assert stray.exists()
+
+
+def test_stale_video_upload_directories_are_removed_but_recent_ones_are_kept(
+    isolated_data,
+):
+    root = settings.media_upload_temp_dir
+    stale = root / "saenuree-video-upload-stale"
+    recent = root / "saenuree-video-upload-recent"
+    active = root / "saenuree-video-upload-active"
+    unrelated = root / "other-temp-dir"
+    for path in (stale, recent, active, unrelated):
+        path.mkdir(parents=True)
+        (path / "source.mp4").write_bytes(b"partial")
+
+    now = datetime.now(timezone.utc).timestamp()
+    os.utime(
+        stale,
+        (now - VIDEO_UPLOAD_TEMP_GRACE_SECONDS - 1,) * 2,
+    )
+    os.utime(
+        stale / "source.mp4",
+        (now - VIDEO_UPLOAD_TEMP_GRACE_SECONDS - 1,) * 2,
+    )
+    os.utime(recent, (now - 60,) * 2)
+    os.utime(active, (now - VIDEO_UPLOAD_TEMP_GRACE_SECONDS - 1,) * 2)
+    os.utime(active / "source.mp4", (now - 60,) * 2)
+    os.utime(unrelated, (now - VIDEO_UPLOAD_TEMP_GRACE_SECONDS - 1,) * 2)
+
+    removed = cleanup_stale_video_uploads(now=now)
+
+    assert removed == 1
+    assert not stale.exists()
+    assert recent.exists()
+    assert active.exists()
+    assert unrelated.exists()
 
 
 def test_run_maintenance_purges_expired_post_trash(isolated_data, live_refs):

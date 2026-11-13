@@ -176,6 +176,10 @@ describe('usePostEditor helpers', () => {
 
   it('reports upload progress and blocks saving until uploaded media is processed', async () => {
     let resolveUpload!: (response: MediaFileResponse) => void;
+    let reportUploadProgress!: (progress: {
+      loaded: number;
+      total?: number;
+    }) => void;
     uploadMediaFile.mockImplementation(
       (
         _file: File,
@@ -187,9 +191,13 @@ describe('usePostEditor helpers', () => {
         },
       ) =>
         new Promise((resolve) => {
-          options?.onUploadProgress?.({ loaded: 50, total: 100 });
-          resolveUpload = resolve;
-        }),
+              if (!options?.onUploadProgress) {
+                throw new Error('Expected upload progress callback');
+              }
+              reportUploadProgress = options.onUploadProgress;
+              reportUploadProgress({ loaded: 50, total: 100 });
+              resolveUpload = resolve;
+            }),
     );
     optimizeMediaImage.mockResolvedValue({
       imageId: 'img-c',
@@ -218,6 +226,11 @@ describe('usePostEditor helpers', () => {
     });
     expect(result.current.isUploadingMedia).toBe(true);
     expect(result.current.canSave).toBe(false);
+    act(() => {
+      reportUploadProgress({ loaded: 100, total: 100 });
+    });
+    expect(result.current.uploadProgress?.processing).toBe(true);
+    expect(result.current.uploadProgress?.percent).toBe(100);
     await act(async () => {
       await result.current.save();
     });

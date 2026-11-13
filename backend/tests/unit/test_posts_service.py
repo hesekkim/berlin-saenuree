@@ -333,6 +333,41 @@ def test_video_media_validation_and_file_references(isolated_data, monkeypatch):
         )
 
 
+def test_video_posts_are_capped_at_200_mib_when_global_limit_is_higher(
+    isolated_data, monkeypatch
+):
+    monkeypatch.setattr(settings, "media_max_file_bytes", 500 * 1024 * 1024)
+    monkeypatch.setattr(
+        posts_service,
+        "get_file_record",
+        lambda _file_id: {
+            "meta": {
+                "contentType": "video/mp4",
+                "originalName": "clip.mp4",
+                "sizeBytes": 200 * 1024 * 1024 + 1,
+            }
+        },
+    )
+
+    with pytest.raises(PostsValidationError, match="video exceeds maximum size"):
+        create_post(
+            {
+                "published": True,
+                "media": [
+                    {
+                        "type": "video",
+                        "fileId": "video-file",
+                        "width": 640,
+                        "height": 360,
+                    }
+                ],
+                "copies": {},
+            },
+            created_by="admin@example.com",
+            role="site_admin",
+        )
+
+
 def test_empty_copies_allowed(isolated_data):
     created = create_post(
         {"published": True, "images": [_make_image()], "copies": {}},

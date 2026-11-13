@@ -2,7 +2,7 @@ export const MAX_POST_MEDIA = 30;
 export const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
 export const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export const VIDEO_ACCEPT = 'video/mp4,.mp4';
-export const VIDEO_MAX_BYTES = 100 * 1024 * 1024;
+export const VIDEO_MAX_BYTES = 200 * 1024 * 1024;
 export const POST_MEDIA_ACCEPT = `${IMAGE_ACCEPT},${VIDEO_ACCEPT}`;
 
 export function getPostMediaMaxBytes(file: File): number {

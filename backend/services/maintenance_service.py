@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shutil
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -27,6 +28,7 @@ from services.image_optimize_service import (
 from services.media_files_service import (
     META_FILENAME,
     MediaFilesNotFoundError,
+    VIDEO_UPLOAD_TEMP_PREFIX,
     delete_file,
 )
 from services.media_refs import collect_active_media_refs, normalize_media_id
@@ -36,6 +38,7 @@ logger = logging.getLogger(__name__)
 FIRST_RUN_DELAY_SECONDS = 5 * 60
 RUN_INTERVAL_SECONDS = 6 * 60 * 60
 ORPHAN_GRACE_SECONDS = 24 * 60 * 60
+VIDEO_UPLOAD_TEMP_GRACE_SECONDS = 24 * 60 * 60
 
 
 @dataclass
@@ -107,6 +110,37 @@ def _delete_file(file_id: str) -> None:
         delete_file(file_id)
     except (MediaFilesNotFoundError, OSError) as error:
         logger.warning("Orphan sweep could not delete file %s: %s", file_id, error)
+
+
+def cleanup_stale_video_uploads(*, now: float | None = None) -> int:
+    root = settings.media_upload_temp_dir
+    current = time.time() if now is None else now
+    removed = 0
+    for path in root.iterdir():
+        if (
+            not path.name.startswith(VIDEO_UPLOAD_TEMP_PREFIX)
+            or path.is_symlink()
+            or not path.is_dir()
+        ):
+            continue
+        try:
+            last_modified = path.stat().st_mtime
+            source_path = path / "source.mp4"
+            if source_path.is_file():
+                last_modified = max(last_modified, source_path.stat().st_mtime)
+            if current - last_modified < VIDEO_UPLOAD_TEMP_GRACE_SECONDS:
+                continue
+            shutil.rmtree(path)
+            removed += 1
+        except FileNotFoundError:
+            continue
+        except OSError as error:
+            logger.warning(
+                "Could not remove stale video upload directory %s: %s",
+                path.name,
+                error,
+            )
+    return removed
 
 
 def sweep_orphan_media(*, dry_run: bool, now: float | None = None) -> OrphanReport:
@@ -184,10 +218,17 @@ def _sweep_orphans() -> None:
         )
 
 
+def _cleanup_stale_video_uploads() -> None:
+    removed = cleanup_stale_video_uploads()
+    if removed:
+        logger.info("Removed %d stale video upload directory(s)", removed)
+
+
 def run_maintenance() -> None:
     """One maintenance pass. Each step is isolated so a failure does not skip the rest."""
     _run_step("posts trash expiry", posts_trash_service.purge_expired_trash)
     _run_step("blogger trash expiry", blogger_trash_service.purge_expired_trash)
+    _run_step("stale video upload cleanup", _cleanup_stale_video_uploads)
     _run_step("orphan media sweep", _sweep_orphans)
     if settings.maintenance_enabled:
         _run_step("monthly backup", backups_service.ensure_monthly_backup)

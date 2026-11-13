@@ -2,12 +2,24 @@
 
 Render 등 PaaS에 FastAPI를 올리는 기본 가이드다.
 
+## 로컬 동영상 업로드 설정
+
+로컬에서는 `backend` 디렉터리에서 백엔드 의존성을 설치한다. MP4 동영상은 원본 그대로 저장하며 FFmpeg 같은 별도 인코더가 필요하지 않다.
+
+```powershell
+Set-Location backend
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+`.venv`가 없다면 먼저 `python -m venv .venv`를 실행한다. 기존 가상환경에서 패키지를 설치한 뒤 백엔드 서버를 다시 시작한다.
+
 ## 빠른 설정
 
 1. GitHub에 backend 코드 push
 2. Web Service 생성
-3. Build: `pip install -r requirements.txt` (운영에는 `requirements-dev.txt`를 쓰지 않는다)
-4. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. Render의 Root Directory를 `backend`로 설정한다.
+4. Build: `pip install -r requirements.txt` (운영에는 `requirements-dev.txt`를 쓰지 않는다)
+5. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 
 ## 필수 환경 변수
 
@@ -70,6 +82,12 @@ API docs: `https://your-api.example.com/docs`
 - 영구 디스크에 `data/`를 두고, 앱 유저만 읽기/쓰기
 - `cms_users.json`·`site_settings.json`·`pages/` 백업 권장
 - 상세·위협 모델은 [SECURITY.md](./SECURITY.md)의 「데이터 파일」
+
+## Posts 동영상 업로드
+
+- Posts MP4 업로드는 최대 200MiB이며 동영상은 재인코딩 없이 원본 바이트 그대로 저장한다.
+- Posts 동영상은 원본 요청 본문을 임시 파일에 직접 스트리밍하므로 multipart 파싱용 파일 복사본을 만들지 않는다. 임시 파일은 `APP_DATA_ROOT/.media-upload-tmp`에 두고, 영구 저장 경로와 같은 파일시스템에서 이동한다. 24시간이 지난 임시 디렉터리는 정기 유지보수에서 제거한다.
+- 브라우저 재생 호환성은 원본 MP4의 코덱에 따라 달라진다.
 
 ## 백업·복구
 

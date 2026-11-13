@@ -119,6 +119,7 @@ export function usePostEditor({
     fileName: string;
     percent: number | null;
     processing: boolean;
+    optimizingImages: boolean;
     fileIndex: number;
     fileCount: number;
   } | null>(null);
@@ -472,6 +473,7 @@ export function usePostEditor({
         fileName: accepted[0].name,
         percent: 0,
         processing: false,
+        optimizingImages: false,
         fileIndex: 1,
         fileCount: accepted.length,
       });
@@ -489,6 +491,7 @@ export function usePostEditor({
             fileName: file.name,
             percent: Math.round((index / accepted.length) * 100),
             processing: false,
+            optimizingImages: false,
             fileIndex: index + 1,
             fileCount: accepted.length,
           });
@@ -511,7 +514,9 @@ export function usePostEditor({
                           ((index + filePercent / 100) / accepted.length) *
                             100,
                         ),
-                  processing: false,
+                  processing:
+                    total !== undefined && total > 0 && loaded >= total,
+                  optimizingImages: false,
                   fileIndex: index + 1,
                   fileCount: accepted.length,
                 });
@@ -532,6 +537,9 @@ export function usePostEditor({
             fileName: '',
             percent: null,
             processing: true,
+            optimizingImages: uploaded.some((media) =>
+              sourceFiles.get(media.id)?.type.startsWith('image/'),
+            ),
             fileIndex: accepted.length,
             fileCount: accepted.length,
           });

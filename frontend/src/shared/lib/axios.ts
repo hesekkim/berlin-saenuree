@@ -29,6 +29,14 @@ function isLoginCodeRequest(url: string | undefined): boolean {
   return url === '/auth/send-code' || url === '/auth/verify-code';
 }
 
+function isMediaUploadRequest(config: AxiosRequestConfig): boolean {
+  const url = config.url?.replace(/\/+$/, '');
+  return (
+    config.method?.toLowerCase() === 'post' &&
+    (url === '/media/files' || url === '/media/files/video')
+  );
+}
+
 function getRequestToken(headers: AxiosRequestConfig['headers']): string | null {
   const authorization = headers?.Authorization;
   if (typeof authorization !== 'string') {
@@ -90,6 +98,10 @@ apiClient.interceptors.response.use(
         getRequestToken(originalRequest.headers)
     ) {
       localStorage.removeItem('auth_token');
+      return Promise.reject(error);
+    }
+
+    if (originalRequest && isMediaUploadRequest(originalRequest)) {
       return Promise.reject(error);
     }
 

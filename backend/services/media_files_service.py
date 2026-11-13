@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import uuid
+from collections.abc import AsyncIterable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from core.json_store import write_json_store
 ORIGINAL_BASENAME = "original"
 META_FILENAME = "meta.json"
 READ_CHUNK_SIZE = 64 * 1024
+VIDEO_UPLOAD_TEMP_PREFIX = "saenuree-video-upload-"
 
 FILE_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -279,6 +281,70 @@ async def read_upload_limited(upload_file: Any, limit: int) -> bytes:
     return b"".join(chunks)
 
 
+async def copy_upload_limited(
+    upload_file: Any, destination: Path, limit: int
+) -> int:
+    async def chunks() -> AsyncIterable[bytes]:
+        while True:
+            chunk = await upload_file.read(1024 * 1024)
+            if not chunk:
+                break
+            yield chunk
+
+    return await copy_stream_limited(chunks(), destination, limit)
+
+
+async def copy_stream_limited(
+    chunks: AsyncIterable[bytes], destination: Path, limit: int
+) -> int:
+    if limit <= 0:
+        raise MediaFilesValidationError("max_size_bytes must be positive")
+
+    total = 0
+    try:
+        with destination.open("wb") as target:
+            async for chunk in chunks:
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total > limit:
+                    raise MediaFilesValidationError(
+                        f"File exceeds maximum size of {limit} bytes"
+                    )
+                target.write(chunk)
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+    return total
+
+
+def _validate_file_for_storage(
+    *,
+    size: int,
+    header: bytes,
+    original_name: str,
+    content_type: str | None,
+    max_size_bytes: int | None,
+    accept: str | None,
+) -> tuple[int, str, str]:
+    limit = resolve_max_size_bytes(max_size_bytes)
+    if size > limit:
+        raise MediaFilesValidationError(
+            f"File exceeds maximum size of {limit} bytes"
+        )
+
+    normalized_type = normalize_content_type(content_type)
+    if normalized_type == DEFAULT_CONTENT_TYPE and sniff_content_type(header) == "video/mp4":
+        normalized_type = "video/mp4"
+    name = normalize_original_name(original_name)
+    assert_content_type_plausible(header, normalized_type)
+    if not matches_accept(
+        content_type=normalized_type, original_name=name, accept=accept
+    ):
+        raise MediaFilesValidationError("File type is not allowed")
+    return limit, normalized_type, name
+
+
 def save_file(
     content: bytes,
     *,
@@ -288,22 +354,15 @@ def save_file(
     accept: str | None = None,
     uploaded_by: str | None = None,
 ) -> dict[str, Any]:
-    limit = resolve_max_size_bytes(max_size_bytes)
     size = len(content)
-    if size > limit:
-        raise MediaFilesValidationError(
-            f"File exceeds maximum size of {limit} bytes"
-        )
-
-    normalized_type = normalize_content_type(content_type)
-    if normalized_type == DEFAULT_CONTENT_TYPE and sniff_content_type(content) == "video/mp4":
-        normalized_type = "video/mp4"
-    name = normalize_original_name(original_name)
-    assert_content_type_plausible(content, normalized_type)
-    if not matches_accept(
-        content_type=normalized_type, original_name=name, accept=accept
-    ):
-        raise MediaFilesValidationError("File type is not allowed")
+    limit, normalized_type, name = _validate_file_for_storage(
+        size=size,
+        header=content[:16],
+        original_name=original_name,
+        content_type=content_type,
+        max_size_bytes=max_size_bytes,
+        accept=accept,
+    )
 
     file_id = str(uuid.uuid4())
     file_dir = settings.media_file_dir(file_id)
@@ -312,6 +371,51 @@ def save_file(
 
     try:
         (file_dir / stored_name).write_bytes(content)
+        meta = {
+            "id": file_id,
+            "originalName": name,
+            "storedName": stored_name,
+            "contentType": normalized_type,
+            "sizeBytes": size,
+            "uploadedBy": normalize_uploader(uploaded_by),
+            "createdAt": _utc_now_iso(),
+        }
+        write_json_store(_meta_path(file_dir), meta)
+    except OSError:
+        shutil.rmtree(file_dir, ignore_errors=True)
+        raise
+
+    return _to_response(meta)
+
+
+def save_file_from_path(
+    source_path: Path,
+    *,
+    original_name: str,
+    content_type: str | None,
+    max_size_bytes: int | None = None,
+    accept: str | None = None,
+    uploaded_by: str | None = None,
+) -> dict[str, Any]:
+    size = source_path.stat().st_size
+    with source_path.open("rb") as source:
+        header = source.read(16)
+    limit, normalized_type, name = _validate_file_for_storage(
+        size=size,
+        header=header,
+        original_name=original_name,
+        content_type=content_type,
+        max_size_bytes=max_size_bytes,
+        accept=accept,
+    )
+
+    file_id = str(uuid.uuid4())
+    file_dir = settings.media_file_dir(file_id)
+    file_dir.mkdir(parents=True, exist_ok=False)
+    stored_name = stored_name_for(name)
+
+    try:
+        source_path.replace(file_dir / stored_name)
         meta = {
             "id": file_id,
             "originalName": name,

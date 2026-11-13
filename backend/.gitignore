@@ -51,6 +51,7 @@ logs/
 data/*.json
 !data/.gitkeep
 backups/
+.media-upload-tmp/
 
 # Testing
 .pytest_cache/
