@@ -15,11 +15,15 @@ Set-Location backend
 
 ## 빠른 설정
 
-1. GitHub에 backend 코드 push
-2. Web Service 생성
-3. Render의 Root Directory를 `backend`로 설정한다.
-4. Build: `pip install -r requirements.txt` (운영에는 `requirements-dev.txt`를 쓰지 않는다)
-5. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+backend와 frontend는 별도 저장소로 나누지 않아도 된다. 통합 저장소 `berlin-saenuree`를 Render와 Vercel 양쪽에 연결하고, 서비스별 Root Directory를 다르게 설정한다. 두 플랫폼은 같은 브랜치의 변경을 각각 독립적으로 빌드·배포한다.
+
+1. Render에서 통합 GitHub 저장소를 연결해 Web Service를 생성한다.
+2. Root Directory를 `backend`로 설정한다.
+3. Build Command: `pip install -r requirements.txt` (운영에는 `requirements-dev.txt`를 쓰지 않는다)
+4. Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. 아래 필수 환경 변수를 설정한다. `APP_ALLOWED_ORIGINS`에는 Vercel에 배포할 frontend의 실제 origin을 넣는다.
+
+Vercel 배포 설정과 `VITE_API_BASE_URL`, CSP, CORS를 맞추는 방법은 [frontend 배포 가이드](../../frontend/DEPLOY.md)를 참고한다.
 
 ## 필수 환경 변수
 
@@ -70,11 +74,13 @@ API docs: `https://your-api.example.com/docs`
 - APP_MEDIA_GC_DRY_RUN=True(기본)면 일반 orphan 미디어 sweep은 삭제하지 않고 대상만 서버 로그(info)에 남긴다. 로그 확인 후 False로 바꾸면 해당 orphan 삭제가 시작된다. 이 설정은 만료된 Posts 동영상 lease 정리에는 적용되지 않는다.
 
 수동 실행이 필요하면 backend/에서 python -m scripts.purge_expired_trash를 실행한다. 서버가 실행 중일 때는 실행하지 않는다. 같은 JSON 파일을 두 프로세스가 동시에 쓰면 안 된다.
+
 ## 워커 수 (단일 워커 전제)
 
 - 백엔드는 **워커 1개**로 실행한다 (`uvicorn` `--workers 1`, uvicorn 기본값). JSON store의 잠금(`core/store_lock.py`)은 프로세스 안에서만 유효하다.
 - 워커를 여러 개 띄우면 같은 JSON 파일을 프로세스끼리 동시에 쓰게 되어 데이터가 유실될 수 있다. 멀티 워커 전환은 파일 lock 또는 DB 전환을 별도 작업으로 다룬 뒤에 한다.
 - 휴지통 정리·orphan 미디어 수거 스케줄러도 프로세스마다 돌아가므로 워커가 1개여야 중복 실행이 없다.
+
 ## 데이터 디렉터리
 
 `APP_DATA_ROOT`(기본: backend 루트) 아래 `data/`에 JSON이 생긴다.
