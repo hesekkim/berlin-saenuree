@@ -286,6 +286,42 @@ describe('useHomePageEditor', () => {
     );
   });
 
+  it('keeps the panorama shared when editing another language', async () => {
+    const { result } = renderHook(() => useHomePageEditor(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+
+    act(() => {
+      result.current.setEditLanguage(Language.KO);
+    });
+    await act(async () => {
+      await result.current.handleImageUploaded('panorama', [
+        {
+          id: 'panorama-upload',
+          url: '/media/panorama-upload',
+          originalName: 'panorama.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 100,
+        },
+      ]);
+    });
+    await act(async () => {
+      await result.current.save();
+    });
+
+    const [, savedDocument] = savePageDocument.mock.calls[0];
+    expect(savedDocument.content[Language.EN].panoramaImageId).toBe('new-image');
+    expect(savedDocument.content[Language.KO].panoramaImageId).toBe('new-image');
+    expect(savedDocument.content[Language.EN].panoramaSourceFileId).toBe(
+      'new-source'
+    );
+    expect(savedDocument.content[Language.KO].panoramaSourceFileId).toBe(
+      'new-source'
+    );
+  });
+
   it('shows the shared hero images when the German copy is not saved yet', async () => {
     const sharedImage = {
       imageId: 'shared-image',

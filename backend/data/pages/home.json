@@ -1,5 +1,5 @@
 {
-  "contentRevision": 11,
+  "contentRevision": 20,
   "content": {
     "ko": {
       "yearMotto": "새로운 일을 행하실\n하나님을 기대하라",
@@ -18,13 +18,26 @@
     }
   },
   "sharedMedia": {
-    "heroImages": [],
-    "panoramaImageId": "",
-    "panoramaSourceFileId": "",
+    "heroImages": [
+      {
+        "imageId": "7b7838a5-6e3d-4e1b-b7e4-d89fc2643909",
+        "sourceFileId": "47de8a6e-000f-4673-9fd1-35643219e224"
+      },
+      {
+        "imageId": "669be524-9a84-4aee-96ca-90fd57ef3e69",
+        "sourceFileId": "219cca9a-5cf9-4fbc-b780-75c3eddb6283"
+      },
+      {
+        "imageId": "5516e8cf-4622-49bc-a9b5-9b9500597dfe",
+        "sourceFileId": "3a5a3ac4-7f5e-4b8e-a2b2-02359551a7f1"
+      }
+    ],
+    "panoramaImageId": "fd3d3779-a7c1-4684-ab62-492f157e8d65",
+    "panoramaSourceFileId": "a286a6ce-2d31-4db5-aa05-946d9586a033",
     "youtubeVideoUrls": [
       "https://www.youtube.com/watch?v=rKY6bp79-6A",
-      "https://www.youtube.com/watch?v=yyCDZM51RzU",
-      "https://www.youtube.com/watch?v=XyyEKZskwaY"
+      "https://www.youtube.com/watch?v=LEMNit_6Cm8&t=3s",
+      "https://www.youtube.com/watch?v=T17pP65xlbM&list=RDMM&start_radio=1&rv=LEMNit_6Cm8"
     ]
   }
 }

@@ -333,6 +333,17 @@ export function useHomePageEditor() {
       }
       setDraft((prev) => {
         const withLanguage = ensureHomeContentLanguage(prev, editLanguage);
+        if (
+          field === 'panoramaImageId' ||
+          field === 'panoramaSourceFileId'
+        ) {
+          return Object.fromEntries(
+            Object.entries(withLanguage).map(([language, copy]) => [
+              language,
+              { ...copy, [field]: value },
+            ])
+          ) as HomeContentByLanguage;
+        }
         return {
           ...withLanguage,
           [editLanguage]: {

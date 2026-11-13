@@ -99,6 +99,7 @@ export function normalizeSharedHomeMedia(
     ])
   ) as HomeContentByLanguage;
   const sharedImages = getSharedHomeImages(normalized);
+  const sharedPanorama = getSharedHomePanorama(normalized);
   const sharedVideoUrls = getSharedHomeVideoUrls(normalized);
 
   return Object.fromEntries(
@@ -107,6 +108,7 @@ export function normalizeSharedHomeMedia(
       {
         ...copy,
         heroImages: sharedImages,
+        ...sharedPanorama,
         youtubeVideoUrls: sharedVideoUrls,
       },
     ])
@@ -135,6 +137,25 @@ function getSharedHomeVideoUrls(content: HomeContentByLanguage): string[] {
       copy.youtubeVideoUrls.some((url) => url.trim())
     )?.youtubeVideoUrls ?? []
   );
+}
+
+function getSharedHomePanorama(
+  content: HomeContentByLanguage
+): Pick<HomeCopy, 'panoramaImageId' | 'panoramaSourceFileId'> {
+  const hasPanorama = (copy: HomeCopy | undefined) =>
+    Boolean(copy?.panoramaImageId || copy?.panoramaSourceFileId);
+  const englishCopy = content[Language.EN];
+  if (hasPanorama(englishCopy)) {
+    return {
+      panoramaImageId: englishCopy.panoramaImageId,
+      panoramaSourceFileId: englishCopy.panoramaSourceFileId,
+    };
+  }
+  const copy = Object.values(content).find(hasPanorama);
+  return {
+    panoramaImageId: copy?.panoramaImageId ?? '',
+    panoramaSourceFileId: copy?.panoramaSourceFileId ?? '',
+  };
 }
 
 /** Prefer the active language; if blank, use another language that has copy. */
@@ -189,9 +210,15 @@ export function ensureHomeContentLanguage(
 
   const sharedContent = normalizeSharedHomeMedia(content);
   const heroImages = getSharedHomeImages(sharedContent);
+  const panorama = getSharedHomePanorama(sharedContent);
   const youtubeVideoUrls = getSharedHomeVideoUrls(sharedContent);
   return {
     ...sharedContent,
-    [language]: { ...createEmptyHomeCopy(), heroImages, youtubeVideoUrls },
+    [language]: {
+      ...createEmptyHomeCopy(),
+      heroImages,
+      ...panorama,
+      youtubeVideoUrls,
+    },
   };
 }
