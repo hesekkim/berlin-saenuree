@@ -59,7 +59,9 @@ export default function ChurchStories() {
 
   return (
     <main className={styles.page}>
-      <PageHeader className={styles.header} title={labels.storiesPageTitle} />
+      {!id ? (
+        <PageHeader className={styles.header} title={labels.storiesPageTitle} />
+      ) : null}
 
       {id ? (
         storyQuery.isPending ? (

@@ -154,24 +154,30 @@ def test_blogger_publish_width_change_removes_unreferenced_old_derivative(isolat
     assert (isolated_data / "data" / "media" / "images" / new_image_id).exists()
 
 
-def test_blogger_create_rejects_legacy_media_only_ko_body(isolated_data):
-    media_id = "12345678-1234-1234-1234-123456789abc"
-    with pytest.raises(BloggerValidationError, match="data-media-width"):
-        create_blogger(
-            _payload(
-                copies={
-                    "ko": {
-                        "title": "사진",
-                        "body": (
-                            f'<p><img data-media-id="{media_id}" '
-                            f'src="/api/v1/media/files/{media_id}"></p>'
-                        ),
-                    }
-                }
-            ),
-            created_by="admin@example.com",
-            role="site_admin",
-        )
+def test_blogger_publish_defaults_missing_image_width(isolated_data):
+    source = save_file(
+        _png_bytes(),
+        original_name="photo.png",
+        content_type="image/png",
+    )
+    body = (
+        f'<p><img data-media-id="{source["id"]}" '
+        f'src="/api/v1/media/files/{source["id"]}"></p>'
+    )
+
+    created = create_blogger(
+        _payload(copies={"ko": {"title": "사진", "body": body}}),
+        created_by="admin@example.com",
+        role="site_admin",
+    )
+
+    published_body = created["copies"]["ko"]["body"]
+    assert f'data-media-id="{source["id"]}"' in published_body
+    assert "/api/v1/media/images/" in published_body
+    image_id = published_body.split('data-image-id="', 1)[1].split('"', 1)[0]
+    assert Image.open(
+        isolated_data / "data" / "media" / "images" / image_id / "display.webp"
+    ).size == (1000, 500)
 
 
 def test_blogger_create_rejects_body_without_text_or_media(isolated_data):

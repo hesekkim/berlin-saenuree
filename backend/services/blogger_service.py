@@ -14,6 +14,7 @@ from services.rich_text import (
     extract_image_ids,
     extract_media_ids,
     MAX_BLOGGER_RICH_HTML_LENGTH,
+    MAX_MEDIA_WIDTH,
     check_rich_html_length,
     rich_html_has_content,
     rich_html_plain_text,
@@ -164,10 +165,10 @@ def _publish_copies(
             attrs = {key.lower(): value for key, value in _IMG_VALUE_RE.findall(tag)}
             try:
                 media_id = attrs["data-media-id"]
-                width = int(attrs["data-media-width"])
+                width = int(attrs.get("data-media-width") or MAX_MEDIA_WIDTH)
             except (KeyError, TypeError, ValueError):
                 raise ImageOptimizeError(
-                    "Published images require data-media-id and data-media-width"
+                    "Published images require data-media-id"
                 )
             key = (media_id.lower(), width)
             result = cache.get(key)

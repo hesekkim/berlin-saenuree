@@ -10,14 +10,17 @@
 }
 
 .root :global(img) {
-  display: block;
+  display: inline-block;
   max-width: 100%;
   height: auto;
+  vertical-align: middle;
 }
 
 .root :global(a[data-media-kind='attachment']) {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   max-width: 100%;
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--cms-border, #d6d6d6);
@@ -25,4 +28,26 @@
   overflow: hidden;
   color: var(--cms-text, #424242);
   text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.root :global(a[data-media-kind='attachment']::after) {
+  flex: 0 0 auto;
+  color: var(--cms-primary, var(--color-primary, #b8956a));
+  content: '\2193';
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.root :global(a[data-media-kind='attachment']:hover) {
+  border-color: var(--cms-primary, var(--color-primary, #b8956a));
+  background-color: var(--cms-surface-muted, #f5f5f5);
+}
+
+.root :global(a[data-media-kind='attachment']:focus-visible) {
+  outline: 2px solid var(--cms-focus, var(--color-primary, #b8956a));
+  outline-offset: 2px;
 }
