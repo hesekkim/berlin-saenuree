@@ -5,6 +5,7 @@ import {
   deleteMediaFile,
   deleteOptimizedImage,
   optimizeMediaImage,
+  renewVideoUploadLease,
   uploadMediaFile,
   type MediaFileResponse,
 } from '../../../../../shared/api/mediaApi';
@@ -26,6 +27,8 @@ import {
   POST_MEDIA_ACCEPT,
   readVideoDimensions,
 } from '../utils/postMedia';
+
+const VIDEO_UPLOAD_LEASE_RENEWAL_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export type PostEditorState = {
   media: PostMedia[];
@@ -131,6 +134,7 @@ export function usePostEditor({
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const sessionImageIdsRef = useRef(new Set<string>());
   const sessionFileIdsRef = useRef(new Set<string>());
+  const sessionVideoFileIdsRef = useRef(new Set<string>());
   const discardSessionMediaRef = useRef<() => Promise<void>>(async () => {});
 
   const siteLanguages = useMemo(
@@ -140,6 +144,9 @@ export function usePostEditor({
 
   const deleteSessionMedia = useCallback(
     async (imageIds: string[], fileIds: string[]) => {
+      for (const fileId of fileIds) {
+        sessionVideoFileIdsRef.current.delete(fileId);
+      }
       const failedImageIds = new Set<string>();
       const failedFileIds = new Set<string>();
       await Promise.all([
@@ -207,6 +214,7 @@ export function usePostEditor({
       }
       for (const fileId of retainedFileIds) {
         sessionFileIdsRef.current.delete(fileId);
+        sessionVideoFileIdsRef.current.delete(fileId);
       }
       await deleteSessionMedia(imageIds, fileIds);
     },
@@ -233,6 +241,25 @@ export function usePostEditor({
     setConflictPost(null);
     setFormError('');
   }, [isOpen, post]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const renewLeases = () => {
+      for (const fileId of sessionVideoFileIdsRef.current) {
+        void renewVideoUploadLease(fileId).catch(() => {
+          toastRef.current.warning(labels.postsVideoLeaseRenewalFailed);
+        });
+      }
+    };
+    const intervalId = window.setInterval(
+      renewLeases,
+      VIDEO_UPLOAD_LEASE_RENEWAL_INTERVAL_MS,
+    );
+    return () => window.clearInterval(intervalId);
+  }, [isOpen, labels.postsVideoLeaseRenewalFailed]);
 
   const isDirty = useMemo(() => {
     if (!state) {
@@ -415,6 +442,9 @@ export function usePostEditor({
         if (!target) {
           return current;
         }
+        if (target.type === 'video') {
+          sessionVideoFileIdsRef.current.delete(target.fileId);
+        }
         return {
           ...current,
           media: current.media.filter((item) =>
@@ -499,6 +529,9 @@ export function usePostEditor({
             const media = await uploadMediaFile(file, {
               accept: POST_MEDIA_ACCEPT,
               maxSizeBytes,
+              leaseVideoUpload:
+                file.type === 'video/mp4' ||
+                file.name.toLowerCase().endsWith('.mp4'),
               signal: controller.signal,
               onUploadProgress: ({ loaded, total }) => {
                 const filePercent =
@@ -524,6 +557,9 @@ export function usePostEditor({
             });
             uploaded.push(media);
             sourceFiles.set(media.id, file);
+            if (media.contentType === 'video/mp4') {
+              sessionVideoFileIdsRef.current.add(media.id);
+            }
             sessionFileIdsRef.current.add(media.id);
           } catch {
             if (controller.signal.aborted) {

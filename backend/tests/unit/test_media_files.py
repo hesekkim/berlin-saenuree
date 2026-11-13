@@ -9,6 +9,7 @@ from starlette.requests import Request
 from api.v1.endpoints.auth import get_current_cms_user
 from core.config import settings
 from main import app
+from services import media_files_service
 from services.media_files_service import (
     MediaFilesNotFoundError,
     MediaFilesValidationError,
@@ -493,6 +494,68 @@ def test_streamed_video_api_stores_original_without_multipart(isolated_data):
         assert client.get(body["url"]).content == original
         assert settings.media_upload_temp_dir.parent == settings.base_path
         assert not list(settings.media_upload_temp_dir.iterdir())
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_posts_video_upload_lease_can_be_renewed(isolated_data, monkeypatch):
+    original = b"\x00\x00\x00\x18ftypisom original"
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+    expirations = iter(
+        ["2026-11-14T00:00:00+00:00", "2099-01-01T00:00:00+00:00"]
+    )
+    monkeypatch.setattr(
+        media_files_service,
+        "_video_upload_lease_expiry",
+        lambda: next(expirations),
+    )
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files/video",
+            content=original,
+            headers={"Content-Type": "video/mp4"},
+            params={"filename": "clip.mp4", "lease": "true"},
+        )
+        assert response.status_code == 200
+        file_id = response.json()["id"]
+        record = get_file_record(file_id)
+        assert record["meta"]["uploadLeaseExpiresAt"] == "2026-11-14T00:00:00+00:00"
+
+        renewed = client.post(
+            "/api/v1/media/files/video/lease",
+            json={"fileId": file_id},
+        )
+
+        assert renewed.status_code == 204
+        assert (
+            get_file_record(file_id)["meta"]["uploadLeaseExpiresAt"]
+            == "2099-01-01T00:00:00+00:00"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_posts_video_upload_lease_cannot_be_renewed_by_another_user(isolated_data):
+    original = b"\x00\x00\x00\x18ftypisom original"
+    app.dependency_overrides[get_current_cms_user] = _site_admin
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/v1/media/files/video",
+            content=original,
+            headers={"Content-Type": "video/mp4"},
+            params={"filename": "clip.mp4", "lease": "true"},
+        )
+        file_id = response.json()["id"]
+        app.dependency_overrides[get_current_cms_user] = _page_admin
+
+        renewed = client.post(
+            "/api/v1/media/files/video/lease",
+            json={"fileId": file_id},
+        )
+
+        assert renewed.status_code == 400
     finally:
         app.dependency_overrides.clear()
 

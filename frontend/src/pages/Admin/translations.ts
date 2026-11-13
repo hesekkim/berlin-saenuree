@@ -421,6 +421,8 @@ export const adminTranslations = {
       '사진을 웹 표시용으로 최적화하고 있습니다. 잠시만 기다려 주세요.',
     postsMediaCancel: '업로드 취소',
     postsMediaCleanupFailed: '일부 임시 미디어를 정리하지 못했습니다.',
+    postsVideoLeaseRenewalFailed:
+      '편집 중인 동영상 보호를 갱신하지 못했습니다. 저장을 마쳐 주세요.',
     postsComposerRemoveImage: '미디어 삭제',
     postsComposerAddPhotos: '사진/동영상 추가',
     postsComposerSelectImage: '{index}번째 미디어 선택',
@@ -911,6 +913,8 @@ export const adminTranslations = {
     postsMediaOptimizingImages: 'Optimizing photos for web display. Please wait.',
     postsMediaCancel: 'Cancel upload',
     postsMediaCleanupFailed: 'Some temporary media could not be removed.',
+    postsVideoLeaseRenewalFailed:
+      'Could not keep the video protected while editing. Please save your changes.',
     postsComposerRemoveImage: 'Remove media',
     postsComposerAddPhotos: 'Add photos/videos',
     postsComposerSelectImage: 'Select media {index}',
@@ -1417,6 +1421,8 @@ export const adminTranslations = {
       'Fotos werden für die Webanzeige optimiert. Bitte warten.',
     postsMediaCancel: 'Upload abbrechen',
     postsMediaCleanupFailed: 'Einige temporäre Medien konnten nicht entfernt werden.',
+    postsVideoLeaseRenewalFailed:
+      'Das Video konnte während der Bearbeitung nicht geschützt bleiben. Bitte speichern Sie Ihre Änderungen.',
     postsComposerRemoveImage: 'Medium entfernen',
     postsComposerAddPhotos: 'Fotos/Videos hinzufügen',
     postsComposerSelectImage: 'Medium {index} auswählen',

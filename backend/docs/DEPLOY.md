@@ -67,7 +67,7 @@ API docs: `https://your-api.example.com/docs`
 
 - 끄려면 APP_MAINTENANCE_ENABLED=False
 - orphan 미디어는 참조 없이 생성 후 24시간이 지난 것만 삭제한다. 편집 중 업로드와 참조 중인 미디어는 지우지 않는다.
-- APP_MEDIA_GC_DRY_RUN=True(기본)면 삭제하지 않고 삭제 대상만 서버 로그(info)에 남긴다. 로그를 확인한 뒤 False로 바꾸면 삭제가 시작된다.
+- APP_MEDIA_GC_DRY_RUN=True(기본)면 일반 orphan 미디어 sweep은 삭제하지 않고 대상만 서버 로그(info)에 남긴다. 로그 확인 후 False로 바꾸면 해당 orphan 삭제가 시작된다. 이 설정은 만료된 Posts 동영상 lease 정리에는 적용되지 않는다.
 
 수동 실행이 필요하면 backend/에서 python -m scripts.purge_expired_trash를 실행한다. 서버가 실행 중일 때는 실행하지 않는다. 같은 JSON 파일을 두 프로세스가 동시에 쓰면 안 된다.
 ## 워커 수 (단일 워커 전제)
@@ -87,6 +87,7 @@ API docs: `https://your-api.example.com/docs`
 
 - Posts MP4 업로드는 최대 200MiB이며 동영상은 재인코딩 없이 원본 바이트 그대로 저장한다.
 - Posts 동영상은 원본 요청 본문을 임시 파일에 직접 스트리밍하므로 multipart 파싱용 파일 복사본을 만들지 않는다. 임시 파일은 `APP_DATA_ROOT/.media-upload-tmp`에 두고, 영구 저장 경로와 같은 파일시스템에서 이동한다. 24시간이 지난 임시 디렉터리는 정기 유지보수에서 제거한다.
+- 게시물 저장 전 동영상은 24시간 lease로 보호하며 편집기가 열려 있는 동안 6시간마다 lease를 갱신한다. 응답 유실 등으로 클라이언트가 파일 ID를 받지 못한 업로드는 lease가 만료된 뒤 정기 유지보수에서 삭제한다. 게시물에서 참조 중인 동영상은 lease 만료와 관계없이 보존한다.
 - 브라우저 재생 호환성은 원본 MP4의 코덱에 따라 달라진다.
 
 ## 백업·복구

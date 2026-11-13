@@ -11,6 +11,10 @@ class MediaFileResponse(BaseModel):
     sizeBytes: int
 
 
+class RenewVideoUploadLeaseRequest(BaseModel):
+    fileId: str = Field(min_length=1)
+
+
 class OptimizeImageRequest(BaseModel):
     fileId: str = Field(min_length=1)
     variants: list[Literal["display", "thumb"]] = Field(

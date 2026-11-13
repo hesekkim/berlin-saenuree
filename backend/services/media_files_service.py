@@ -5,17 +5,19 @@ import re
 import shutil
 import uuid
 from collections.abc import AsyncIterable
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from core.config import settings
 from core.json_store import write_json_store
+from core.store_lock import STORE_LOCK
 
 ORIGINAL_BASENAME = "original"
 META_FILENAME = "meta.json"
 READ_CHUNK_SIZE = 64 * 1024
 VIDEO_UPLOAD_TEMP_PREFIX = "saenuree-video-upload-"
+VIDEO_UPLOAD_LEASE_SECONDS = 24 * 60 * 60
 
 FILE_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -81,6 +83,12 @@ def normalize_uploader(email: str | None) -> str:
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _video_upload_lease_expiry() -> str:
+    return (
+        datetime.now(timezone.utc) + timedelta(seconds=VIDEO_UPLOAD_LEASE_SECONDS)
+    ).replace(microsecond=0).isoformat()
 
 
 def _normalize_accept_tokens(accept: str | None) -> list[str]:
@@ -396,6 +404,7 @@ def save_file_from_path(
     max_size_bytes: int | None = None,
     accept: str | None = None,
     uploaded_by: str | None = None,
+    video_upload_lease: bool = False,
 ) -> dict[str, Any]:
     size = source_path.stat().st_size
     with source_path.open("rb") as source:
@@ -425,12 +434,32 @@ def save_file_from_path(
             "uploadedBy": normalize_uploader(uploaded_by),
             "createdAt": _utc_now_iso(),
         }
+        if video_upload_lease:
+            meta["uploadLeaseExpiresAt"] = _video_upload_lease_expiry()
         write_json_store(_meta_path(file_dir), meta)
     except OSError:
         shutil.rmtree(file_dir, ignore_errors=True)
         raise
 
     return _to_response(meta)
+
+
+def renew_video_upload_lease(file_id: str, *, uploaded_by: str) -> None:
+    validated_id = _validate_file_id(file_id)
+    with STORE_LOCK:
+        record = get_file_record(validated_id)
+        meta = record["meta"]
+        if (
+            str(meta.get("contentType") or "").strip().lower() != "video/mp4"
+            or normalize_uploader(str(meta.get("uploadedBy") or ""))
+            != normalize_uploader(uploaded_by)
+            or not meta.get("uploadLeaseExpiresAt")
+        ):
+            raise MediaFilesValidationError(
+                "Video upload lease cannot be renewed"
+            )
+        meta["uploadLeaseExpiresAt"] = _video_upload_lease_expiry()
+        write_json_store(settings.media_file_dir(validated_id) / META_FILENAME, meta)
 
 
 def get_file_record(file_id: str) -> dict[str, Any]:

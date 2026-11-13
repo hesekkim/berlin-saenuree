@@ -15,6 +15,7 @@ const deleteOptimizedImage = vi.fn();
 const deleteMediaFile = vi.fn();
 const uploadMediaFile = vi.fn();
 const optimizeMediaImage = vi.fn();
+const renewVideoUploadLease = vi.fn();
 const toastError = vi.fn();
 const toastWarning = vi.fn();
 
@@ -27,6 +28,8 @@ vi.mock('../../src/shared/api/mediaApi', () => ({
   deleteMediaFile: (...args: unknown[]) => deleteMediaFile(...args),
   uploadMediaFile: (...args: unknown[]) => uploadMediaFile(...args),
   optimizeMediaImage: (...args: unknown[]) => optimizeMediaImage(...args),
+  renewVideoUploadLease: (...args: unknown[]) =>
+    renewVideoUploadLease(...args),
 }));
 
 vi.mock('../../src/shared/components/ui/Toast/ToastProvider', () => ({
@@ -90,6 +93,8 @@ describe('usePostEditor helpers', () => {
     deleteMediaFile.mockReset();
     uploadMediaFile.mockReset();
     optimizeMediaImage.mockReset();
+    renewVideoUploadLease.mockReset();
+    renewVideoUploadLease.mockResolvedValue(undefined);
     toastError.mockReset();
     toastWarning.mockReset();
   });
@@ -249,6 +254,52 @@ describe('usePostEditor helpers', () => {
 
     expect(result.current.uploadProgress).toBeNull();
     expect(result.current.state?.media).toHaveLength(3);
+  });
+
+  it('renews the lease for unsaved video uploads while the editor is open', async () => {
+    let renewLeaseInterval: (() => void) | undefined;
+    const intervalSpy = vi
+      .spyOn(window, 'setInterval')
+      .mockImplementation((handler, timeout) => {
+        if (
+          timeout === 6 * 60 * 60 * 1000 &&
+          typeof handler === 'function'
+        ) {
+          renewLeaseInterval = handler as () => void;
+        }
+        return 1;
+      });
+    uploadMediaFile.mockResolvedValue({
+      id: 'video-c',
+      url: '/video-c',
+      originalName: 'clip.mp4',
+      contentType: 'video/mp4',
+      sizeBytes: 5,
+    });
+    const { result } = renderEditor();
+
+    await waitFor(() => {
+      expect(result.current.state).not.toBeNull();
+    });
+    await act(async () => {
+      await result.current.addPhotosFromFiles([
+        new File(['video'], 'clip.mp4', { type: 'video/mp4' }),
+      ]);
+    });
+    intervalSpy.mockRestore();
+
+    expect(uploadMediaFile).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.objectContaining({ leaseVideoUpload: true }),
+    );
+    expect(renewLeaseInterval).toBeDefined();
+    act(() => renewLeaseInterval?.());
+    expect(renewVideoUploadLease).toHaveBeenCalledWith('video-c');
+
+    renewVideoUploadLease.mockClear();
+    act(() => result.current.removeMedia('video-c'));
+    act(() => renewLeaseInterval?.());
+    expect(renewVideoUploadLease).not.toHaveBeenCalled();
   });
 
   it('cancels the active upload and deletes files uploaded earlier in the batch', async () => {

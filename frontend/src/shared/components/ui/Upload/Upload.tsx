@@ -69,6 +69,8 @@ export interface UploadProps {
   retainDefaultRemotes?: boolean;
   /** After upload succeeds, skip DELETE on remove (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
+  /** Keep Posts video uploads protected while the editor session is active. */
+  leaseVideoUploads?: boolean;
   onUploaded?: (
     files: MediaFileResponse[],
     items: UploadItem[],
@@ -114,6 +116,7 @@ export default function Upload({
   defaultFiles,
   retainDefaultRemotes = false,
   retainUploadedRemotes = false,
+  leaseVideoUploads = false,
   onUploaded,
   onItemsChange,
   labels: labelsProp,
@@ -143,6 +146,7 @@ export default function Upload({
     defaultFiles,
     retainDefaultRemotes,
     retainUploadedRemotes,
+    leaseVideoUploads,
     onUploaded,
     onItemsChange,
   });

@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 
 from api.v1.endpoints.auth import get_current_cms_user
 from core.config import settings
-from models.media import MediaFileResponse
+from models.media import MediaFileResponse, RenewVideoUploadLeaseRequest
 from services.media_access_service import (
     MediaDeleteForbiddenError,
     MediaInUseError,
@@ -34,6 +34,7 @@ from services.media_files_service import (
     normalize_content_type,
     normalize_original_name,
     read_upload_limited,
+    renew_video_upload_lease,
     resolve_max_size_bytes,
     save_file,
     save_file_from_path,
@@ -132,6 +133,7 @@ async def upload_media_file(
 async def upload_video_file(
     request: Request,
     filename: str = Query(..., min_length=1),
+    lease: bool = Query(default=False),
     accept: str | None = Query(
         default=None,
         description="Comma-separated MIME and/or extension patterns",
@@ -164,11 +166,27 @@ async def upload_video_file(
                 max_size_bytes=limit,
                 accept=accept,
                 uploaded_by=user["email"],
+                video_upload_lease=lease,
             )
     except MediaFilesError as error:
         raise _http_error(error) from error
 
     return MediaFileResponse.model_validate(saved)
+
+
+@router.post("/files/video/lease", status_code=status.HTTP_204_NO_CONTENT)
+async def renew_video_file_upload_lease(
+    payload: RenewVideoUploadLeaseRequest,
+    user: dict = Depends(get_current_cms_user),
+):
+    try:
+        await run_in_threadpool(
+            renew_video_upload_lease,
+            payload.fileId,
+            uploaded_by=user["email"],
+        )
+    except MediaFilesError as error:
+        raise _http_error(error) from error
 
 
 @router.get("/files/{file_id}")

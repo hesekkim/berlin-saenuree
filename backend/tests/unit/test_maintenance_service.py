@@ -12,6 +12,7 @@ from services import maintenance_service
 from services.maintenance_service import (
     ORPHAN_GRACE_SECONDS,
     VIDEO_UPLOAD_TEMP_GRACE_SECONDS,
+    cleanup_expired_video_uploads,
     cleanup_stale_video_uploads,
     run_maintenance,
     sweep_orphan_media,
@@ -233,6 +234,71 @@ def test_stale_video_upload_directories_are_removed_but_recent_ones_are_kept(
     assert recent.exists()
     assert active.exists()
     assert unrelated.exists()
+
+
+def test_expired_video_upload_lease_is_cleaned_even_in_dry_run_mode(
+    isolated_data, monkeypatch
+):
+    monkeypatch.setattr(settings, "media_gc_dry_run", True)
+    file_id = str(uuid.uuid4())
+    _make_media_dir(
+        settings.media_files_dir,
+        file_id,
+        {
+            "contentType": "video/mp4",
+            "createdAt": _aged_iso(OLD),
+            "uploadLeaseExpiresAt": _aged_iso(OLD),
+        },
+        seconds_old=OLD,
+    )
+
+    removed = cleanup_expired_video_uploads()
+
+    assert removed == 1
+    assert not (settings.media_files_dir / file_id).exists()
+
+
+def test_active_video_upload_lease_protects_unsaved_video(isolated_data, live_refs):
+    file_id = str(uuid.uuid4())
+    _make_media_dir(
+        settings.media_files_dir,
+        file_id,
+        {
+            "contentType": "video/mp4",
+            "createdAt": _aged_iso(OLD),
+            "uploadLeaseExpiresAt": (
+                datetime.now(timezone.utc) + timedelta(hours=1)
+            ).isoformat(),
+        },
+        seconds_old=OLD,
+    )
+
+    report = sweep_orphan_media(dry_run=False)
+
+    assert file_id not in report.file_ids
+    assert (settings.media_files_dir / file_id).exists()
+
+
+def test_expired_video_upload_lease_does_not_delete_referenced_video(
+    isolated_data, live_refs
+):
+    file_id = str(uuid.uuid4())
+    _make_media_dir(
+        settings.media_files_dir,
+        file_id,
+        {
+            "contentType": "video/mp4",
+            "createdAt": _aged_iso(OLD),
+            "uploadLeaseExpiresAt": _aged_iso(OLD),
+        },
+        seconds_old=OLD,
+    )
+    live_refs.add(file_id)
+
+    removed = cleanup_expired_video_uploads()
+
+    assert removed == 0
+    assert (settings.media_files_dir / file_id).exists()
 
 
 def test_run_maintenance_purges_expired_post_trash(isolated_data, live_refs):

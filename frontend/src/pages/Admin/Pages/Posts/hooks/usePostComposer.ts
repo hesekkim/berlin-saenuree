@@ -5,6 +5,7 @@ import {
   deleteMediaFile,
   deleteOptimizedImage,
   optimizeMediaImage,
+  renewVideoUploadLease,
   uploadMediaFile,
   type MediaFileResponse,
 } from '../../../../../shared/api/mediaApi';
@@ -28,6 +29,8 @@ import {
   readVideoDimensions,
   VIDEO_MAX_BYTES,
 } from '../utils/postMedia';
+
+const VIDEO_UPLOAD_LEASE_RENEWAL_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export type ComposerStep = 1 | 2 | 3;
 
@@ -103,6 +106,7 @@ export function usePostComposer({
   uploadItemsRef.current = uploadItems;
   const sessionImageIdsRef = useRef(new Set<string>());
   const sessionFileIdsRef = useRef(new Set<string>());
+  const sessionVideoFileIdsRef = useRef(new Set<string>());
   const sessionActiveRef = useRef(false);
 
   const siteLanguages = useMemo(
@@ -113,6 +117,7 @@ export function usePostComposer({
   const resetSessionTracking = () => {
     sessionImageIdsRef.current = new Set();
     sessionFileIdsRef.current = new Set();
+    sessionVideoFileIdsRef.current = new Set();
   };
 
   const discardSessionMedia = useCallback(async () => {
@@ -120,6 +125,7 @@ export function usePostComposer({
     const fileIds = [...sessionFileIdsRef.current];
     sessionImageIdsRef.current = new Set();
     sessionFileIdsRef.current = new Set();
+    sessionVideoFileIdsRef.current = new Set();
     await Promise.all([
       ...imageIds.map(async (imageId) => {
         try {
@@ -164,6 +170,28 @@ export function usePostComposer({
     }
     wasOpenRef.current = isOpen;
   }, [isOpen, resetForm]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const renewLeases = () => {
+      if (!sessionActiveRef.current) {
+        return;
+      }
+      for (const fileId of sessionVideoFileIdsRef.current) {
+        void renewVideoUploadLease(fileId).catch(() => {
+          toastRef.current.warning(labelsRef.current.postsVideoLeaseRenewalFailed);
+        });
+      }
+    };
+    const intervalId = window.setInterval(
+      renewLeases,
+      VIDEO_UPLOAD_LEASE_RENEWAL_INTERVAL_MS,
+    );
+    return () => window.clearInterval(intervalId);
+  }, [isOpen]);
 
   const uploadDefaults = useMemo(
     (): MediaFileResponse[] =>
@@ -255,12 +283,14 @@ export function usePostComposer({
 
       sessionFileIdsRef.current.add(file.id);
       if (file.contentType === 'video/mp4') {
+        sessionVideoFileIdsRef.current.add(file.id);
         const source = uploadedItems.find(
           (item) => item.uploaded?.id === file.id,
         )?.file;
         if (!source) {
           toastRef.current.error(labelsRef.current.uploadUploadFailed);
           sessionFileIdsRef.current.delete(file.id);
+          sessionVideoFileIdsRef.current.delete(file.id);
           await deleteMediaFile(file.id);
           continue;
         }
@@ -268,6 +298,7 @@ export function usePostComposer({
           const dimensions = await readVideoDimensions(source);
           if (!sessionActiveRef.current) {
             sessionFileIdsRef.current.delete(file.id);
+            sessionVideoFileIdsRef.current.delete(file.id);
             await deleteMediaFile(file.id);
             continue;
           }
@@ -277,6 +308,7 @@ export function usePostComposer({
               previous.some((item) => item.type === 'video')
             ) {
               sessionFileIdsRef.current.delete(file.id);
+              sessionVideoFileIdsRef.current.delete(file.id);
               void deleteMediaFile(file.id).catch(() => {});
               return previous;
             }
@@ -287,6 +319,7 @@ export function usePostComposer({
           });
         } catch {
           sessionFileIdsRef.current.delete(file.id);
+          sessionVideoFileIdsRef.current.delete(file.id);
           await deleteMediaFile(file.id);
           toastRef.current.error(labelsRef.current.uploadUploadFailed);
         }
@@ -397,6 +430,7 @@ export function usePostComposer({
         sessionFileIdsRef.current.delete(target.sourceFileId);
       } else {
         sessionFileIdsRef.current.delete(target.fileId);
+        sessionVideoFileIdsRef.current.delete(target.fileId);
       }
     }
     setMedia((prev) =>
@@ -439,6 +473,7 @@ export function usePostComposer({
       void deleteMediaFile(target.sourceFileId).catch(() => {});
     } else {
       sessionFileIdsRef.current.delete(target.fileId);
+      sessionVideoFileIdsRef.current.delete(target.fileId);
       void deleteMediaFile(target.fileId).catch(() => {});
     }
     setMedia((prev) =>
@@ -562,6 +597,7 @@ export function usePostComposer({
             const media = await uploadMediaFile(file, {
               accept: POST_MEDIA_ACCEPT,
               maxSizeBytes: isVideo ? VIDEO_MAX_BYTES : IMAGE_MAX_BYTES,
+              leaseVideoUpload: isVideo,
             });
             uploaded.push(media);
             uploadedItems.push({

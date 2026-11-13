@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { uploadMediaFile } from '../../src/shared/api/mediaApi';
+import {
+  renewVideoUploadLease,
+  uploadMediaFile,
+} from '../../src/shared/api/mediaApi';
 import { apiClient } from '../../src/shared/lib/axios';
 
 describe('uploadMediaFile', () => {
@@ -19,7 +22,10 @@ describe('uploadMediaFile', () => {
     });
 
     const file = new File(['video'], 'video.mp4', { type: 'video/mp4' });
-    await uploadMediaFile(file, { accept: 'video/mp4,.mp4' });
+    await uploadMediaFile(file, {
+      accept: 'video/mp4,.mp4',
+      leaseVideoUpload: true,
+    });
 
     expect(post).toHaveBeenCalledWith(
       '/media/files/video',
@@ -28,6 +34,7 @@ describe('uploadMediaFile', () => {
         params: {
           filename: 'video.mp4',
           accept: 'video/mp4,.mp4',
+          lease: 'true',
         },
         headers: { 'Content-Type': 'video/mp4' },
         timeout: 30 * 60 * 1000,
@@ -54,5 +61,17 @@ describe('uploadMediaFile', () => {
       expect.any(FormData),
       expect.objectContaining({ timeout: undefined }),
     );
+  });
+
+  it('renews the lease for an unsaved video upload', async () => {
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+      data: undefined,
+    });
+
+    await renewVideoUploadLease('video-id');
+
+    expect(post).toHaveBeenCalledWith('/media/files/video/lease', {
+      fileId: 'video-id',
+    });
   });
 });

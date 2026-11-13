@@ -11,6 +11,7 @@ export type MediaFileResponse = {
 export type UploadMediaFileOptions = {
   accept?: string;
   maxSizeBytes?: number;
+  leaseVideoUpload?: boolean;
   signal?: AbortSignal;
   onUploadProgress?: (progress: { loaded: number; total?: number }) => void;
 };
@@ -29,6 +30,9 @@ export async function uploadMediaFile(
   const params: Record<string, string | number> = {};
   if (isVideo) {
     params.filename = file.name;
+    if (options.leaseVideoUpload) {
+      params.lease = 'true';
+    }
   }
   if (options.accept) {
     params.accept = options.accept;
@@ -62,6 +66,10 @@ export async function uploadMediaFile(
     },
   );
   return response.data;
+}
+
+export async function renewVideoUploadLease(fileId: string): Promise<void> {
+  await apiClient.post('/media/files/video/lease', { fileId });
 }
 
 export async function deleteMediaFile(fileId: string): Promise<void> {

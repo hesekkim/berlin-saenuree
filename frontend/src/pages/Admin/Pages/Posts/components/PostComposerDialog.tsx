@@ -188,6 +188,7 @@ export default function PostComposerDialog({
               defaultFiles={uploadDefaults}
               retainDefaultRemotes
               retainUploadedRemotes
+              leaseVideoUploads
               onUploaded={handleUploaded}
               onItemsChange={handleUploadItemsChange}
               labels={{

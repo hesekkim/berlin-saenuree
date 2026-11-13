@@ -41,6 +41,8 @@ export type UseUploadParams = {
   retainDefaultRemotes?: boolean;
   /** After a successful upload, mark the item retainRemote (caller owns lifecycle). */
   retainUploadedRemotes?: boolean;
+  /** Keep Posts video uploads protected while the editor session is active. */
+  leaseVideoUploads?: boolean;
   onUploaded?: (
     files: MediaFileResponse[],
     items: UploadItem[],
@@ -139,6 +141,7 @@ export function useUpload({
   defaultFiles,
   retainDefaultRemotes = false,
   retainUploadedRemotes = false,
+  leaseVideoUploads = false,
   onUploaded,
   onItemsChange,
   maxSizeBytesForFile,
@@ -224,6 +227,7 @@ export function useUpload({
       const uploaded = await uploadMediaFile(item.file, {
         accept,
         maxSizeBytes: maxSizeBytesForFile?.(item.file) ?? maxSizeBytes,
+        leaseVideoUpload: leaseVideoUploads,
       });
       return {
         ...item,

@@ -98,6 +98,15 @@ def _is_past_grace(created_at: float, now: float) -> bool:
     return now - created_at >= ORPHAN_GRACE_SECONDS
 
 
+def _has_active_video_upload_lease(
+    meta: dict[str, Any] | None, now: float
+) -> bool:
+    if meta is None or str(meta.get("contentType") or "").lower() != "video/mp4":
+        return False
+    expires_at = _parse_timestamp(meta.get("uploadLeaseExpiresAt"))
+    return expires_at is not None and expires_at > now
+
+
 def _delete_image(image_id: str) -> None:
     try:
         delete_derivatives(image_id)
@@ -143,13 +152,44 @@ def cleanup_stale_video_uploads(*, now: float | None = None) -> int:
     return removed
 
 
+def cleanup_expired_video_uploads(*, now: float | None = None) -> int:
+    current = time.time() if now is None else now
+    removed = 0
+    with STORE_LOCK:
+        live = collect_active_media_refs()
+        for file_id, path in _media_directories(settings.media_files_dir).items():
+            meta = _read_meta(path)
+            expires_at = _parse_timestamp(
+                meta.get("uploadLeaseExpiresAt") if meta else None
+            )
+            if (
+                file_id in live
+                or meta is None
+                or str(meta.get("contentType") or "").lower() != "video/mp4"
+                or expires_at is None
+                or expires_at > current
+            ):
+                continue
+            try:
+                delete_file(file_id)
+                removed += 1
+            except (MediaFilesNotFoundError, OSError) as error:
+                logger.warning(
+                    "Could not remove expired video upload %s: %s",
+                    file_id,
+                    error,
+                )
+    return removed
+
+
 def sweep_orphan_media(*, dry_run: bool, now: float | None = None) -> OrphanReport:
     """Delete unreferenced media older than the grace period, or only report it.
 
     References are read and deletions happen under the store lock, so a save
     cannot start referencing a candidate between the check and the delete.
     A file is kept while any image derived from it is live or still within the
-    grace period, because that image may still be published or edited.
+    grace period, because that image may still be published or edited. Active
+    video upload leases protect files being used by an open Posts editor.
     """
     current = time.time() if now is None else now
     with STORE_LOCK:
@@ -174,11 +214,15 @@ def sweep_orphan_media(*, dry_run: bool, now: float | None = None) -> OrphanRepo
                 protected.add(normalize_media_id(str(source)))
 
         file_dirs = _media_directories(settings.media_files_dir)
+        file_metas = {
+            file_id: _read_meta(path) for file_id, path in file_dirs.items()
+        }
         orphan_files = [
             file_id
             for file_id, path in file_dirs.items()
             if file_id not in protected
-            and _is_past_grace(_created_at(path, _read_meta(path)), current)
+            and not _has_active_video_upload_lease(file_metas[file_id], current)
+            and _is_past_grace(_created_at(path, file_metas[file_id]), current)
         ]
 
         report = OrphanReport(image_ids=orphan_images, file_ids=orphan_files)
@@ -224,11 +268,18 @@ def _cleanup_stale_video_uploads() -> None:
         logger.info("Removed %d stale video upload directory(s)", removed)
 
 
+def _cleanup_expired_video_uploads() -> None:
+    removed = cleanup_expired_video_uploads()
+    if removed:
+        logger.info("Removed %d expired video upload(s)", removed)
+
+
 def run_maintenance() -> None:
     """One maintenance pass. Each step is isolated so a failure does not skip the rest."""
     _run_step("posts trash expiry", posts_trash_service.purge_expired_trash)
     _run_step("blogger trash expiry", blogger_trash_service.purge_expired_trash)
     _run_step("stale video upload cleanup", _cleanup_stale_video_uploads)
+    _run_step("expired video upload cleanup", _cleanup_expired_video_uploads)
     _run_step("orphan media sweep", _sweep_orphans)
     if settings.maintenance_enabled:
         _run_step("monthly backup", backups_service.ensure_monthly_backup)
