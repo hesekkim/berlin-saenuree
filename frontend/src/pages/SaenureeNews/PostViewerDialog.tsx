@@ -21,6 +21,8 @@ type PostViewerDialogProps = {
   post: PublicPostResponse;
   postIndex: number;
   postCount: number;
+  hasNextPage: boolean;
+  isNextPostLoading: boolean;
   language: string;
   defaultLanguage: string;
   labels: Labels;
@@ -84,6 +86,8 @@ export default function PostViewerDialog({
   post,
   postIndex,
   postCount,
+  hasNextPage,
+  isNextPostLoading,
   language,
   defaultLanguage,
   labels,
@@ -411,11 +415,13 @@ export default function PostViewerDialog({
             </div>
           </div>
         </div>
-        {postIndex < postCount - 1 ? (
+        {postIndex < postCount - 1 || hasNextPage ? (
           <button
             type="button"
             className={`${styles.postNavigation} ${styles.nextPost}`}
             aria-label={labels.nextPost}
+            aria-busy={isNextPostLoading}
+            disabled={isNextPostLoading}
             onClick={onNextPost}
           >
             <span aria-hidden="true">›</span>

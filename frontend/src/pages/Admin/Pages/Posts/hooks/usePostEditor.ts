@@ -125,45 +125,65 @@ export function usePostEditor({
   const [formError, setFormError] = useState('');
   const [conflictPost, setConflictPost] = useState<PostResponse | null>(null);
   const [isClosing, setIsClosing] = useState(false);
-  const [sessionImageIds, setSessionImageIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [sessionFileIds, setSessionFileIds] = useState<Set<string>>(new Set());
 
   const baseSnapshotRef = useRef('');
   const uploadAbortControllerRef = useRef<AbortController | null>(null);
+  const sessionImageIdsRef = useRef(new Set<string>());
+  const sessionFileIdsRef = useRef(new Set<string>());
+  const discardSessionMediaRef = useRef<() => Promise<void>>(async () => {});
 
   const siteLanguages = useMemo(
     () => (availableLanguages.length > 0 ? availableLanguages : ['en']),
     [availableLanguages],
   );
 
-  const resetSessionTracking = useCallback(() => {
-    setSessionImageIds(new Set());
-    setSessionFileIds(new Set());
-  }, []);
+  const deleteSessionMedia = useCallback(
+    async (imageIds: string[], fileIds: string[]) => {
+      const failedImageIds = new Set<string>();
+      const failedFileIds = new Set<string>();
+      await Promise.all([
+        ...imageIds.map(async (imageId) => {
+          try {
+            await deleteOptimizedImage(imageId);
+          } catch (error) {
+            if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+              failedImageIds.add(imageId);
+            }
+          }
+        }),
+        ...fileIds.map(async (fileId) => {
+          try {
+            await deleteMediaFile(fileId);
+          } catch (error) {
+            if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+              failedFileIds.add(fileId);
+            }
+          }
+        }),
+      ]);
+      for (const imageId of imageIds) {
+        if (!failedImageIds.has(imageId)) {
+          sessionImageIdsRef.current.delete(imageId);
+        }
+      }
+      for (const fileId of fileIds) {
+        if (!failedFileIds.has(fileId)) {
+          sessionFileIdsRef.current.delete(fileId);
+        }
+      }
+      if (failedImageIds.size > 0 || failedFileIds.size > 0) {
+        toastRef.current.warning(labels.postsMediaCleanupFailed);
+      }
+    },
+    [labels],
+  );
 
   const discardSessionMedia = useCallback(async () => {
-    const imageIds = [...sessionImageIds];
-    const fileIds = [...sessionFileIds];
-    resetSessionTracking();
-    await Promise.all([
-      ...imageIds.map(async (imageId) => {
-        try {
-          await deleteOptimizedImage(imageId);
-        } catch {
-          // Best-effort only.
-        }
-      }),
-      ...fileIds.map(async (fileId) => {
-        try {
-          await deleteMediaFile(fileId);
-        } catch {
-          // Best-effort only.
-        }
-      }),
-    ]);
-  }, [resetSessionTracking, sessionFileIds, sessionImageIds]);
+    await deleteSessionMedia(
+      [...sessionImageIdsRef.current],
+      [...sessionFileIdsRef.current],
+    );
+  }, [deleteSessionMedia]);
 
   const cleanupSavedSessionMedia = useCallback(
     async (media: PostMedia[]) => {
@@ -175,31 +195,30 @@ export function usePostEditor({
           item.type === 'image' ? item.sourceFileId : item.fileId,
         ),
       );
-      const imageIds = [...sessionImageIds].filter(
+      const imageIds = [...sessionImageIdsRef.current].filter(
         (imageId) => !retainedImageIds.has(imageId),
       );
-      const fileIds = [...sessionFileIds].filter(
+      const fileIds = [...sessionFileIdsRef.current].filter(
         (fileId) => !retainedFileIds.has(fileId),
       );
-      resetSessionTracking();
-      await Promise.all([
-        ...imageIds.map(async (imageId) => {
-          try {
-            await deleteOptimizedImage(imageId);
-          } catch {
-            // Best-effort only.
-          }
-        }),
-        ...fileIds.map(async (fileId) => {
-          try {
-            await deleteMediaFile(fileId);
-          } catch {
-            // Best-effort only.
-          }
-        }),
-      ]);
+      for (const imageId of retainedImageIds) {
+        sessionImageIdsRef.current.delete(imageId);
+      }
+      for (const fileId of retainedFileIds) {
+        sessionFileIdsRef.current.delete(fileId);
+      }
+      await deleteSessionMedia(imageIds, fileIds);
     },
-    [resetSessionTracking, sessionFileIds, sessionImageIds],
+    [deleteSessionMedia],
+  );
+
+  discardSessionMediaRef.current = discardSessionMedia;
+  useEffect(
+    () => () => {
+      uploadAbortControllerRef.current?.abort();
+      void discardSessionMediaRef.current();
+    },
+    [],
   );
 
   useEffect(() => {
@@ -212,8 +231,7 @@ export function usePostEditor({
     baseSnapshotRef.current = stablePostEditorSnapshot(nextState);
     setConflictPost(null);
     setFormError('');
-    resetSessionTracking();
-  }, [isOpen, post, resetSessionTracking]);
+  }, [isOpen, post]);
 
   const isDirty = useMemo(() => {
     if (!state) {
@@ -289,7 +307,7 @@ export function usePostEditor({
           const sourceFile = sourceFiles.get(file.id);
           if (!sourceFile) {
             toastRef.current.error(labels.uploadUploadFailed);
-            await deleteMediaFile(file.id);
+            await deleteSessionMedia([], [file.id]);
             continue;
           }
           try {
@@ -300,7 +318,7 @@ export function usePostEditor({
                 'AbortError',
               );
             }
-            setSessionFileIds((prev) => new Set(prev).add(file.id));
+            sessionFileIdsRef.current.add(file.id);
             setState((current) => {
               if (!current || current.media.some((item) => item.type === 'video')) {
                 return current;
@@ -321,7 +339,7 @@ export function usePostEditor({
               );
             }
             toastRef.current.error(labels.uploadUploadFailed);
-            await deleteMediaFile(file.id);
+            await deleteSessionMedia([], [file.id]);
           }
           continue;
         }
@@ -344,10 +362,8 @@ export function usePostEditor({
             width: optimized.width,
             height: optimized.height,
           };
-          setSessionImageIds((prev) => new Set(prev).add(nextEntry.imageId));
-          setSessionFileIds((prev) =>
-            new Set(prev).add(nextEntry.sourceFileId),
-          );
+          sessionImageIdsRef.current.add(nextEntry.imageId);
+          sessionFileIdsRef.current.add(nextEntry.sourceFileId);
           setState((current) => {
             if (!current) {
               return current;
@@ -377,7 +393,7 @@ export function usePostEditor({
         }
       }
     },
-    [labels, state],
+    [deleteSessionMedia, labels, state],
   );
 
   const removeMedia = useCallback(
@@ -503,6 +519,7 @@ export function usePostEditor({
             });
             uploaded.push(media);
             sourceFiles.set(media.id, file);
+            sessionFileIdsRef.current.add(media.id);
           } catch {
             if (controller.signal.aborted) {
               break;
@@ -545,36 +562,16 @@ export function usePostEditor({
                 }
               : current,
           );
-          setSessionFileIds(
-            (current) =>
-              new Set([...current].filter((id) => !uploadedFileIds.has(id))),
+          await deleteSessionMedia(
+            [...createdImageIds],
+            [...uploadedFileIds],
           );
-          setSessionImageIds(
-            (current) =>
-              new Set([...current].filter((id) => !createdImageIds.has(id))),
-          );
-          await Promise.all([
-            ...[...createdImageIds].map(async (imageId) => {
-              try {
-                await deleteOptimizedImage(imageId);
-              } catch {
-                // Best-effort cleanup after cancelling an upload.
-              }
-            }),
-            ...[...uploadedFileIds].map(async (fileId) => {
-              try {
-                await deleteMediaFile(fileId);
-              } catch {
-                // Best-effort cleanup after cancelling an upload.
-              }
-            }),
-          ]);
         }
         uploadAbortControllerRef.current = null;
         setUploadProgress(null);
       }
     },
-    [handleUpload, labels, state],
+    [deleteSessionMedia, handleUpload, labels, state],
   );
 
   const cancelUpload = useCallback(() => {

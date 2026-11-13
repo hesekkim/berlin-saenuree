@@ -122,6 +122,52 @@ describe('Saenuree News public pages', () => {
     expect(video).toHaveAttribute('controls');
   });
 
+  it('loads the next post page when navigating past the loaded grid items', async () => {
+    const firstPagePosts = Array.from({ length: 30 }, (_, index) => ({
+      ...posts[0],
+      id: `page-post-${index}`,
+      createdAt: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      copies: { en: { body: `<p>Caption ${index + 1}</p>` } },
+    }));
+    const nextPagePost: PublicPostResponse = {
+      ...posts[1],
+      id: 'page-post-30',
+      copies: { en: { body: '<p>Caption 31</p>' } },
+    };
+    mocks.fetchPosts.mockImplementation(
+      async ({ offset = 0 }: { offset?: number } = {}) =>
+        offset === 0
+          ? {
+              items: firstPagePosts,
+              total: 31,
+              limit: 30,
+              offset: 0,
+            }
+          : {
+              items: [nextPagePost],
+              total: 31,
+              limit: 30,
+              offset: 30,
+            },
+    );
+
+    renderWithQueries(<PhotoNews />);
+    const gridPosts = await screen.findAllByRole('button');
+    fireEvent.click(gridPosts[gridPosts.length - 1]);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Caption 30')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Next post' }));
+
+    await waitFor(() => {
+      expect(within(screen.getByRole('dialog')).getByText('Caption 31')).toBeInTheDocument();
+    });
+    expect(mocks.fetchPosts).toHaveBeenLastCalledWith({
+      limit: 30,
+      offset: 30,
+    });
+  });
+
   it('keeps the current photo visible until the next video frame is ready', async () => {
     posts[0].media = [
       ...firstPostImages,

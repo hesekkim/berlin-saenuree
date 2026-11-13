@@ -104,10 +104,26 @@ export default function PhotoNews() {
   );
   const selectedPost =
     selectedPostIndex >= 0 ? posts[selectedPostIndex] : null;
-  const selectAdjacentPost = (offset: -1 | 1) => {
+  const selectAdjacentPost = async (offset: -1 | 1) => {
     const adjacentPost = posts[selectedPostIndex + offset];
     if (adjacentPost) {
       setSelectedPostId(adjacentPost.id);
+      return;
+    }
+    if (
+      offset !== 1 ||
+      !hasNextPage ||
+      isFetchingNextPage ||
+      selectedPostIndex < 0
+    ) {
+      return;
+    }
+
+    const result = await fetchNextPage();
+    const loadedPosts = result.data?.pages.flatMap((page) => page.items) ?? [];
+    const nextPost = loadedPosts[selectedPostIndex + 1];
+    if (nextPost) {
+      setSelectedPostId(nextPost.id);
     }
   };
 
@@ -201,6 +217,8 @@ export default function PhotoNews() {
               post={selectedPost}
               postIndex={selectedPostIndex}
               postCount={posts.length}
+              hasNextPage={Boolean(hasNextPage)}
+              isNextPostLoading={isFetchingNextPage}
               language={language}
               defaultLanguage={defaultLanguage}
               labels={labels}

@@ -16,6 +16,7 @@ const deleteMediaFile = vi.fn();
 const uploadMediaFile = vi.fn();
 const optimizeMediaImage = vi.fn();
 const toastError = vi.fn();
+const toastWarning = vi.fn();
 
 vi.mock('../../src/shared/api/postsApi', () => ({
   updateAdminPost: (...args: unknown[]) => updateAdminPost(...args),
@@ -31,11 +32,25 @@ vi.mock('../../src/shared/api/mediaApi', () => ({
 vi.mock('../../src/shared/components/ui/Toast/ToastProvider', () => ({
   useToast: () => ({
     info: vi.fn(),
-    warning: vi.fn(),
+    warning: toastWarning,
     error: toastError,
     dismiss: vi.fn(),
   }),
 }));
+
+vi.mock('../../src/pages/Admin/Pages/Posts/utils/postMedia', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../../src/pages/Admin/Pages/Posts/utils/postMedia')
+    >();
+  return {
+    ...actual,
+    readVideoDimensions: vi.fn().mockResolvedValue({
+      width: 1920,
+      height: 1080,
+    }),
+  };
+});
 
 function makePost(): PostResponse {
   return {
@@ -76,6 +91,7 @@ describe('usePostEditor helpers', () => {
     uploadMediaFile.mockReset();
     optimizeMediaImage.mockReset();
     toastError.mockReset();
+    toastWarning.mockReset();
   });
 
   it('builds a stable initial state from the post payload', () => {
@@ -344,6 +360,132 @@ describe('usePostEditor helpers', () => {
     expect(deleteOptimizedImage).toHaveBeenCalledWith('img-c');
     expect(deleteMediaFile).toHaveBeenCalledWith('file-c');
     expect(deleteMediaFile).toHaveBeenCalledWith('file-d');
+  });
+
+  it('deletes a replaced uploaded video after saving the edit', async () => {
+    const post = makePost();
+    post.media = [
+      post.media[0]!,
+      { type: 'video', fileId: 'old-video', width: 1920, height: 1080 },
+    ];
+    let uploadCount = 0;
+    uploadMediaFile.mockImplementation(async (file: File) => {
+      uploadCount += 1;
+      return {
+        id: `video-${uploadCount}`,
+        url: `/video-${uploadCount}`,
+        originalName: file.name,
+        contentType: 'video/mp4',
+        sizeBytes: file.size,
+      };
+    });
+    updateAdminPost.mockImplementation(async (id, payload) => ({
+      ...post,
+      id,
+      ...payload,
+      contentRevision: post.contentRevision + 1,
+    }));
+    const { result } = renderEditor(post);
+
+    await waitFor(() => {
+      expect(result.current.state).not.toBeNull();
+    });
+    act(() => {
+      result.current.removeMedia('old-video');
+    });
+    await act(async () => {
+      await result.current.addPhotosFromFiles([
+        new File(['first'], 'first.mp4', { type: 'video/mp4' }),
+      ]);
+    });
+    act(() => {
+      result.current.removeMedia('video-1');
+    });
+    await act(async () => {
+      await result.current.addPhotosFromFiles([
+        new File(['second'], 'second.mp4', { type: 'video/mp4' }),
+      ]);
+    });
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(updateAdminPost).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({
+        media: [
+          expect.objectContaining({ type: 'image', imageId: 'img-a' }),
+          expect.objectContaining({ type: 'video', fileId: 'video-2' }),
+        ],
+      }),
+    );
+    expect(deleteMediaFile).toHaveBeenCalledWith('video-1');
+    expect(deleteMediaFile).not.toHaveBeenCalledWith('video-2');
+  });
+
+  it('discards uploaded media when the editor unmounts without saving', async () => {
+    uploadMediaFile.mockResolvedValue({
+      id: 'video-c',
+      url: '/video-c',
+      originalName: 'clip.mp4',
+      contentType: 'video/mp4',
+      sizeBytes: 5,
+    });
+    const { result, unmount } = renderEditor();
+
+    await waitFor(() => {
+      expect(result.current.state).not.toBeNull();
+    });
+    await act(async () => {
+      await result.current.addPhotosFromFiles([
+        new File(['video'], 'clip.mp4', { type: 'video/mp4' }),
+      ]);
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(deleteMediaFile).toHaveBeenCalledWith('video-c');
+    });
+  });
+
+  it('warns when temporary media cleanup fails', async () => {
+    const post = makePost();
+    post.media = [post.media[0]!];
+    uploadMediaFile.mockResolvedValue({
+      id: 'video-c',
+      url: '/video-c',
+      originalName: 'clip.mp4',
+      contentType: 'video/mp4',
+      sizeBytes: 5,
+    });
+    updateAdminPost.mockResolvedValue({
+      ...post,
+      media: [post.media[0]!],
+      contentRevision: post.contentRevision + 1,
+    });
+    deleteMediaFile.mockRejectedValueOnce(new Error('Delete failed'));
+    const { result } = renderEditor(post);
+
+    await waitFor(() => {
+      expect(result.current.state).not.toBeNull();
+    });
+    await act(async () => {
+      await result.current.addPhotosFromFiles([
+        new File(['video'], 'clip.mp4', { type: 'video/mp4' }),
+      ]);
+    });
+    act(() => {
+      result.current.removeMedia('video-c');
+      result.current.updateCopyBody('<p>Updated</p>');
+    });
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(toastWarning).toHaveBeenCalledWith(
+      adminTranslations.en.postsMediaCleanupFailed,
+    );
   });
 
   it('keeps edits after a conflict until the latest server content is applied', async () => {
