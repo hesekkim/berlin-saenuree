@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   createBackup,
   deleteBackup,
@@ -28,6 +28,7 @@ export function useBackups(labels: AdminTranslations) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const createAbortControllerRef = useRef<AbortController | null>(null);
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
@@ -49,17 +50,35 @@ export function useBackups(labels: AdminTranslations) {
     void loadBackups();
   }, [loadBackups]);
 
+  useEffect(
+    () => () => {
+      createAbortControllerRef.current?.abort();
+    },
+    [],
+  );
+
   const handleCreate = async () => {
+    const controller = new AbortController();
+    createAbortControllerRef.current = controller;
     setBusyAction('create');
     try {
-      await createBackup();
+      await createBackup(controller.signal);
       toast.info(labels.backupsCreateSuccess);
       await loadBackups();
-    } catch {
-      toast.error(labels.backupsCreateFailed);
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        toast.error(labels.backupsCreateFailed);
+      }
     } finally {
+      if (createAbortControllerRef.current === controller) {
+        createAbortControllerRef.current = null;
+      }
       setBusyAction(null);
     }
+  };
+
+  const cancelCreate = () => {
+    createAbortControllerRef.current?.abort();
   };
 
   const handleDownload = async (backup: BackupSummary) => {
@@ -163,6 +182,7 @@ export function useBackups(labels: AdminTranslations) {
     canConfirm: Boolean(password) && busyAction !== 'confirm',
     loadBackups,
     handleCreate,
+    cancelCreate,
     handleDownload,
     handleImportFile,
     openAction,

@@ -47,5 +47,6 @@
 - [012-data-backup-restore.md](./done/012-data-backup-restore.md): 월간·수동 백업, export ZIP 업로드 및 안전 백업을 포함한 복구 기능
 - [013-post-video-upload-size.md](./done/013-post-video-upload-size.md): Posts MP4 용량 상향 및 동영상 업로드·미리보기 UX 개선
 - [014-post-video-upload-stability.md](./done/014-post-video-upload-stability.md): Posts 원본 동영상 업로드 안정화 및 200MiB 지원
+- [015-backup-cancellation-progress.md](./done/015-backup-cancellation-progress.md): 백업 생성 진행 표시 및 취소 기능
 
 ## 진행 중인 티켓

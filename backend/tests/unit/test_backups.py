@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import threading
 import zipfile
 from datetime import datetime, timezone
 
@@ -70,6 +71,47 @@ def test_backup_includes_data_and_media_but_excludes_verification_codes(
     assert manifest["siteId"] == settings.jwt_issuer
     assert backup["kind"] == "manual"
     assert backup["isValid"] is True
+
+
+def test_cancelled_backup_removes_temporary_archive(isolated_data, monkeypatch):
+    settings.data_dir.mkdir(parents=True)
+    posts_file = settings.data_dir / "posts.json"
+    posts_file.write_text('{"posts":[]}', encoding="utf-8")
+    cancel_event = threading.Event()
+
+    class CancellingFiles:
+        def __iter__(self):
+            yield posts_file
+            cancel_event.set()
+
+    monkeypatch.setattr(
+        backups_service,
+        "_iter_data_files",
+        lambda _cancel_event=None: CancellingFiles(),
+    )
+
+    with pytest.raises(backups_service.BackupCancelledError):
+        backups_service.create_backup(cancel_event=cancel_event)
+
+    assert list(settings.backup_dir.glob("*.zip")) == []
+    assert list(settings.backup_dir.glob(".backup-*.tmp")) == []
+
+
+def test_cancelled_during_fsync_does_not_publish_backup(isolated_data, monkeypatch):
+    settings.data_dir.mkdir(parents=True)
+    (settings.data_dir / "posts.json").write_text('{"posts":[]}', encoding="utf-8")
+    cancel_event = threading.Event()
+
+    def cancel_during_fsync(_file_descriptor):
+        cancel_event.set()
+
+    monkeypatch.setattr(backups_service.os, "fsync", cancel_during_fsync)
+
+    with pytest.raises(backups_service.BackupCancelledError):
+        backups_service.create_backup(cancel_event=cancel_event)
+
+    assert list(settings.backup_dir.glob("*.zip")) == []
+    assert list(settings.backup_dir.glob(".backup-*.tmp")) == []
 
 
 def test_monthly_backup_replaces_corrupt_archive(isolated_data):

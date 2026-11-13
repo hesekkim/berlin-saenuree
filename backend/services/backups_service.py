@@ -9,6 +9,7 @@ import re
 import shutil
 import stat
 import tempfile
+import threading
 import uuid
 import zipfile
 from datetime import datetime, timedelta, timezone
@@ -48,6 +49,10 @@ class BackupPasswordError(BackupError):
 
 
 class BackupPasswordNotConfiguredError(BackupError):
+    pass
+
+
+class BackupCancelledError(BackupError):
     pass
 
 
@@ -162,11 +167,19 @@ def list_backups() -> dict[str, Any]:
     return {"backups": backups, "maxBackups": MAX_BACKUPS}
 
 
-def _iter_data_files() -> list[Path]:
+def _raise_if_cancelled(cancel_event: threading.Event | None) -> None:
+    if cancel_event is not None and cancel_event.is_set():
+        raise BackupCancelledError("Backup was cancelled")
+
+
+def _iter_data_files(
+    cancel_event: threading.Event | None = None,
+) -> list[Path]:
     data_dir = settings.data_dir
     data_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
-    for path in sorted(data_dir.rglob("*")):
+    for path in data_dir.rglob("*"):
+        _raise_if_cancelled(cancel_event)
         if path.is_symlink():
             raise BackupValidationError("Symbolic links are not supported in data")
         if not path.is_file():
@@ -174,6 +187,7 @@ def _iter_data_files() -> list[Path]:
         if path.relative_to(data_dir) == Path("verification_codes.json"):
             continue
         paths.append(path)
+    paths.sort()
     if len(paths) > MAX_ARCHIVE_FILES:
         raise BackupValidationError("Data contains too many files to back up")
     return paths
@@ -183,7 +197,9 @@ def _create_backup_locked(
     kind: str,
     created_at: datetime | None = None,
     preserve_backup: Path | None = None,
+    cancel_event: threading.Event | None = None,
 ) -> dict[str, Any]:
+    _raise_if_cancelled(cancel_event)
     now = (created_at or _utc_now()).astimezone(timezone.utc).replace(microsecond=0)
     backup_id = f"{now.strftime('%Y%m%dT%H%M%SZ')}-{kind}-{uuid.uuid4().hex}"
     root = _backup_root()
@@ -202,7 +218,8 @@ def _create_backup_locked(
             compression=zipfile.ZIP_DEFLATED,
             compresslevel=6,
         ) as archive:
-            for source in _iter_data_files():
+            for source in _iter_data_files(cancel_event):
+                _raise_if_cancelled(cancel_event)
                 relative_path = source.relative_to(settings.data_dir).as_posix()
                 archive_name = f"data/{relative_path}"
                 digest = hashlib.sha256()
@@ -210,6 +227,7 @@ def _create_backup_locked(
                 with source.open("rb") as source_file:
                     with archive.open(archive_name, "w") as archive_file:
                         while chunk := source_file.read(_CHUNK_SIZE):
+                            _raise_if_cancelled(cancel_event)
                             size += len(chunk)
                             total_size += len(chunk)
                             if total_size > settings.backup_max_expanded_bytes:
@@ -225,6 +243,7 @@ def _create_backup_locked(
                         "sha256": digest.hexdigest(),
                     }
                 )
+            _raise_if_cancelled(cancel_event)
             manifest = {
                 "schemaVersion": 1,
                 "siteId": settings.jwt_issuer,
@@ -236,10 +255,12 @@ def _create_backup_locked(
                 MANIFEST_NAME,
                 json.dumps(manifest, ensure_ascii=False, separators=(",", ":")),
             )
+        _raise_if_cancelled(cancel_event)
         if temporary_path.stat().st_size > settings.backup_max_archive_bytes:
             raise BackupValidationError("Backup archive exceeds the size limit")
         with temporary_path.open("rb+") as archive_file:
             os.fsync(archive_file.fileno())
+        _raise_if_cancelled(cancel_event)
         os.replace(temporary_path, final_path)
         _prune_backups(preserve_backup)
     except Exception:
@@ -248,11 +269,14 @@ def _create_backup_locked(
     return _backup_metadata(final_path)
 
 
-def create_backup(kind: str = "manual") -> dict[str, Any]:
+def create_backup(
+    kind: str = "manual",
+    cancel_event: threading.Event | None = None,
+) -> dict[str, Any]:
     if kind not in {"automatic", "manual", "pre_restore"}:
         raise ValueError("Unsupported backup kind")
     with STORE_LOCK:
-        return _create_backup_locked(kind)
+        return _create_backup_locked(kind, cancel_event=cancel_event)
 
 
 def ensure_monthly_backup(now: datetime | None = None) -> None:

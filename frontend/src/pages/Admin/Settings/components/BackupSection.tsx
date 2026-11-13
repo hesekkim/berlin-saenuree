@@ -1,6 +1,7 @@
 import Button from '../../../../shared/components/ui/Button/Button';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
 import InputField from '../../../../shared/components/ui/InputField/InputField';
+import LoadingSpinner from '../../../../shared/components/LoadingSpinner/LoadingSpinner';
 import { FiDownload, FiTrash2 } from 'react-icons/fi';
 import type { AdminTranslations } from '../../translations';
 import { useBackups } from '../hooks/useBackups';
@@ -49,6 +50,7 @@ export default function BackupSection({ labels }: BackupSectionProps) {
     setPassword,
     canConfirm,
     handleCreate,
+    cancelCreate,
     handleDownload,
     handleImportFile,
     openAction,
@@ -82,16 +84,31 @@ export default function BackupSection({ labels }: BackupSectionProps) {
             <p className={styles.description}>{labels.backupsSectionDesc}</p>
           </div>
           <div className={styles.headerActions}>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={Boolean(busyAction)}
-              onClick={() => void handleCreate()}
-            >
-              {busyAction === 'create'
-                ? labels.backupsCreating
-                : labels.backupsCreate}
-            </Button>
+            {busyAction === 'create' ? (
+              <div className={styles.createProgress}>
+                <LoadingSpinner
+                  size="small"
+                  text={labels.backupsCreating}
+                  inline
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={cancelCreate}
+                >
+                  {labels.backupsCancel}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={Boolean(busyAction)}
+                onClick={() => void handleCreate()}
+              >
+                {labels.backupsCreate}
+              </Button>
+            )}
             <label
               className={[
                 styles.uploadButton,

@@ -52,6 +52,13 @@
   gap: var(--cf-space-8);
 }
 
+.createProgress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-8);
+}
+
 .rowActions {
   flex-shrink: 0;
   gap: var(--cf-space-16);

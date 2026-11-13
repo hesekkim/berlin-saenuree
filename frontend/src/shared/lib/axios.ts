@@ -139,6 +139,7 @@ apiClient.interceptors.response.use(
     if (
       !error.response &&
       error.code !== 'RATE_LIMIT_EXCEEDED' &&
+      error.code !== AxiosError.ERR_CANCELED &&
       originalRequest &&
       !originalRequest._retry
     ) {

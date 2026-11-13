@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import asyncio
+import threading
+
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -34,9 +37,30 @@ async def get_backups(_email: str = Depends(get_current_site_admin)):
 
 
 @router.post("", response_model=BackupSummary)
-async def post_backup(_email: str = Depends(get_current_site_admin)):
+async def post_backup(
+    request: Request,
+    _email: str = Depends(get_current_site_admin),
+):
+    cancel_event = threading.Event()
+    backup_task = asyncio.create_task(
+        run_in_threadpool(backups_service.create_backup, "manual", cancel_event)
+    )
     try:
-        return await run_in_threadpool(backups_service.create_backup)
+        while not backup_task.done():
+            if await request.is_disconnected():
+                cancel_event.set()
+                break
+            await asyncio.sleep(0.1)
+        return await asyncio.shield(backup_task)
+    except backups_service.BackupCancelledError as error:
+        raise HTTPException(status_code=499, detail=str(error)) from error
+    except asyncio.CancelledError:
+        cancel_event.set()
+        try:
+            await asyncio.shield(backup_task)
+        except (asyncio.CancelledError, backups_service.BackupCancelledError):
+            pass
+        raise
     except backups_service.BackupError as error:
         raise _http_error(error) from error
 

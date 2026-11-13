@@ -73,6 +73,36 @@ describe('useBackups', () => {
     expect(result.current.pendingAction).toBeNull();
   });
 
+  it('aborts an in-progress backup when cancellation is requested', async () => {
+    const labels = adminTranslations[Language.EN];
+    const { result } = renderHook(() => useBackups(labels));
+    await waitFor(() => expect(mocks.fetchBackups).toHaveBeenCalledTimes(1));
+
+    let backupSignal: AbortSignal | undefined;
+    mocks.createBackup.mockImplementation(
+      (signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          backupSignal = signal;
+          signal.addEventListener(
+            'abort',
+            () => reject({ __CANCEL__: true }),
+            { once: true },
+          );
+        }),
+    );
+
+    act(() => {
+      void result.current.handleCreate();
+    });
+    expect(result.current.busyAction).toBe('create');
+
+    act(() => result.current.cancelCreate());
+    await waitFor(() => expect(result.current.busyAction).toBeNull());
+
+    expect(backupSignal?.aborted).toBe(true);
+    expect(mocks.toast.error).not.toHaveBeenCalled();
+  });
+
   it('shows an incorrect password on the field instead of a toast', async () => {
     const labels = adminTranslations[Language.EN];
     const { result } = renderHook(() => useBackups(labels));

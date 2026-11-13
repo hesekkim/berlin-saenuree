@@ -33,8 +33,14 @@ export async function fetchBackups(): Promise<BackupListResponse> {
   return response.data;
 }
 
-export async function createBackup(): Promise<BackupSummary> {
-  const response = await apiClient.post<BackupSummary>('/admin/backups');
+export async function createBackup(
+  signal?: AbortSignal,
+): Promise<BackupSummary> {
+  const response = await apiClient.post<BackupSummary>(
+    '/admin/backups',
+    undefined,
+    { signal, timeout: 30 * 60 * 1000 },
+  );
   return response.data;
 }
 
