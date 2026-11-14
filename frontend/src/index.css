@@ -9,6 +9,8 @@
   --color-text: #1a1a1a;
   --color-text-secondary: #4a4a4a;
   --color-text-transparent: #1a1a1aaa;
+  --color-overlay: #1a1a1acc;
+  --color-text-on-overlay: #ffffff;
 
   --color-primary: #b8956a;
   --color-accent: #9d7e54;
