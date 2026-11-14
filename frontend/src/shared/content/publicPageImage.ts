@@ -28,33 +28,6 @@ export const publicPageImageFallbacks = {
   ],
 } as const;
 
-const fallbackImageUrls: Record<string, string> = {
-  '5516e8cf-4622-49bc-a9b5-9b9500597dfe':
-    publicPageImageFallbacks.homeHero[0],
-  'e0c98859-7655-4b63-a126-ba1737831ab9':
-    publicPageImageFallbacks.homeHero[1],
-  '2b449924-8222-4cd5-9964-95b4f9df8f38':
-    publicPageImageFallbacks.homeHero[2],
-  'fd3d3779-a7c1-4684-ab62-492f157e8d65':
-    publicPageImageFallbacks.homePanorama,
-  'c10e169f-e469-46de-b7a8-6a865a2403d3':
-    publicPageImageFallbacks.visitMap[0],
-  '4ff9480f-4510-4623-a1d2-fd790822781c':
-    publicPageImageFallbacks.visitMap[1],
-  '9c5fc7d3-ff16-4175-b491-1344ba92e313':
-    publicPageImageFallbacks.visitMap[2],
-  '24578012-ce9d-4df1-9d4e-ae36b8efc62a':
-    publicPageImageFallbacks.visitMap[3],
-  '17aedd74-ee1e-4cc8-86d2-f4ca19adbb71':
-    publicPageImageFallbacks.visitVenue[0],
-  'e4a1c778-abc4-460d-9511-d81d281ae2ce':
-    publicPageImageFallbacks.visitVenue[1],
-  'd70f3e0b-1ec1-481d-b7e8-a1258b78f031':
-    publicPageImageFallbacks.visitVenue[2],
-  'f446ad1d-e1d0-44bc-ba03-1ee9ee488e8f':
-    publicPageImageFallbacks.visitVenue[3],
-};
-
 export function indexedPublicPageImageFallback(
   images: readonly string[],
   index: number,
@@ -92,8 +65,5 @@ export function publicPageImageUrl(
   if (imageIdOrUrl.startsWith('/images/cms-fallback/')) {
     return imageIdOrUrl;
   }
-  return (
-    fallbackImageUrls[imageIdOrUrl] ??
-    mediaImageAbsoluteUrl(imageIdOrUrl, variant)
-  );
+  return mediaImageAbsoluteUrl(imageIdOrUrl, variant);
 }

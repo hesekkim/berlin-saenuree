@@ -164,8 +164,11 @@ function backgroundImageStyle(
   image: string,
   fallback: string | undefined,
 ): string {
-  return [image, fallback]
-    .filter((source): source is string => Boolean(source && source !== image))
+  const sources = [image];
+  if (fallback && fallback !== image) {
+    sources.push(fallback);
+  }
+  return sources
     .map((source) => `url("${source}")`)
     .join(', ');
 }
