@@ -1,4 +1,4 @@
-import { mediaImageAbsoluteUrl } from '../api/mediaApi';
+import { publicPageImageUrl } from './publicPageImage';
 
 export type VisitService = {
   id: string;
@@ -37,7 +37,7 @@ export type VisitSharedMedia = {
 export type VisitContentByLanguage = Record<string, VisitCopy>;
 
 export function visitImageUrl(image: VisitImage): string {
-  return image.imageId ? mediaImageAbsoluteUrl(image.imageId, 'display') : '';
+  return image.imageId ? publicPageImageUrl(image.imageId, 'display') : '';
 }
 
 export function normalizeVisitSharedMedia(value: unknown): VisitSharedMedia {

@@ -1,42 +1,28 @@
-import { useEffect, useState } from 'react';
 import { fetchEditablePageDocument } from '../../shared/api/cmsApi';
 import { useConfig } from '../../shared/context/ConfigContext';
 import {
-  normalizeVisitSharedMedia,
+  normalizeVisitDocument,
+  VISIT_FALLBACK_DOCUMENT,
+} from '../../shared/content/publicPageFallbacks';
+import { usePublicPageContent } from '../../shared/content/usePublicPageContent';
+import {
   resolveVisitCopy,
 } from '../../shared/content/visitContent';
 
+const loadVisitContent = () => fetchEditablePageDocument('visit');
+
 export function useVisitContent() {
   const { language } = useConfig();
-  const [content, setContent] = useState<Record<string, unknown>>({});
-  const [sharedMedia, setSharedMedia] = useState<unknown>(null);
-  const [hasLoadError, setHasLoadError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchEditablePageDocument('visit')
-      .then((document) => {
-        if (!cancelled) {
-          setContent(document.content);
-          setSharedMedia(document.sharedMedia);
-          setHasLoadError(false);
-        }
-      })
-      .catch((error: unknown) => {
-        console.error('Failed to load Visit page content', error);
-        if (!cancelled) {
-          setHasLoadError(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { content: document, hasLoadError } = usePublicPageContent({
+    slug: 'visit',
+    fallback: VISIT_FALLBACK_DOCUMENT,
+    load: loadVisitContent,
+    normalize: normalizeVisitDocument,
+  });
 
   return {
-    content: resolveVisitCopy(content, language),
-    sharedMedia: normalizeVisitSharedMedia(sharedMedia),
+    content: resolveVisitCopy(document.content, language),
+    sharedMedia: document.sharedMedia,
     hasLoadError,
   };
 }

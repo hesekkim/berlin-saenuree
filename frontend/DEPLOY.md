@@ -32,6 +32,10 @@ backend와 frontend는 별도 저장소로 나누지 않아도 된다. 통합 �
 
 SPA 라우팅은 `vercel.json` rewrite로 `index.html`에 넘긴다.
 
+### 공개 CMS 페이지 fallback
+
+공개 페이지는 마지막으로 정상 조회한 콘텐츠를 브라우저에 저장하고, 첫 방문 또는 캐시가 없는 경우 `src/shared/content/fallbacks/`의 기본 콘텐츠를 표시한다. 기본 사진은 `public/images/cms-fallback/`에 있다. 기본 CMS 콘텐츠나 사진을 바꾸면 두 fallback 경로도 함께 갱신해 frontend를 배포한다.
+
 ### 보안 헤더 (CSP) 설정
 
 `vercel.json`의 `Content-Security-Policy`에는 API 주소가 들어 있다. 빌드 환경변수를 읽을 수 없으므로 **배포하는 사이트마다 직접 바꿔야 한다.** `https://your-backend.example.com`을 Render backend origin으로 바꾼다.

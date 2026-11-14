@@ -1,5 +1,10 @@
 import { useConfig } from '../../shared/context/ConfigContext';
-import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
+import {
+  applyPublicPageImageFallback,
+  indexedPublicPageImageFallback,
+  publicPageImageFallbacks,
+  publicPageImageUrl,
+} from '../../shared/content/publicPageImage';
 import { useChurchHistoryContent } from './useChurchHistoryContent';
 import { useChurchHistoryReveal } from './useChurchHistoryReveal';
 import { useChurchHistoryBackground } from './useChurchHistoryBackground';
@@ -17,9 +22,19 @@ export default function ChurchHistory() {
   const activeEvent =
     content.events.find((event) => event.id === activeEventId) ??
     content.events[0];
+  const activeEventIndex = activeEvent
+    ? content.events.indexOf(activeEvent)
+    : -1;
+  const activeImageFallback =
+    activeEventIndex >= 0
+      ? indexedPublicPageImageFallback(
+          publicPageImageFallbacks.churchHistoryEvent,
+          activeEventIndex,
+        )
+      : undefined;
   const activeImage = activeEvent
     ? activeEvent.imageId
-      ? mediaImageAbsoluteUrl(activeEvent.imageId, 'display')
+      ? publicPageImageUrl(activeEvent.imageId, 'display')
       : activeEvent.imageUrl
     : undefined;
   const { backgroundImage, transitionImage, finishTransition } =
@@ -32,7 +47,12 @@ export default function ChurchHistory() {
         aria-hidden="true"
         style={
           backgroundImage
-            ? { backgroundImage: `url("${backgroundImage}")` }
+            ? {
+                backgroundImage: backgroundImageStyle(
+                  backgroundImage,
+                  activeImageFallback,
+                ),
+              }
             : undefined
         }
       >
@@ -40,7 +60,12 @@ export default function ChurchHistory() {
           <div
             key={transitionImage}
             className={styles.historyBackgroundTransition}
-            style={{ backgroundImage: `url("${transitionImage}")` }}
+            style={{
+              backgroundImage: backgroundImageStyle(
+                transitionImage,
+                activeImageFallback,
+              ),
+            }}
             onAnimationEnd={finishTransition}
           />
         ) : null}
@@ -56,7 +81,7 @@ export default function ChurchHistory() {
         <div className={styles.introSurface}>
           {hasLoadError ? (
             <p className={styles.loadError} role="alert">
-              {text.loadFailed}
+              {text.fallbackNotice}
             </p>
           ) : null}
 
@@ -92,7 +117,7 @@ export default function ChurchHistory() {
         >
           {content.events.map((event, index) => {
             const image = event.imageId
-              ? mediaImageAbsoluteUrl(event.imageId, 'display')
+              ? publicPageImageUrl(event.imageId, 'display')
               : event.imageUrl;
             return (
               <li
@@ -107,6 +132,15 @@ export default function ChurchHistory() {
                     <img
                       className={styles.image}
                       src={image}
+                      onError={(event) =>
+                        applyPublicPageImageFallback(
+                          event.currentTarget,
+                          indexedPublicPageImageFallback(
+                            publicPageImageFallbacks.churchHistoryEvent,
+                            index,
+                          ),
+                        )
+                      }
                       alt={event.date || `${text.timeline} ${index + 1}`}
                       loading={index > 1 ? 'lazy' : 'eager'}
                       decoding="async"
@@ -124,4 +158,14 @@ export default function ChurchHistory() {
       </section>
     </main>
   );
+}
+
+function backgroundImageStyle(
+  image: string,
+  fallback: string | undefined,
+): string {
+  return [image, fallback]
+    .filter((source): source is string => Boolean(source && source !== image))
+    .map((source) => `url("${source}")`)
+    .join(', ');
 }

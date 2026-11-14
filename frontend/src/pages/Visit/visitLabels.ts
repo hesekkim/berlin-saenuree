@@ -22,7 +22,7 @@ const labels = {
     nextPhoto: '다음 사진',
     photoSlide: 'GROSSER SAAL 사진 {current} / {total}',
     photoPicker: '{number}번째 사진 보기',
-    contentUnavailable: '페이지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    fallbackNotice: '서버에 연결할 수 없어 저장된 방문 정보를 표시하고 있습니다.',
   },
   [Language.EN]: {
     heading: 'Everything you need to join us for worship',
@@ -44,7 +44,7 @@ const labels = {
     nextPhoto: 'Next photo',
     photoSlide: 'GROSSER SAAL photo {current} of {total}',
     photoPicker: 'Show photo {number}',
-    contentUnavailable: 'Could not load page information. Please try again later.',
+    fallbackNotice: 'The server is unavailable. Showing saved visit information.',
   },
   [Language.DE]: {
     heading: 'Alle Informationen für Ihren Besuch beim Gottesdienst',
@@ -66,7 +66,7 @@ const labels = {
     nextPhoto: 'Nächstes Foto',
     photoSlide: 'GROSSER SAAL – Foto {current} von {total}',
     photoPicker: 'Foto {number} anzeigen',
-    contentUnavailable: 'Seiteninformationen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.',
+    fallbackNotice: 'Der Server ist nicht erreichbar. Gespeicherte Besuchsinformationen werden angezeigt.',
   },
 };
 

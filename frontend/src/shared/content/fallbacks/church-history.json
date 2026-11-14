@@ -1,0 +1,104 @@
+{
+  "ko": {
+    "events": [
+      {
+        "id": "2013-05-12",
+        "date": "2013.05.12",
+        "description": "동베를린에 위치한 담임목사 사택에서 개척예배를 시작했습니다.",
+        "imageUrl": "/images/church-history/20130512.webp"
+      },
+      {
+        "id": "2013-10-25",
+        "date": "2013.10.25",
+        "description": "베를린 Bundesplatz에 위치한 교회에서 창립예배를 드렸습니다.",
+        "imageUrl": "/images/church-history/20131025.webp"
+      },
+      {
+        "id": "2015-01-25",
+        "date": "2015.01.25",
+        "description": "예배당을 Alexanderplatz로 이전했습니다.",
+        "imageUrl": "/images/church-history/20150125.webp"
+      },
+      {
+        "id": "2020-12-13",
+        "date": "2020.12.13",
+        "description": "베를린 Pankow에 위치한 Hoffnungskirche로 예배당을 이전했습니다.",
+        "imageUrl": "/images/church-history/20201213.webp"
+      },
+      {
+        "id": "2021-07-04",
+        "date": "2021.07.04",
+        "description": "베를린 Mitte에 위치한 Theologisches Konvikt으로 예배당을 이전했습니다.",
+        "imageUrl": "/images/church-history/20210704.webp"
+      }
+    ]
+  },
+  "en": {
+    "events": [
+      {
+        "id": "2013-05-12",
+        "date": "2013.05.12",
+        "description": "The church began with a planting service at the senior pastor’s home in East Berlin.",
+        "imageUrl": "/images/church-history/20130512.webp"
+      },
+      {
+        "id": "2013-10-25",
+        "date": "2013.10.25",
+        "description": "The founding service was held at a church in Bundesplatz, Berlin.",
+        "imageUrl": "/images/church-history/20131025.webp"
+      },
+      {
+        "id": "2015-01-25",
+        "date": "2015.01.25",
+        "description": "The congregation moved its place of worship to Alexanderplatz.",
+        "imageUrl": "/images/church-history/20150125.webp"
+      },
+      {
+        "id": "2020-12-13",
+        "date": "2020.12.13",
+        "description": "The church moved to Hoffnungskirche in Pankow, Berlin.",
+        "imageUrl": "/images/church-history/20201213.webp"
+      },
+      {
+        "id": "2021-07-04",
+        "date": "2021.07.04",
+        "description": "The church moved to Theologisches Konvikt in Mitte, Berlin.",
+        "imageUrl": "/images/church-history/20210704.webp"
+      }
+    ]
+  },
+  "de": {
+    "events": [
+      {
+        "id": "2013-05-12",
+        "date": "2013.05.12",
+        "description": "Die Gemeinde begann mit einem Gründungsgottesdienst im Pfarrhaus des Gemeindepastors in Ost-Berlin.",
+        "imageUrl": "/images/church-history/20130512.webp"
+      },
+      {
+        "id": "2013-10-25",
+        "date": "2013.10.25",
+        "description": "Der Gründungsgottesdienst fand in einer Kirche am Bundesplatz in Berlin statt.",
+        "imageUrl": "/images/church-history/20131025.webp"
+      },
+      {
+        "id": "2015-01-25",
+        "date": "2015.01.25",
+        "description": "Die Gemeinde zog mit ihrem Gottesdienstort zum Alexanderplatz um.",
+        "imageUrl": "/images/church-history/20150125.webp"
+      },
+      {
+        "id": "2020-12-13",
+        "date": "2020.12.13",
+        "description": "Die Gemeinde zog in die Hoffnungskirche in Berlin-Pankow um.",
+        "imageUrl": "/images/church-history/20201213.webp"
+      },
+      {
+        "id": "2021-07-04",
+        "date": "2021.07.04",
+        "description": "Die Gemeinde zog zum Theologischen Konvikt in Berlin-Mitte um.",
+        "imageUrl": "/images/church-history/20210704.webp"
+      }
+    ]
+  }
+}

@@ -1,42 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
 import { fetchPageContent } from '../../shared/api/cmsApi';
 import { useConfig } from '../../shared/context/ConfigContext';
 import {
+  HOME_FALLBACK_CONTENT,
+  normalizeHomePageContent,
+} from '../../shared/content/publicPageFallbacks';
+import { usePublicPageContent } from '../../shared/content/usePublicPageContent';
+import {
   HOME_PAGE_SLUG,
   resolveHomeCopy,
-  type HomeContentByLanguage,
 } from '../../shared/content/homeContent';
+
+const loadHomeContent = () => fetchPageContent(HOME_PAGE_SLUG);
 
 /** Public home page copy for the active site language. */
 export function useHomeContent() {
   const { language } = useConfig();
-  const [contentByLanguage, setContentByLanguage] =
-    useState<HomeContentByLanguage>({});
-
-  const refresh = useCallback(() => {
-    fetchPageContent(HOME_PAGE_SLUG)
-      .then((content) => {
-        setContentByLanguage(content);
-      })
-      .catch(() => {
-        // Keep the last known copy when the API is unavailable.
-      });
-  }, []);
-
-  useEffect(() => {
-    refresh();
-
-    const onFocus = () => {
-      refresh();
-    };
-
-    window.addEventListener('focus', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [refresh]);
+  const { content } = usePublicPageContent({
+    slug: HOME_PAGE_SLUG,
+    fallback: HOME_FALLBACK_CONTENT,
+    load: loadHomeContent,
+    normalize: normalizeHomePageContent,
+    refreshOnFocus: true,
+  });
 
   return {
-    content: resolveHomeCopy(contentByLanguage, language),
+    content: resolveHomeCopy(content, language),
   };
 }

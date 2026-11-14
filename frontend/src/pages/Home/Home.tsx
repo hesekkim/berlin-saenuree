@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { mediaImageAbsoluteUrl } from '../../shared/api/mediaApi';
+import {
+  applyPublicPageImageFallback,
+  indexedPublicPageImageFallback,
+  publicPageImageFallbacks,
+  publicPageImageUrl,
+} from '../../shared/content/publicPageImage';
 import { useConfig } from '../../shared/context/ConfigContext';
 import HomePopups from './HomePopups';
 import { getHomeLabels } from './homeLabels';
@@ -103,7 +108,16 @@ export default function Home() {
                 className={`${styles.heroSlide} ${
                   index === activeHeroSlideIndex ? styles.heroSlideActive : ''
                 }`}
-                src={mediaImageAbsoluteUrl(image.imageId, 'display')}
+                src={publicPageImageUrl(image.imageId, 'display')}
+                onError={(event) =>
+                  applyPublicPageImageFallback(
+                    event.currentTarget,
+                    indexedPublicPageImageFallback(
+                      publicPageImageFallbacks.homeHero,
+                      index,
+                    ),
+                  )
+                }
                 alt=""
                 aria-hidden={index !== activeHeroSlideIndex}
                 loading={index === 0 ? 'eager' : 'lazy'}
@@ -283,7 +297,13 @@ export default function Home() {
         <section className={styles.panoramaSection}>
           <img
             className={styles.panoramaImage}
-            src={mediaImageAbsoluteUrl(content.panoramaImageId, 'display')}
+            src={publicPageImageUrl(content.panoramaImageId, 'display')}
+            onError={(event) =>
+              applyPublicPageImageFallback(
+                event.currentTarget,
+                publicPageImageFallbacks.homePanorama,
+              )
+            }
             alt={labels.panoramaLabel}
             loading="lazy"
           />

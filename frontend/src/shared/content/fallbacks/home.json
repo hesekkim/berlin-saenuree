@@ -1,0 +1,58 @@
+{
+    "contentRevision":  27,
+    "content":  {
+                    "ko":  {
+                               "yearMotto":  "새로운 일을 행하실\n하나님을 기대하라",
+                               "bibleVerse":  "그런즉 누구든지 그리스도 안에 있으면 새로운 피조물이라 이전 것은 지나갔으니 보라 새 것이 되었도다",
+                               "bibleReference":  "고린도후서 5:17",
+                               "pastoralMissionItems":  [
+                                                            "영혼이 구원에 이르도록 힘씁니다.",
+                                                            "우리 안에 하나님의 형상이 회복되도록 함께 힘씁니다.",
+                                                            "영과 진리 안에서 세워지는 교회를 이루어갑니다."
+                                                        ]
+                           },
+                    "en":  {
+                               "yearMotto":  "Look forward to the new thing God will do.",
+                               "bibleVerse":  "Therefore if any man be in Christ, he is a new creature: old things are passed away; behold, all things are become new.",
+                               "bibleReference":  "2 Corinthians 5:17",
+                               "pastoralMissionItems":  [
+                                                            "We strive to lead souls to salvation.",
+                                                            "Together, we strive for God\u0027s image to be restored within us.",
+                                                            "We are building a church established in the Spirit and in truth."
+                                                        ]
+                           },
+                    "de":  {
+                               "yearMotto":  "Erwarte das Neue, das Gott tun wird.",
+                               "bibleVerse":  "Darum, ist jemand in Christo, so ist er eine neue Kreatur; das Alte ist vergangen, siehe, es ist alles neu geworden!",
+                               "bibleReference":  "2. Korinther 5,17",
+                               "pastoralMissionItems":  [
+                                                            "Wir setzen uns dafür ein, dass Menschen Erlösung finden.",
+                                                            "Gemeinsam setzen wir uns dafür ein, dass Gottes Ebenbild in uns wiederhergestellt wird.",
+                                                            "Wir bauen eine Gemeinde auf, die im Geist und in der Wahrheit gegründet ist."
+                                                        ]
+                           }
+                },
+    "sharedMedia":  {
+                        "heroImages":  [
+                                           {
+                                               "imageId":  "/images/cms-fallback/home/hero-1.webp",
+                                               "sourceFileId":  "3a5a3ac4-7f5e-4b8e-a2b2-02359551a7f1"
+                                           },
+                                           {
+                                               "imageId":  "/images/cms-fallback/home/hero-2.webp",
+                                               "sourceFileId":  "1ad35152-22ee-45f5-a424-a0de6ac3d9d0"
+                                           },
+                                           {
+                                               "imageId":  "/images/cms-fallback/home/hero-3.webp",
+                                               "sourceFileId":  "d69ed75b-7434-4a99-921e-840585c640f5"
+                                           }
+                                       ],
+                        "panoramaImageId":  "/images/cms-fallback/home/panorama.webp",
+                        "panoramaSourceFileId":  "a286a6ce-2d31-4db5-aa05-946d9586a033",
+                        "youtubeVideoUrls":  [
+                                                 "https://www.youtube.com/watch?v=rKY6bp79-6A",
+                                                 "https://www.youtube.com/watch?v=LEMNit_6Cm8\u0026t=3s",
+                                                 "https://www.youtube.com/watch?v=T17pP65xlbM\u0026list=RDMM\u0026start_radio=1\u0026rv=LEMNit_6Cm8"
+                                             ]
+                    }
+}

@@ -7,7 +7,7 @@ const labels = {
     timeline: '교회 연혁',
     timelineSubtitle: 'Berlin Saenuree',
     introductionLabel: '교회 소개',
-    loadFailed: '교회 역사 콘텐츠를 불러오지 못했습니다.',
+    fallbackNotice: '서버에 연결할 수 없어 저장된 교회 역사 콘텐츠를 표시하고 있습니다.',
     introduction: [
       {
         quotation: '“위로하라, 내 백성을 위로하라”',
@@ -34,7 +34,7 @@ const labels = {
     timeline: 'Our History',
     timelineSubtitle: 'Berlin Saenuree',
     introductionLabel: 'About the church',
-    loadFailed: 'Church history content could not be loaded.',
+    fallbackNotice: 'The server is unavailable. Showing saved church history content.',
     introduction: [
       {
         quotation: '“Comfort, comfort my people,” says your God.',
@@ -60,7 +60,7 @@ const labels = {
     timeline: 'Unsere Geschichte',
     timelineSubtitle: 'Berlin Saenuree',
     introductionLabel: 'Über die Gemeinde',
-    loadFailed: 'Der Inhalt zur Gemeindegeschichte konnte nicht geladen werden.',
+    fallbackNotice: 'Der Server ist nicht erreichbar. Gespeicherte Inhalte zur Gemeindegeschichte werden angezeigt.',
     introduction: [
       {
         quotation: '„Tröstet, tröstet mein Volk!“, spricht euer Gott.',

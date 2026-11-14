@@ -1,0 +1,220 @@
+{
+    "contentRevision":  12,
+    "content":  {
+                    "ko":  {
+                               "services":  [
+                                                {
+                                                    "id":  "sunday-service",
+                                                    "name":  "주일 예배",
+                                                    "day":  "주일",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "sunday-school",
+                                                    "name":  "주일 학교",
+                                                    "day":  "주일",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "morning-prayer",
+                                                    "name":  "새벽 예배",
+                                                    "day":  "월요일–토요일",
+                                                    "time":  "07:00",
+                                                    "place":  "GROSSER SAAL"
+                                                }
+                                            ],
+                               "address":  "Borsigstraße 5, 10115 Berlin",
+                               "primaryTransit":  [
+                                                      {
+                                                          "id":  "s-bahn",
+                                                          "type":  "S-Bahn",
+                                                          "line":  "S1 · S2",
+                                                          "station":  "Nordbahnhof",
+                                                          "walkingTime":  "도보 4분"
+                                                      },
+                                                      {
+                                                          "id":  "u-bahn",
+                                                          "type":  "U-Bahn",
+                                                          "line":  "U6",
+                                                          "station":  "Oranienburger Tor",
+                                                          "walkingTime":  "도보 7분"
+                                                      }
+                                                  ],
+                               "secondaryTransit":  [
+                                                        {
+                                                            "id":  "tram",
+                                                            "type":  "Tram",
+                                                            "line":  "M5",
+                                                            "station":  "Oranienburger Tor",
+                                                            "walkingTime":  "도보 6분"
+                                                        },
+                                                        {
+                                                            "id":  "bus",
+                                                            "type":  "Bus",
+                                                            "line":  "142",
+                                                            "station":  "Tucholskystraße",
+                                                            "walkingTime":  "도보 2분"
+                                                        }
+                                                    ],
+                               "googleMapsUrl":  "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+                           },
+                    "en":  {
+                               "services":  [
+                                                {
+                                                    "id":  "sunday-service",
+                                                    "name":  "Sunday Service",
+                                                    "day":  "Sunday",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "sunday-school",
+                                                    "name":  "Sunday School",
+                                                    "day":  "Sunday",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "morning-prayer",
+                                                    "name":  "Morning Prayer",
+                                                    "day":  "Monday–Saturday",
+                                                    "time":  "07:00",
+                                                    "place":  "GROSSER SAAL"
+                                                }
+                                            ],
+                               "address":  "Borsigstraße 5, 10115 Berlin",
+                               "primaryTransit":  [
+                                                      {
+                                                          "id":  "s-bahn",
+                                                          "type":  "S-Bahn",
+                                                          "line":  "S1 · S2",
+                                                          "station":  "Nordbahnhof",
+                                                          "walkingTime":  "4 min walk"
+                                                      },
+                                                      {
+                                                          "id":  "u-bahn",
+                                                          "type":  "U-Bahn",
+                                                          "line":  "U6",
+                                                          "station":  "Oranienburger Tor",
+                                                          "walkingTime":  "7 min walk"
+                                                      }
+                                                  ],
+                               "secondaryTransit":  [
+                                                        {
+                                                            "id":  "tram",
+                                                            "type":  "Tram",
+                                                            "line":  "M5",
+                                                            "station":  "Oranienburger Tor",
+                                                            "walkingTime":  "6 min walk"
+                                                        },
+                                                        {
+                                                            "id":  "bus",
+                                                            "type":  "Bus",
+                                                            "line":  "142",
+                                                            "station":  "Tucholskystraße",
+                                                            "walkingTime":  "2 min walk"
+                                                        }
+                                                    ],
+                               "googleMapsUrl":  "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+                           },
+                    "de":  {
+                               "services":  [
+                                                {
+                                                    "id":  "sunday-service",
+                                                    "name":  "Sonntagsgottesdienst",
+                                                    "day":  "Sonntag",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "sunday-school",
+                                                    "name":  "Kindergottesdienst",
+                                                    "day":  "Sonntag",
+                                                    "time":  "11:30",
+                                                    "place":  "GROSSER SAAL"
+                                                },
+                                                {
+                                                    "id":  "morning-prayer",
+                                                    "name":  "Morgengebet",
+                                                    "day":  "Montag–Samstag",
+                                                    "time":  "07:00",
+                                                    "place":  "GROSSER SAAL"
+                                                }
+                                            ],
+                               "address":  "Borsigstraße 5, 10115 Berlin",
+                               "primaryTransit":  [
+                                                      {
+                                                          "id":  "s-bahn",
+                                                          "type":  "S-Bahn",
+                                                          "line":  "S1 · S2",
+                                                          "station":  "Nordbahnhof",
+                                                          "walkingTime":  "4 Min. zu Fuß"
+                                                      },
+                                                      {
+                                                          "id":  "u-bahn",
+                                                          "type":  "U-Bahn",
+                                                          "line":  "U6",
+                                                          "station":  "Oranienburger Tor",
+                                                          "walkingTime":  "7 Min. zu Fuß"
+                                                      }
+                                                  ],
+                               "secondaryTransit":  [
+                                                        {
+                                                            "id":  "tram",
+                                                            "type":  "Tram",
+                                                            "line":  "M5",
+                                                            "station":  "Oranienburger Tor",
+                                                            "walkingTime":  "6 Min. zu Fuß"
+                                                        },
+                                                        {
+                                                            "id":  "bus",
+                                                            "type":  "Bus",
+                                                            "line":  "142",
+                                                            "station":  "Tucholskystraße",
+                                                            "walkingTime":  "2 Min. zu Fuß"
+                                                        }
+                                                    ],
+                               "googleMapsUrl":  "https://www.google.com/maps/place/BERLIN+SAENUREE+CHURCH/@52.5288882,13.3858649,17z/data=!3m2!4b1!5s0x47a851eed117464d:0xa5ea2979b5a19360!4m6!3m5!1s0x47a84e20a6f55faf:0xa988a0988c544bf3!8m2!3d52.5288883!4d13.3907412!16s%2Fg%2F11c2mcrqs9"
+                           }
+                },
+    "sharedMedia":  {
+                        "mapImages":  [
+                                          {
+                                              "imageId":  "/images/cms-fallback/visit/mapImages-1.webp",
+                                              "sourceFileId":  "60173229-8dba-4273-9cea-e0e89874eac5"
+                                          },
+                                          {
+                                              "imageId":  "/images/cms-fallback/visit/mapImages-2.webp",
+                                              "sourceFileId":  "79e92f0a-dd2a-4074-a3ca-3709f8c0e765"
+                                          },
+                                          {
+                                              "imageId":  "/images/cms-fallback/visit/mapImages-3.webp",
+                                              "sourceFileId":  "6c6a0bc2-e796-4c38-ac64-0180333cdc3b"
+                                          },
+                                          {
+                                              "imageId":  "/images/cms-fallback/visit/mapImages-4.webp",
+                                              "sourceFileId":  "053ede4d-5a6d-4434-a11d-bff0f70539ba"
+                                          }
+                                      ],
+                        "venueImages":  [
+                                            {
+                                                "imageId":  "/images/cms-fallback/visit/venueImages-1.webp",
+                                                "sourceFileId":  "c9c130b9-aa92-4241-9c83-2075d203e936"
+                                            },
+                                            {
+                                                "imageId":  "/images/cms-fallback/visit/venueImages-2.webp",
+                                                "sourceFileId":  "4fb6436b-e1a5-486e-a1d4-1eba0a8a796f"
+                                            },
+                                            {
+                                                "imageId":  "/images/cms-fallback/visit/venueImages-3.webp",
+                                                "sourceFileId":  "c6b971af-c55a-4b14-a50b-a35e9ec7f7ff"
+                                            },
+                                            {
+                                                "imageId":  "/images/cms-fallback/visit/venueImages-4.webp",
+                                                "sourceFileId":  "2b817660-1990-451f-bfd1-8ebf614cafc5"
+                                            }
+                                        ]
+                    }
+}

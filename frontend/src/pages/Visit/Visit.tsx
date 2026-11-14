@@ -12,6 +12,11 @@ import {
   visitImageUrl,
 } from '../../shared/content/visitContent';
 import { useConfig } from '../../shared/context/ConfigContext';
+import {
+  applyPublicPageImageFallback,
+  indexedPublicPageImageFallback,
+  publicPageImageFallbacks,
+} from '../../shared/content/publicPageImage';
 import { useVisitContent } from './useVisitContent';
 import PageHeader from '../../shared/components/PageHeader/PageHeader';
 import styles from './Visit.module.css';
@@ -73,7 +78,7 @@ export default function Visit() {
 
       {hasLoadError ? (
         <p className={styles.loadError} role="alert">
-          {labels.contentUnavailable}
+          {labels.fallbackNotice}
         </p>
       ) : null}
 
@@ -175,6 +180,15 @@ export default function Visit() {
                 <div className={styles.mapFrame}>
                   <img
                     src={visitImageUrl(mapImages[activeMapIndex])}
+                    onError={(event) =>
+                      applyPublicPageImageFallback(
+                        event.currentTarget,
+                        indexedPublicPageImageFallback(
+                          publicPageImageFallbacks.visitMap,
+                          activeMapIndex,
+                        ),
+                      )
+                    }
                     alt={labels.mapTitle}
                     loading="lazy"
                     decoding="async"
@@ -241,6 +255,15 @@ export default function Visit() {
                           {Math.abs(position) <= 1 ? (
                             <img
                               src={visitImageUrl(image)}
+                              onError={(event) =>
+                                applyPublicPageImageFallback(
+                                  event.currentTarget,
+                                  indexedPublicPageImageFallback(
+                                    publicPageImageFallbacks.visitVenue,
+                                    index,
+                                  ),
+                                )
+                              }
                               alt={formatVisitLabel(labels.photoSlide, {
                                 current: index + 1,
                                 total: venueImages.length,

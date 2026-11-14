@@ -18,7 +18,7 @@ export default function ChurchVision() {
 
       {hasLoadError ? (
         <p className={styles.loadError} role="alert">
-          {labels.contentUnavailable}
+          {labels.fallbackNotice}
         </p>
       ) : null}
 
