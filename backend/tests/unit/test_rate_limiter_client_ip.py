@@ -114,6 +114,17 @@ def test_localhost_is_exempt_when_no_proxy_is_trusted(monkeypatch):
     assert set(_hammer(client, {})) == {200}
 
 
+def test_preflight_requests_do_not_consume_the_general_limit(monkeypatch):
+    monkeypatch.setattr(settings, "trusted_proxy_hops", 1)
+    client = TestClient(_limited_app(), client=("127.0.0.1", 5000))
+    headers = {"X-Forwarded-For": "8.8.8.8"}
+
+    for _ in range(GENERAL_BURST + 1):
+        assert client.options("/ping", headers=headers).status_code != 429
+
+    assert client.get("/ping", headers=headers).status_code == 200
+
+
 def test_visitors_behind_a_local_proxy_are_counted_individually(monkeypatch):
     monkeypatch.setattr(settings, "trusted_proxy_hops", 1)
     client = TestClient(_limited_app(), client=("127.0.0.1", 5000))

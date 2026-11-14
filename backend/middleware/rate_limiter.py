@@ -24,7 +24,7 @@ MEDIA_RETRY_AFTER_SECONDS = 2
 Bucket = Literal["general", "media"]
 
 # General API: catch scrapers / credential stuffing.
-GENERAL_BURST = 10
+GENERAL_BURST = 30
 GENERAL_PER_MINUTE = 300
 
 # CMS multi-file upload (up to 30 photos + optimize) is intentionally bursty.
@@ -185,6 +185,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         if self.debug:
+            return await call_next(request)
+
+        if request.method == "OPTIONS":
             return await call_next(request)
 
         if request.url.path in BYPASS_PATHS:
