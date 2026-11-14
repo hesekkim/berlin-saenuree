@@ -328,7 +328,7 @@ export default function PostViewerDialog({
                       );
                     })}
                     {pendingVideoIndex !== null && !pendingVideoReady ? (
-                      <div className={styles.videoLoading} role="status" aria-live="polite">
+                      <div className={styles.videoLoading}>
                         <LoadingSpinner
                           size="medium"
                           text={labels.videoLoading}

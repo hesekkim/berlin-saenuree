@@ -93,16 +93,19 @@ describe('pageDocumentFromResponse', () => {
     expect(put).toHaveBeenCalledWith(
       '/pages/home',
       expect.objectContaining({
+        contentRevision: 4,
         content: {
           en: {
             yearMotto: 'English',
             bibleVerse: '',
             bibleReference: '',
+            pastoralMissionItems: [],
           },
           ko: {
             yearMotto: '한국어',
             bibleVerse: '',
             bibleReference: '',
+            pastoralMissionItems: [],
           },
         },
         sharedMedia,

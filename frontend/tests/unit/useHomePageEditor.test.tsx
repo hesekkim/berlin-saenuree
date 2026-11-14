@@ -18,6 +18,26 @@ const optimizeMediaImage = vi.fn();
 const toastInfo = vi.fn();
 const toastError = vi.fn();
 
+function validHomeCopy(
+  overrides: Partial<ReturnType<typeof createEmptyHomeCopy>> = {},
+) {
+  return {
+    ...createEmptyHomeCopy(),
+    pastoralMissionItems: ['Mission'],
+    ...overrides,
+  };
+}
+
+function validHomeContent(
+  overrides: Partial<Record<Language, ReturnType<typeof validHomeCopy>>> = {},
+) {
+  return {
+    [Language.EN]: validHomeCopy(overrides[Language.EN]),
+    [Language.KO]: validHomeCopy(overrides[Language.KO]),
+    [Language.DE]: validHomeCopy(overrides[Language.DE]),
+  };
+}
+
 function createLocalStorage() {
   const values = new Map<string, string>();
   return {
@@ -106,12 +126,11 @@ describe('useHomePageEditor', () => {
 
     fetchPageDocument.mockResolvedValue({
       contentRevision: 0,
-      content: {
-        [Language.EN]: {
-          ...createEmptyHomeCopy(),
+      content: validHomeContent({
+        [Language.EN]: validHomeCopy({
           youtubeVideoUrls: ['dQw4w9WgXcQ'],
-        },
-      },
+        }),
+      }),
     });
     savePageDocument.mockImplementation(
       async (_slug: string, document: { contentRevision: number; content: object }) => ({
@@ -237,16 +256,10 @@ describe('useHomePageEditor', () => {
     };
     fetchPageDocument.mockResolvedValue({
       contentRevision: 0,
-      content: {
-        [Language.EN]: {
-          ...createEmptyHomeCopy(),
-          heroImages: [sharedImage],
-        },
-        [Language.KO]: {
-          ...createEmptyHomeCopy(),
-          yearMotto: '한국어 표어',
-        },
-      },
+      content: validHomeContent({
+        [Language.EN]: validHomeCopy({ heroImages: [sharedImage] }),
+        [Language.KO]: validHomeCopy({ yearMotto: '한국어 표어' }),
+      }),
     });
 
     const { result } = renderHook(() => useHomePageEditor(), { wrapper });
@@ -353,16 +366,10 @@ describe('useHomePageEditor', () => {
     const videoUrls = ['https://youtu.be/dQw4w9WgXcQ'];
     fetchPageDocument.mockResolvedValue({
       contentRevision: 0,
-      content: {
-        [Language.EN]: {
-          ...createEmptyHomeCopy(),
-          youtubeVideoUrls: videoUrls,
-        },
-        [Language.KO]: {
-          ...createEmptyHomeCopy(),
-          youtubeVideoUrls: videoUrls,
-        },
-      },
+      content: validHomeContent({
+        [Language.EN]: validHomeCopy({ youtubeVideoUrls: videoUrls }),
+        [Language.KO]: validHomeCopy({ youtubeVideoUrls: videoUrls }),
+      }),
     });
 
     const { result } = renderHook(() => useHomePageEditor(), { wrapper });
@@ -546,8 +553,11 @@ describe('useHomePageEditor', () => {
       [Language.EN]: {
         ...createEmptyHomeCopy(),
         yearMotto: 'Latest',
+        pastoralMissionItems: ['Mission'],
         youtubeVideoUrls: ['dQw4w9WgXcQ'],
       },
+      [Language.KO]: validHomeCopy(),
+      [Language.DE]: validHomeCopy(),
     };
     savePageDocument.mockRejectedValue(
       conflictError({ slug: 'home', contentRevision: 3, content: latest })
@@ -646,13 +656,12 @@ describe('useHomePageEditor', () => {
     await act(async () => {
       resolveFetch?.({
         contentRevision: 2,
-        content: {
-          [Language.EN]: {
-            ...createEmptyHomeCopy(),
+        content: validHomeContent({
+          [Language.EN]: validHomeCopy({
             yearMotto: 'Loaded',
             youtubeVideoUrls: ['dQw4w9WgXcQ'],
-          },
-        },
+          }),
+        }),
       });
     });
 

@@ -193,16 +193,16 @@ export function useHomePageEditor() {
 
   const applyDocument = useCallback(
     (document: PageDocument) => {
-      const content = normalizeHomeMissionItems(
-        normalizeSharedHomeMedia(
+      const content = normalizeSharedHomeMedia(
+        normalizeHomeMissionItems(
           Object.fromEntries(
             Object.entries(document.content).map(([language, copy]) => [
               language,
               normalizeHomeCopy(copy),
             ])
-          ) as HomeContentByLanguage
-        ),
-        availableLanguages
+          ) as HomeContentByLanguage,
+          availableLanguages
+        )
       );
       setDraft(content);
       setSavedDraft(content);

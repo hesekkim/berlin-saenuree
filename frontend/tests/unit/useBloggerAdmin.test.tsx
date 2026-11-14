@@ -130,7 +130,7 @@ describe('useBloggerAdmin', () => {
     expect([...result.current.selectedIds]).toEqual(['b']);
     expect(result.current.selectedCount).toBe(1);
     expect(toastWarning).toHaveBeenCalledWith(
-      'Deleted 1 Blogger posts. 1 could not be deleted.',
+      'Deleted 1 stories. 1 could not be deleted.',
     );
   });
 });
