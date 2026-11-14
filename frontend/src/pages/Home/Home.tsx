@@ -254,26 +254,30 @@ export default function Home() {
         )}
       </section>
 
-      <section
-        className={styles.philosophySection}
-        aria-labelledby="philosophy-title"
-      >
-        <div className={styles.philosophyContent}>
-          <h2
-            id="philosophy-title"
-            className={`${styles.eyebrow} ${styles.philosophyTitle}`}
-          >
-            {labels.philosophy}
-          </h2>
-          <div className={styles.philosophyList}>
-            {labels.philosophyItems.map((item) => (
-              <p className={styles.philosophyItem} key={item}>
-                {item}
-              </p>
-            ))}
+      {content.pastoralMissionItems.some((item) => item.trim()) ? (
+        <section
+          className={styles.philosophySection}
+          aria-labelledby="philosophy-title"
+        >
+          <div className={styles.philosophyContent}>
+            <h2
+              id="philosophy-title"
+              className={`${styles.eyebrow} ${styles.philosophyTitle}`}
+            >
+              {labels.philosophy}
+            </h2>
+            <div className={styles.philosophyList}>
+              {content.pastoralMissionItems.map((item, index) =>
+                item.trim() ? (
+                  <p className={styles.philosophyItem} key={`${index}-${item}`}>
+                    {item}
+                  </p>
+                ) : null
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {content.panoramaImageId ? (
         <section className={styles.panoramaSection}>

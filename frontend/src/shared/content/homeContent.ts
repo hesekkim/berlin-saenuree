@@ -4,6 +4,7 @@ export type HomeCopy = {
   yearMotto: string;
   bibleVerse: string;
   bibleReference: string;
+  pastoralMissionItems: string[];
   heroImages: HomeImage[];
   heroImageId?: string;
   heroSourceFileId?: string;
@@ -34,6 +35,7 @@ export function createEmptyHomeCopy(): HomeCopy {
     yearMotto: '',
     bibleVerse: '',
     bibleReference: '',
+    pastoralMissionItems: [],
     heroImages: [],
     panoramaImageId: '',
     panoramaSourceFileId: '',
@@ -63,6 +65,11 @@ export function normalizeHomeCopy(copy?: Partial<HomeCopy>): HomeCopy {
       : [];
   const normalized = {
     ...merged,
+    pastoralMissionItems: Array.isArray(copy?.pastoralMissionItems)
+      ? copy.pastoralMissionItems
+          .filter((item): item is string => typeof item === 'string')
+          .slice(0, 3)
+      : [],
     heroImages:
       Array.isArray(copy?.heroImages) && copy.heroImages.length > 0
         ? copy.heroImages
@@ -82,6 +89,7 @@ export function isBlankHomeCopy(copy: HomeCopy | undefined): boolean {
     normalized.yearMotto.trim() ||
     normalized.bibleVerse.trim() ||
     normalized.bibleReference.trim() ||
+    normalized.pastoralMissionItems.some((item) => item.trim()) ||
     normalized.heroImages.some((image) => image.imageId || image.sourceFileId) ||
     normalized.panoramaImageId.trim() ||
     normalized.panoramaSourceFileId.trim() ||
@@ -216,9 +224,70 @@ export function ensureHomeContentLanguage(
     ...sharedContent,
     [language]: {
       ...createEmptyHomeCopy(),
+      pastoralMissionItems: Array.from({ length: 3 }, () => ''),
       heroImages,
       ...panorama,
       youtubeVideoUrls,
     },
   };
+}
+
+export function normalizeHomeMissionItems(
+  content: HomeContentByLanguage,
+  languages: string[] = []
+): HomeContentByLanguage {
+  const normalized = Object.fromEntries(
+    [...new Set([...Object.keys(content), ...languages])].map((language) => [
+      language,
+      normalizeHomeCopy(content[language]),
+    ])
+  ) as HomeContentByLanguage;
+  return Object.fromEntries(
+    Object.entries(normalized).map(([language, copy]) => [
+      language,
+      {
+        ...copy,
+        pastoralMissionItems: Array.from(
+          { length: 3 },
+          (_, index) => copy.pastoralMissionItems[index] ?? ''
+        ),
+      },
+    ])
+  );
+}
+
+export function updateHomeMissionItem(
+  content: HomeContentByLanguage,
+  language: string,
+  index: number,
+  value: string
+): HomeContentByLanguage {
+  const copy = content[language];
+  if (!copy || index < 0 || index >= copy.pastoralMissionItems.length) {
+    return content;
+  }
+  return {
+    ...content,
+    [language]: {
+      ...copy,
+      pastoralMissionItems: copy.pastoralMissionItems.map((item, itemIndex) =>
+        itemIndex === index ? value : item
+      ),
+    },
+  };
+}
+
+export function hasValidHomeMissionItems(
+  content: HomeContentByLanguage,
+  languages: string[]
+): boolean {
+  return (
+    languages.length > 0 &&
+    languages.every((language) => {
+      const items = content[language]?.pastoralMissionItems.filter((item) =>
+        item.trim()
+      );
+      return items !== undefined && items.length >= 1 && items.length <= 3;
+    })
+  );
 }

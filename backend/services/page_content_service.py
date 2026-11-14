@@ -227,6 +227,13 @@ def _normalize_copy(raw: object, *, home: bool = False) -> dict[str, Any] | None
         for key in _HOME_TEXT_FIELDS
         if key in raw
     }
+    mission_items = raw.get("pastoralMissionItems")
+    if isinstance(mission_items, list):
+        normalized["pastoralMissionItems"] = [
+            item.strip()
+            for item in mission_items[:3]
+            if isinstance(item, str) and item.strip()
+        ]
     shared = {
         key: raw[key]
         for key in _HOME_SHARED_FIELDS

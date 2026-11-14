@@ -30,6 +30,8 @@ export default function HomePageEditor() {
     handleImageUploaded,
     handleImageItemsChange,
     isVideoSelectionValid,
+    isMissionSelectionValid,
+    updateMissionItem,
     save,
     reloadLatest,
     dismissConflict,
@@ -104,6 +106,10 @@ export default function HomePageEditor() {
   const videoUrls = Array.from(
     { length: 3 },
     (_, index) => current.youtubeVideoUrls[index] ?? '',
+  );
+  const missionItems = Array.from(
+    { length: 3 },
+    (_, index) => current.pastoralMissionItems[index] ?? '',
   );
 
   return (
@@ -215,6 +221,41 @@ export default function HomePageEditor() {
             </p>
           ) : null}
         </section>
+        <section
+          className={styles.fieldGroup}
+          aria-labelledby="home-mission-title"
+        >
+          <h2 id="home-mission-title" className={styles.groupTitle}>
+            {t.homeMissionSectionTitle}
+          </h2>
+          {missionItems.map((item, index) => (
+            <div className={styles.videoField} key={`mission-${index}`}>
+              <InputField
+                label={`${t.homeMissionItemLabel} ${index + 1}`}
+                value={item}
+                onChange={(value) => updateMissionItem(index, value)}
+                multiline
+                rows={2}
+                disabled={!isReady || isSaving}
+              />
+              <button
+                type="button"
+                className={styles.videoRemove}
+                aria-label={`${t.homeRemoveMission} ${index + 1}`}
+                title={`${t.homeRemoveMission} ${index + 1}`}
+                onClick={() => updateMissionItem(index, '')}
+                disabled={!item.trim() || !isReady || isSaving}
+              >
+                <IoTrashOutline aria-hidden />
+              </button>
+            </div>
+          ))}
+          {!isMissionSelectionValid ? (
+            <p className={styles.mediaHint} role="status">
+              {t.homeMissionValidation}
+            </p>
+          ) : null}
+        </section>
       </div>
 
       <div className={styles.actions}>
@@ -231,7 +272,8 @@ export default function HomePageEditor() {
             isImageUploading ||
             isImageOptimizing ||
             isImageCleaning ||
-            !isVideoSelectionValid
+            !isVideoSelectionValid ||
+            !isMissionSelectionValid
           }
         >
           {t.homeSave}

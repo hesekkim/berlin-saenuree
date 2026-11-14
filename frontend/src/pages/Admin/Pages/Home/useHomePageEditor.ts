@@ -27,17 +27,23 @@ import {
   HOME_PAGE_SLUG,
   createEmptyHomeCopy,
   ensureHomeContentLanguage,
+  hasValidHomeMissionItems,
+  normalizeHomeMissionItems,
   normalizeHomeCopy,
   normalizeSharedHomeMedia,
   type HomeContentByLanguage,
   type HomeImage,
   type HomeCopy,
+  updateHomeMissionItem,
 } from '../../../../shared/content/homeContent';
 import { getYouTubeVideoId } from '../../../Home/youtubeVideo';
 import { adminTranslations } from '../../translations';
 
 type HomeImageSlot = 'hero' | 'panorama';
-type HomeTextField = Exclude<keyof HomeCopy, 'youtubeVideoUrls' | 'heroImages'>;
+type HomeTextField = Exclude<
+  keyof HomeCopy,
+  'youtubeVideoUrls' | 'heroImages' | 'pastoralMissionItems'
+>;
 const PENDING_HOME_SOURCES_KEY = 'cms.home.pending-media.v1';
 
 function readPendingHomeSources(): string[] {
@@ -145,6 +151,9 @@ function normalizeHomeDraft(content: HomeContentByLanguage) {
       language,
       {
         ...normalizeHomeCopy(copy),
+        pastoralMissionItems: copy.pastoralMissionItems
+          .map((item) => item.trim())
+          .filter(Boolean),
         youtubeVideoUrls: copy.youtubeVideoUrls
           .map((url) => url.trim())
           .filter(Boolean),
@@ -182,17 +191,25 @@ export function useHomePageEditor() {
     panorama: false,
   });
 
-  const applyDocument = useCallback((document: PageDocument) => {
-    const content = normalizeSharedHomeMedia(Object.fromEntries(
-      Object.entries(document.content).map(([language, copy]) => [
-        language,
-        normalizeHomeCopy(copy),
-      ])
-    ) as HomeContentByLanguage);
-    setDraft(content);
-    setSavedDraft(content);
-    setRevision(document.contentRevision);
-  }, []);
+  const applyDocument = useCallback(
+    (document: PageDocument) => {
+      const content = normalizeHomeMissionItems(
+        normalizeSharedHomeMedia(
+          Object.fromEntries(
+            Object.entries(document.content).map(([language, copy]) => [
+              language,
+              normalizeHomeCopy(copy),
+            ])
+          ) as HomeContentByLanguage
+        ),
+        availableLanguages
+      );
+      setDraft(content);
+      setSavedDraft(content);
+      setRevision(document.contentRevision);
+    },
+    [availableLanguages]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -394,6 +411,23 @@ export function useHomePageEditor() {
     [editLanguage, isReady]
   );
 
+  const updateMissionItem = useCallback(
+    (index: number, value: string) => {
+      if (!isReady) {
+        return;
+      }
+      setDraft((previous) =>
+        updateHomeMissionItem(
+          ensureHomeContentLanguage(previous, editLanguage),
+          editLanguage,
+          index,
+          value
+        )
+      );
+    },
+    [editLanguage, isReady]
+  );
+
   const handleImageUploaded = useCallback(
     async (slot: HomeImageSlot, files: MediaFileResponse[]) => {
       setIsImageOptimizing(true);
@@ -501,6 +535,10 @@ export function useHomePageEditor() {
     videoUrls.every(
       (url) => !url.trim() || getYouTubeVideoId(url) !== null
     );
+  const isMissionSelectionValid = hasValidHomeMissionItems(
+    draft,
+    availableLanguages
+  );
 
   const save = useCallback(async () => {
     if (
@@ -511,6 +549,7 @@ export function useHomePageEditor() {
       isImageOptimizing ||
       isImageCleaning ||
       !isVideoSelectionValid ||
+      !isMissionSelectionValid ||
       conflict
     ) {
       return;
@@ -556,6 +595,7 @@ export function useHomePageEditor() {
     revision,
     toast,
     isVideoSelectionValid,
+    isMissionSelectionValid,
   ]);
 
   const reloadLatest = useCallback(() => {
@@ -584,9 +624,11 @@ export function useHomePageEditor() {
     conflict,
     updateField,
     updateVideoUrls,
+    updateMissionItem,
     handleImageUploaded,
     handleImageItemsChange,
     isVideoSelectionValid,
+    isMissionSelectionValid,
     save,
     reloadLatest,
     dismissConflict,

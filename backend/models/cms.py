@@ -29,6 +29,7 @@ class HomeCopy(BaseModel):
     yearMotto: str = ""
     bibleVerse: str = ""
     bibleReference: str = ""
+    pastoralMissionItems: list[str] | None = None
 
     @model_validator(mode="after")
     def validate_legacy_video_urls(self):
@@ -130,6 +131,18 @@ class PageContentUpdateRequest(BaseModel):
                 legacy_url = (copy.model_extra or {}).get("youtubeVideoUrl")
                 if legacy_url:
                     HomeSharedMedia(youtubeVideoUrls=[legacy_url])
+        for copy in self.content.values():
+            if "pastoralMissionItems" not in copy.model_fields_set:
+                continue
+            items = copy.pastoralMissionItems
+            if (
+                items is None
+                or not 1 <= len(items) <= 3
+                or any(not item.strip() for item in items)
+            ):
+                raise ValueError(
+                    "Provide between one and three non-empty pastoral mission items"
+                )
         return self
 
 

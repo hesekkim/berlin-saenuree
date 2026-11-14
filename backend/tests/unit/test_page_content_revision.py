@@ -5,10 +5,12 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from api.v1.endpoints.auth import require_page_editor
 from core.config import settings
 from main import app
+from models.cms import PageContentUpdateRequest
 from services import page_content_service
 from services.media_refs import is_media_referenced
 from services.page_content_service import PageContentConflictError
@@ -53,6 +55,41 @@ def test_missing_page_starts_at_revision_zero(isolated_data):
 
     assert document.revision == 0
     assert document.content == {}
+
+
+def test_home_mission_items_require_one_to_three_non_empty_entries(isolated_data):
+    valid = PageContentUpdateRequest.model_validate(
+        {
+            "contentRevision": 0,
+            "content": {
+                "en": {
+                    "pastoralMissionItems": ["Serve", "Preach", "Love"],
+                }
+            },
+        }
+    )
+
+    assert valid.content["en"].pastoralMissionItems == ["Serve", "Preach", "Love"]
+    saved = page_content_service.save_page_content(
+        "home",
+        {"en": {"pastoralMissionItems": valid.content["en"].pastoralMissionItems}},
+        expected_revision=0,
+        shared_media=SHARED_MEDIA,
+    )
+    assert saved.content["en"]["pastoralMissionItems"] == ["Serve", "Preach", "Love"]
+
+    for items in ([], [" "], ["1", "2", "3", "4"]):
+        with pytest.raises(ValidationError):
+            PageContentUpdateRequest.model_validate(
+                {
+                    "contentRevision": 0,
+                    "content": {
+                        "en": {
+                            "pastoralMissionItems": items,
+                        }
+                    },
+                }
+            )
 
 
 def test_church_history_keeps_baseline_events_out_of_cms_content(isolated_data):

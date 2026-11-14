@@ -3,7 +3,10 @@ import { Language } from '../../src/shared/types/Language';
 import {
   createEmptyHomeCopy,
   ensureHomeContentLanguage,
+  hasValidHomeMissionItems,
+  normalizeHomeMissionItems,
   resolveHomeCopy,
+  updateHomeMissionItem,
 } from '../../src/shared/content/homeContent';
 
 describe('homeContent helpers', () => {
@@ -18,8 +21,61 @@ describe('homeContent helpers', () => {
       'fr'
     );
 
-    expect(content.fr).toEqual(createEmptyHomeCopy());
+    expect(content.fr).toEqual({
+      ...createEmptyHomeCopy(),
+      pastoralMissionItems: ['', '', ''],
+    });
     expect(content[Language.EN].yearMotto).toBe('EN');
+  });
+
+  it('keeps three editable mission item slots aligned across languages', () => {
+    const content = normalizeHomeMissionItems(
+      {
+        en: {
+          ...createEmptyHomeCopy(),
+          pastoralMissionItems: ['First', 'Second', 'Third', 'Ignored'],
+        },
+        ko: {
+          ...createEmptyHomeCopy(),
+          pastoralMissionItems: ['첫째'],
+        },
+      },
+      ['en', 'ko', 'de']
+    );
+
+    expect(content.en.pastoralMissionItems).toEqual(['First', 'Second', 'Third']);
+    expect(content.ko.pastoralMissionItems).toEqual(['첫째', '', '']);
+    expect(content.de.pastoralMissionItems).toEqual(['', '', '']);
+  });
+
+  it('requires 1–3 non-empty mission items in every enabled language', () => {
+    const content = normalizeHomeMissionItems(
+      {
+        en: {
+          ...createEmptyHomeCopy(),
+          pastoralMissionItems: ['Serve'],
+        },
+        ko: {
+          ...createEmptyHomeCopy(),
+          pastoralMissionItems: ['섬김'],
+        },
+      },
+      ['en', 'ko']
+    );
+
+    expect(hasValidHomeMissionItems(content, ['en', 'ko'])).toBe(true);
+    expect(
+      hasValidHomeMissionItems(
+        updateHomeMissionItem(content, 'ko', 0, '  '),
+        ['en', 'ko']
+      )
+    ).toBe(false);
+    expect(
+      hasValidHomeMissionItems(
+        normalizeHomeMissionItems({ en: createEmptyHomeCopy() }, ['en']),
+        ['en']
+      )
+    ).toBe(false);
   });
 
   it('resolves blank active language to another language with copy', () => {
