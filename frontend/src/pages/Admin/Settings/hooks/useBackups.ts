@@ -28,7 +28,9 @@ export function useBackups(labels: AdminTranslations) {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const createAbortControllerRef = useRef<AbortController | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isValidatingImport, setIsValidatingImport] = useState(false);
+  const operationAbortControllerRef = useRef<AbortController | null>(null);
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
@@ -52,14 +54,14 @@ export function useBackups(labels: AdminTranslations) {
 
   useEffect(
     () => () => {
-      createAbortControllerRef.current?.abort();
+      operationAbortControllerRef.current?.abort();
     },
     [],
   );
 
   const handleCreate = async () => {
     const controller = new AbortController();
-    createAbortControllerRef.current = controller;
+    operationAbortControllerRef.current = controller;
     setBusyAction('create');
     try {
       await createBackup(controller.signal);
@@ -70,15 +72,15 @@ export function useBackups(labels: AdminTranslations) {
         toast.error(labels.backupsCreateFailed);
       }
     } finally {
-      if (createAbortControllerRef.current === controller) {
-        createAbortControllerRef.current = null;
+      if (operationAbortControllerRef.current === controller) {
+        operationAbortControllerRef.current = null;
       }
       setBusyAction(null);
     }
   };
 
   const cancelCreate = () => {
-    createAbortControllerRef.current?.abort();
+    operationAbortControllerRef.current?.abort();
   };
 
   const handleDownload = async (backup: BackupSummary) => {
@@ -104,17 +106,43 @@ export function useBackups(labels: AdminTranslations) {
     if (!file) {
       return;
     }
+    const controller = new AbortController();
+    operationAbortControllerRef.current = controller;
     setBusyAction('import');
+    setUploadProgress(0);
+    setIsValidatingImport(false);
     try {
-      const preview = await stageBackupImport(file);
+      const preview = await stageBackupImport(
+        file,
+        controller.signal,
+        (loaded, total) => {
+          if (total && loaded >= total) {
+            setUploadProgress(null);
+            setIsValidatingImport(true);
+          } else if (total) {
+            setUploadProgress(Math.round((loaded / total) * 100));
+          }
+        },
+      );
       setPendingAction({ kind: 'restore-import', preview });
       setPassword('');
       setPasswordError(null);
-    } catch {
-      toast.error(labels.backupsImportFailed);
+    } catch (error) {
+      if (!axios.isCancel(error)) {
+        toast.error(labels.backupsImportFailed);
+      }
     } finally {
+      if (operationAbortControllerRef.current === controller) {
+        operationAbortControllerRef.current = null;
+      }
       setBusyAction(null);
+      setUploadProgress(null);
+      setIsValidatingImport(false);
     }
+  };
+
+  const cancelImport = () => {
+    operationAbortControllerRef.current?.abort();
   };
 
   const openAction = (action: PendingAction) => {
@@ -133,34 +161,44 @@ export function useBackups(labels: AdminTranslations) {
   };
 
   const confirmAction = async () => {
-    if (!pendingAction || !password) {
+    const action = pendingAction;
+    if (!action || !password) {
       return;
     }
     setBusyAction('confirm');
     try {
-      if (pendingAction.kind === 'delete') {
-        await deleteBackup(pendingAction.backup.id, password);
+      if (action.kind === 'delete') {
+        await deleteBackup(action.backup.id, password);
+        setBackupList((current) =>
+          current
+            ? {
+                ...current,
+                backups: current.backups.filter(
+                  (backup) => backup.id !== action.backup.id,
+                ),
+              }
+            : current,
+        );
         toast.info(labels.backupsDeleteSuccess);
-      } else if (pendingAction.kind === 'restore-backup') {
-        await restoreBackup(pendingAction.backup.id, password);
+      } else if (action.kind === 'restore-backup') {
+        await restoreBackup(action.backup.id, password);
         toast.info(labels.backupsRestoreSuccess);
       } else {
-        await restoreImportedBackup(
-          pendingAction.preview.importId,
-          password,
-        );
+        await restoreImportedBackup(action.preview.importId, password);
         toast.info(labels.backupsRestoreSuccess);
       }
       setPendingAction(null);
       setPassword('');
       setPasswordError(null);
-      await loadBackups();
+      if (action.kind !== 'delete') {
+        await loadBackups();
+      }
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.status === 403) {
         setPasswordError(labels.backupsPasswordInvalid);
       } else {
         toast.error(
-          pendingAction.kind === 'delete'
+          action.kind === 'delete'
             ? labels.backupsDeleteFailed
             : labels.backupsRestoreFailed,
         );
@@ -178,11 +216,14 @@ export function useBackups(labels: AdminTranslations) {
     pendingAction,
     password,
     passwordError,
+    uploadProgress,
+    isValidatingImport,
     setPassword: handlePasswordChange,
     canConfirm: Boolean(password) && busyAction !== 'confirm',
     loadBackups,
     handleCreate,
     cancelCreate,
+    cancelImport,
     handleDownload,
     handleImportFile,
     openAction,

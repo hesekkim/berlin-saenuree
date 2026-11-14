@@ -183,6 +183,16 @@ def test_imported_export_can_be_restored(isolated_data):
     assert not (settings.backup_dir / ".imports" / f"{preview['importId']}.zip").exists()
 
 
+def test_cancelled_import_removes_staged_archive(isolated_data):
+    cancel_event = threading.Event()
+    cancel_event.set()
+
+    with pytest.raises(backups_service.BackupCancelledError):
+        backups_service.stage_import(io.BytesIO(b"archive"), cancel_event)
+
+    assert list((settings.backup_dir / ".imports").glob("*.zip")) == []
+
+
 def test_wrong_password_does_not_change_data(isolated_data):
     settings.data_dir.mkdir(parents=True)
     current = settings.data_dir / "value.json"

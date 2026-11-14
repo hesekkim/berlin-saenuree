@@ -22,6 +22,7 @@ export interface DialogProps {
   overlayClassName?: string;
   headerClassName?: string;
   showTitle?: boolean;
+  showCloseButton?: boolean;
   showHeaderDivider?: boolean;
   onDialogClick?: MouseEventHandler<HTMLDivElement>;
 }
@@ -42,6 +43,7 @@ export default function Dialog({
   overlayClassName = '',
   headerClassName = '',
   showTitle = true,
+  showCloseButton = true,
   showHeaderDivider = true,
   onDialogClick,
 }: DialogProps) {
@@ -107,14 +109,16 @@ export default function Dialog({
               {title}
             </h2>
           ) : null}
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label={closeLabel}
-          >
-            <IoMdClose aria-hidden="true" />
-          </button>
+          {showCloseButton ? (
+            <button
+              type="button"
+              className={styles.closeButton}
+              onClick={onClose}
+              aria-label={closeLabel}
+            >
+              <IoMdClose aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
 
         <div className={[styles.body, bodyClassName].filter(Boolean).join(' ')}>

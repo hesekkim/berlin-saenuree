@@ -33,6 +33,18 @@
   text-align: center;
 }
 
+.loadingState {
+  display: grid;
+  min-height: 10rem;
+  place-items: center;
+  text-align: center;
+}
+
+.loadingMessage {
+  margin: 0;
+  font-weight: 600;
+}
+
 .emptyState .emptyMessage {
   margin: 0;
   font-weight: 600;
@@ -46,13 +58,6 @@
 
 .headerActions,
 .rowActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--cf-space-8);
-}
-
-.createProgress {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -207,6 +212,43 @@
 
 .restoreDialog {
   max-width: 42rem;
+}
+
+.operationDialog {
+  max-width: 30rem;
+}
+
+.operationDialogBody {
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding-block: var(--cf-space-8, 0.5rem);
+  padding-bottom: var(--cf-space-16);
+}
+
+.operationContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cf-space-16);
+  width: 100%;
+  padding-top: var(--cf-space-12);
+}
+
+.operationContent > div {
+  min-height: 0;
+  padding: 0;
+}
+
+.operationContent p {
+  margin: 0;
+  text-align: center;
+}
+
+.operationProgress {
+  width: 100%;
+  height: 0.75rem;
+  accent-color: var(--cms-primary, var(--cf-blue-63));
 }
 
 .restoreConfirm {

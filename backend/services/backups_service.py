@@ -341,7 +341,11 @@ def _safe_archive_member(info: zipfile.ZipInfo) -> str:
     return name
 
 
-def _validate_archive(path: Path) -> tuple[dict[str, Any], int]:
+def _validate_archive(
+    path: Path,
+    cancel_event: threading.Event | None = None,
+) -> tuple[dict[str, Any], int]:
+    _raise_if_cancelled(cancel_event)
     if path.stat().st_size > settings.backup_max_archive_bytes:
         raise BackupValidationError("Backup archive exceeds the upload size limit")
     try:
@@ -355,6 +359,7 @@ def _validate_archive(path: Path) -> tuple[dict[str, Any], int]:
             file_infos: dict[str, zipfile.ZipInfo] = {}
             expanded_size = 0
             for info in infos:
+                _raise_if_cancelled(cancel_event)
                 if info.filename == MANIFEST_NAME:
                     if info.file_size > 2 * 1024 * 1024:
                         raise BackupValidationError("Backup manifest is too large")
@@ -396,6 +401,7 @@ def _validate_archive(path: Path) -> tuple[dict[str, Any], int]:
                 raise BackupValidationError("Backup file manifest does not match")
             expected: dict[str, dict[str, Any]] = {}
             for record in files:
+                _raise_if_cancelled(cancel_event)
                 if not isinstance(record, dict):
                     raise BackupValidationError("Backup file manifest is invalid")
                 member_name = record.get("path")
@@ -417,10 +423,12 @@ def _validate_archive(path: Path) -> tuple[dict[str, Any], int]:
                 raise BackupValidationError("Backup file manifest does not match")
             total_actual_size = 0
             for member_name, info in file_infos.items():
+                _raise_if_cancelled(cancel_event)
                 digest = hashlib.sha256()
                 member_size = 0
                 with archive.open(info, "r") as member:
                     while chunk := member.read(_CHUNK_SIZE):
+                        _raise_if_cancelled(cancel_event)
                         member_size += len(chunk)
                         total_actual_size += len(chunk)
                         if (
@@ -452,13 +460,21 @@ def _validate_archive(path: Path) -> tuple[dict[str, Any], int]:
     return manifest, expanded_size
 
 
-def _copy_upload(source: BinaryIO, destination: Path) -> None:
+def _copy_upload(
+    source: BinaryIO,
+    destination: Path,
+    cancel_event: threading.Event | None = None,
+) -> None:
     source.seek(0)
     size = 0
     try:
         with destination.open("xb") as target:
             destination.chmod(0o600)
-            while chunk := source.read(_CHUNK_SIZE):
+            while True:
+                _raise_if_cancelled(cancel_event)
+                chunk = source.read(_CHUNK_SIZE)
+                if not chunk:
+                    break
                 size += len(chunk)
                 if size > settings.backup_max_archive_bytes:
                     raise BackupValidationError(
@@ -470,13 +486,16 @@ def _copy_upload(source: BinaryIO, destination: Path) -> None:
         raise
 
 
-def stage_import(source: BinaryIO) -> dict[str, Any]:
+def stage_import(
+    source: BinaryIO,
+    cancel_event: threading.Event | None = None,
+) -> dict[str, Any]:
     imports_dir = _imports_root()
     import_id = uuid.uuid4().hex
     destination = imports_dir / f"{import_id}.zip"
-    _copy_upload(source, destination)
+    _copy_upload(source, destination, cancel_event)
     try:
-        manifest, expanded_size = _validate_archive(destination)
+        manifest, expanded_size = _validate_archive(destination, cancel_event)
     except Exception:
         destination.unlink(missing_ok=True)
         raise

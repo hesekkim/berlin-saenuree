@@ -44,6 +44,8 @@ export default function BackupSection({ labels }: BackupSectionProps) {
     maxBackups,
     isLoading,
     busyAction,
+    uploadProgress,
+    isValidatingImport,
     pendingAction,
     password,
     passwordError,
@@ -51,6 +53,7 @@ export default function BackupSection({ labels }: BackupSectionProps) {
     canConfirm,
     handleCreate,
     cancelCreate,
+    cancelImport,
     handleDownload,
     handleImportFile,
     openAction,
@@ -72,6 +75,20 @@ export default function BackupSection({ labels }: BackupSectionProps) {
     manual: labels.backupsManual,
     pre_restore: labels.backupsPreRestore,
   };
+  const isCreating = busyAction === 'create';
+  const isImporting = busyAction === 'import';
+  const isRestoring =
+    busyAction === 'confirm' &&
+    (pendingAction?.kind === 'restore-backup' ||
+      pendingAction?.kind === 'restore-import');
+  const operationMessage = isCreating
+    ? labels.backupsCreating
+    : isRestoring
+      ? labels.backupsRestoring
+      : isValidatingImport
+        ? labels.backupsImportValidating
+        : labels.backupsImporting;
+  const cancelOperation = isCreating ? cancelCreate : cancelImport;
 
   return (
     <>
@@ -84,31 +101,14 @@ export default function BackupSection({ labels }: BackupSectionProps) {
             <p className={styles.description}>{labels.backupsSectionDesc}</p>
           </div>
           <div className={styles.headerActions}>
-            {busyAction === 'create' ? (
-              <div className={styles.createProgress}>
-                <LoadingSpinner
-                  size="small"
-                  text={labels.backupsCreating}
-                  inline
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={cancelCreate}
-                >
-                  {labels.backupsCancel}
-                </Button>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={Boolean(busyAction)}
-                onClick={() => void handleCreate()}
-              >
-                {labels.backupsCreate}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={Boolean(busyAction)}
+              onClick={() => void handleCreate()}
+            >
+              {labels.backupsCreate}
+            </Button>
             <label
               className={[
                 styles.uploadButton,
@@ -117,11 +117,7 @@ export default function BackupSection({ labels }: BackupSectionProps) {
                 .filter(Boolean)
                 .join(' ')}
             >
-              <span>
-                {busyAction === 'import'
-                  ? labels.backupsLoading
-                  : labels.backupsImport}
-              </span>
+              <span>{labels.backupsImport}</span>
               <input
                 type="file"
                 accept=".zip,application/zip"
@@ -137,7 +133,9 @@ export default function BackupSection({ labels }: BackupSectionProps) {
         </div>
         <p className={styles.warning}>{labels.backupsStorageWarning}</p>
         {isLoading ? (
-          <p className={styles.emptyMessage}>{labels.backupsLoading}</p>
+          <div className={styles.loadingState} role="status" aria-live="polite">
+            <p className={styles.loadingMessage}>{labels.backupsLoading}</p>
+          </div>
         ) : backups.length === 0 ? (
           <div className={styles.emptyState}>
             <p className={styles.emptyMessage}>{labels.backupsEmpty}</p>
@@ -212,7 +210,7 @@ export default function BackupSection({ labels }: BackupSectionProps) {
       </section>
 
       <Dialog
-        isOpen={pendingAction !== null}
+        isOpen={pendingAction !== null && !isRestoring}
         title={pendingImport ? labels.backupsImportTitle : title}
         onClose={closeAction}
         closeLabel={labels.dialogCloseLabel}
@@ -292,6 +290,57 @@ export default function BackupSection({ labels }: BackupSectionProps) {
             />
           </div>
         ) : null}
+      </Dialog>
+
+      <Dialog
+        isOpen={isCreating || isImporting || isRestoring}
+        title={
+          isRestoring
+            ? labels.backupsRestoring
+            : isCreating
+              ? labels.backupsCreating
+              : labels.backupsImport
+        }
+        onClose={cancelOperation}
+        closeLabel={labels.backupsCancel}
+        className={styles.operationDialog}
+        bodyClassName={styles.operationDialogBody}
+        showFooterDivider={false}
+        showCloseButton={!isRestoring}
+        closeOnOverlayClick={false}
+        closeOnEscape={false}
+        footer={
+          isRestoring ? undefined : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={cancelOperation}
+            >
+              {labels.backupsCancel}
+            </Button>
+          )
+        }
+      >
+        <div className={styles.operationContent}>
+          {isImporting && !isValidatingImport ? (
+            <>
+              <p role="status" aria-live="polite">
+                {operationMessage}
+              </p>
+              <progress
+                className={styles.operationProgress}
+                max={100}
+                value={uploadProgress ?? undefined}
+                aria-label={operationMessage}
+              />
+            </>
+          ) : (
+            <LoadingSpinner
+              size="medium"
+              text={operationMessage}
+            />
+          )}
+        </div>
       </Dialog>
     </>
   );

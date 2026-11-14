@@ -52,13 +52,22 @@ export async function downloadBackup(backupId: string): Promise<Blob> {
   return response.data;
 }
 
-export async function stageBackupImport(file: File): Promise<ImportPreview> {
+export async function stageBackupImport(
+  file: File,
+  signal?: AbortSignal,
+  onProgress?: (loaded: number, total?: number) => void,
+): Promise<ImportPreview> {
   const formData = new FormData();
   formData.append('file', file);
   const response = await apiClient.post<ImportPreview>(
     '/admin/backups/import',
     formData,
-    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 },
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      signal,
+      timeout: 300000,
+      onUploadProgress: ({ loaded, total }) => onProgress?.(loaded, total),
+    },
   );
   return response.data;
 }

@@ -103,6 +103,68 @@ describe('useBackups', () => {
     expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
+  it('aborts an in-progress backup upload when cancellation is requested', async () => {
+    const { result } = renderHook(() =>
+      useBackups(adminTranslations[Language.EN]),
+    );
+    await waitFor(() => expect(mocks.fetchBackups).toHaveBeenCalledTimes(1));
+
+    let uploadSignal: AbortSignal | undefined;
+    mocks.stageBackupImport.mockImplementation(
+      (_file: File, signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          uploadSignal = signal;
+          signal.addEventListener(
+            'abort',
+            () => reject({ __CANCEL__: true }),
+            { once: true },
+          );
+        }),
+    );
+
+    act(() => {
+      void result.current.handleImportFile(
+        new File(['archive'], 'backup.zip', { type: 'application/zip' }),
+      );
+    });
+    expect(result.current.busyAction).toBe('import');
+
+    act(() => result.current.cancelImport());
+    await waitFor(() => expect(result.current.busyAction).toBeNull());
+
+    expect(uploadSignal?.aborted).toBe(true);
+    expect(mocks.toast.error).not.toHaveBeenCalled();
+  });
+
+  it('removes a deleted backup locally without reloading the list', async () => {
+    const backup = {
+      id: 'backup-to-delete',
+      kind: 'manual' as const,
+      createdAt: '2026-01-01T00:00:00+00:00',
+      sizeBytes: 1200,
+      isValid: true,
+    };
+    mocks.fetchBackups.mockResolvedValue({
+      backups: [backup],
+      maxBackups: 12,
+    });
+    const { result } = renderHook(() =>
+      useBackups(adminTranslations[Language.EN]),
+    );
+    await waitFor(() => expect(result.current.backups).toHaveLength(1));
+
+    act(() => result.current.openAction({ kind: 'delete', backup }));
+    act(() => result.current.setPassword('admin-secret'));
+    await act(async () => result.current.confirmAction());
+
+    expect(mocks.deleteBackup).toHaveBeenCalledWith(
+      backup.id,
+      'admin-secret',
+    );
+    expect(result.current.backups).toEqual([]);
+    expect(mocks.fetchBackups).toHaveBeenCalledTimes(1);
+  });
+
   it('shows an incorrect password on the field instead of a toast', async () => {
     const labels = adminTranslations[Language.EN];
     const { result } = renderHook(() => useBackups(labels));
