@@ -42,6 +42,7 @@ SPA 라우팅은 `vercel.json` rewrite로 `index.html`에 넘긴다.
 
 - 실제 backend origin(`VITE_API_BASE_URL`과 같은 값)을 `img-src`와 `connect-src` 두 곳에서 바꾼다.
 - 바꾸지 않으면 API 요청과 이미지가 CSP에 막힌다.
+- Home의 YouTube 썸네일은 `i.ytimg.com`, 영상 재생은 `www.youtube-nocookie.com`을 허용해야 한다.
 - `style-src`/`font-src`는 현재 Google Fonts(`index.html`)를 허용한다. 폰트를 바꾸면 여기도 맞춘다.
 - 다른 헤더: `X-Frame-Options: DENY`, `frame-ancestors 'none'` (다른 사이트에 끼워 넣기 금지), `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`(카메라·마이크·위치 차단).
 - 배포 후 브라우저 콘솔에 `Content Security Policy` 위반이 없는지 확인한다 (로그인, 에디터 이미지, 팝업).
