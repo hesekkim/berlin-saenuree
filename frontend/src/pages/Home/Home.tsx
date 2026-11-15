@@ -20,6 +20,7 @@ export default function Home() {
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
   const heroPhotoRef = useRef<HTMLDivElement>(null);
+  const heroTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef<number | null>(null);
   const videoScrollTimerRef = useRef<number | null>(null);
   const heroImages = content.heroImages;
@@ -29,6 +30,36 @@ export default function Home() {
     .map((url) => getYouTubeVideoId(url))
     .filter((id): id is string => id !== null)
     .slice(0, 3);
+
+  const handleHeroTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    heroTouchStartRef.current = touch
+      ? { x: touch.clientX, y: touch.clientY }
+      : null;
+  };
+
+  const handleHeroTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = heroTouchStartRef.current;
+    heroTouchStartRef.current = null;
+    if (!start || heroImages.length < 2) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    if (!touch) {
+      return;
+    }
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    setHeroSlideIndex((index) =>
+      (index + (deltaX < 0 ? 1 : -1) + heroImages.length) % heroImages.length
+    );
+  };
 
   useEffect(
     () => () => {
@@ -101,6 +132,11 @@ export default function Home() {
             role={heroImages.length > 1 ? 'region' : undefined}
             aria-roledescription={heroImages.length > 1 ? 'carousel' : undefined}
             aria-label={heroImages.length > 1 ? labels.heroSlides : undefined}
+            onTouchStart={handleHeroTouchStart}
+            onTouchEnd={handleHeroTouchEnd}
+            onTouchCancel={() => {
+              heroTouchStartRef.current = null;
+            }}
           >
             {heroImages.map((image, index) => (
               <img

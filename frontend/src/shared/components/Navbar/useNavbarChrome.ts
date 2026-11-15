@@ -40,9 +40,6 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
     staleTime: 30_000,
   });
   const [openMenuBar, setOpenMenuBar] = useState(false);
-  const [showBackground, setShowBackground] = useState(
-    () => window.scrollY > 10
-  );
 
   const enhancedNavbarItems = filterNavbarItems(
     navbarItems,
@@ -73,8 +70,6 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
 
   useEffect(() => {
     const onScroll = () => {
-      const minScrollYToShowBackground = 10;
-      setShowBackground(window.scrollY > minScrollYToShowBackground);
       setOpenMenuBar(false);
     };
 
@@ -93,7 +88,6 @@ export function useNavbarChrome(navbarItems: NavbarItemProps[]) {
     isAuthenticated,
     selectedMenuTitle,
     openMenuBar,
-    showBackground,
     enhancedNavbarItems,
     sizeMedium,
     toggleOpenMenuBar,

@@ -19,7 +19,6 @@ export default function Navbar({
   const contentLanguage = toContentLanguage(language);
   const {
     openMenuBar,
-    showBackground,
     enhancedNavbarItems,
     toggleOpenMenuBar,
     handleSelectMenu,
@@ -29,8 +28,8 @@ export default function Navbar({
   return (
     <header
       className={`${styles['main-container']} ${
-        (showBackground || openMenuBar) && styles.accent
-      } ${openMenuBar ? styles['menu-open'] : ''}`}
+        openMenuBar ? styles['menu-open'] : ''
+      }`}
     >
       <div className={styles['left-side']}>
         <div className={styles['title-container']}>

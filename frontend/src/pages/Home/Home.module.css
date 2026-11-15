@@ -27,6 +27,7 @@
   background-color: var(--color-bg-secondary);
   transform: scale(var(--hero-image-scale, 1));
   opacity: var(--hero-image-opacity, 1);
+  touch-action: pan-y;
   will-change: opacity, transform;
 }
 
