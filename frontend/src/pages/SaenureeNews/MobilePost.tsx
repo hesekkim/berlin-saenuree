@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type TouchEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type SyntheticEvent,
+  type TouchEvent,
+} from 'react';
 import SanitizedRichText from '../../shared/components/ui/SanitizedRichText/SanitizedRichText';
 import {
   mediaImageAbsoluteUrl,
@@ -33,42 +39,54 @@ function formatDate(value: string, language: string): string {
 function MobilePostMedia({
   media,
   alt,
-  frameAspectRatio,
+  onImageReady,
   onVideoPreviewReady,
   onVideoError,
   controls = true,
 }: {
   media: PublicPostMedia;
   alt: string;
-  frameAspectRatio: number;
+  onImageReady?: () => void;
   onVideoPreviewReady?: () => void;
   onVideoError?: () => void;
   controls?: boolean;
 }) {
-  const aspectRatio = media.width / media.height;
-  const hasAspectRatioDifference =
-    Math.abs(aspectRatio - frameAspectRatio) / frameAspectRatio >
-    IMAGE_ASPECT_RATIO_TOLERANCE;
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    if (!onImageReady) {
+      return;
+    }
+
+    const image = event.currentTarget;
+    if (typeof image.decode !== 'function') {
+      onImageReady();
+      return;
+    }
+
+    void image.decode().then(onImageReady, onImageReady);
+  };
 
   return (
     <div className={styles.photoSlide}>
       {media.type === 'image' ? (
         <>
-          {hasAspectRatioDifference ? (
-            <img
-              className={`${styles.photo} ${styles.photoBackdrop}`}
-              src={mediaImageAbsoluteUrl(media.imageId, 'display')}
-              alt=""
-              aria-hidden="true"
-            />
-          ) : null}
+          <img
+            className={`${styles.photo} ${styles.photoBackdrop}`}
+            src={mediaImageAbsoluteUrl(media.imageId, 'display')}
+            alt=""
+            aria-hidden="true"
+            loading={onImageReady ? 'eager' : 'lazy'}
+            width={media.width}
+            height={media.height}
+          />
           <img
             className={`${styles.photo} ${styles.photoForeground}`}
             src={mediaImageAbsoluteUrl(media.imageId, 'display')}
             alt={alt}
-            loading="lazy"
+            loading={onImageReady ? 'eager' : 'lazy'}
             width={media.width}
             height={media.height}
+            onLoad={handleImageLoad}
+            onError={onImageReady}
           />
         </>
       ) : (
@@ -95,6 +113,8 @@ export default function MobilePost({
     from: number;
     to: number;
     direction: 'next' | 'previous';
+    isReady: boolean;
+    shouldAnimate: boolean;
   } | null>(null);
   const [pendingVideoIndex, setPendingVideoIndex] = useState<number | null>(
     null,
@@ -106,7 +126,10 @@ export default function MobilePost({
   const captionRef = useRef<HTMLDivElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const visibleImageIndex =
-    pendingVideoIndex ?? transition?.to ?? activeImage;
+    pendingVideoIndex ??
+    (transition?.isReady && transition.shouldAnimate
+      ? transition.to
+      : activeImage);
   const isChangingVideo = pendingVideoIndex !== null;
   const media = post.media;
   const activeMedia = media[visibleImageIndex] ?? media[0];
@@ -187,21 +210,39 @@ export default function MobilePost({
       return;
     }
 
-    if (
-      media[activeImage]?.type === 'video' ||
-      (typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      )
-    ) {
-      setActiveImage(index);
+    const nextMedia = media[index];
+    if (nextMedia?.type === 'image') {
+      const prefersReducedMotion =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTransition({
+        from: activeImage,
+        to: index,
+        direction: index > activeImage ? 'next' : 'previous',
+        isReady: false,
+        shouldAnimate:
+          media[activeImage]?.type !== 'video' && !prefersReducedMotion,
+      });
       return;
     }
 
-    setTransition({
-      from: activeImage,
-      to: index,
-      direction: index > activeImage ? 'next' : 'previous',
-    });
+    if (media[activeImage]?.type === 'video') {
+      setActiveImage(index);
+    }
+  };
+
+  const handleImageReady = (index: number) => {
+    if (!transition || transition.to !== index || transition.isReady) {
+      return;
+    }
+
+    if (!transition.shouldAnimate) {
+      setActiveImage(index);
+      setTransition(null);
+      return;
+    }
+
+    setTransition({ ...transition, isReady: true });
   };
 
   const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
@@ -226,7 +267,7 @@ export default function MobilePost({
   };
 
   const handleSlideAnimationEnd = () => {
-    if (!transition) {
+    if (!transition?.isReady || !transition.shouldAnimate) {
       return;
     }
     setActiveImage(transition.to);
@@ -287,31 +328,11 @@ export default function MobilePost({
           }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={() => {
+            touchStart.current = null;
+          }}
         >
-          {transition ? (
-            <div
-              className={`${styles.photoTrack} ${
-                transition.direction === 'next'
-                  ? styles.slideNext
-                  : styles.slidePrevious
-              }`}
-              onAnimationEnd={handleSlideAnimationEnd}
-            >
-              {visibleImages.map((index) => {
-                const item = media[index];
-                const mediaId =
-                  item.type === 'image' ? item.imageId : item.fileId;
-                return (
-                  <MobilePostMedia
-                    key={mediaId}
-                    media={item}
-                    alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
-                    frameAspectRatio={frameAspectRatio}
-                    />
-                );
-              })}
-            </div>
-          ) : activeMedia ? (
+          {pendingVideoIndex !== null ? (
             <>
               {[
                 { index: activeImage, isPending: false },
@@ -349,7 +370,6 @@ export default function MobilePost({
                     <MobilePostMedia
                       media={item}
                       alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
-                      frameAspectRatio={frameAspectRatio}
                       controls={!isPending}
                       onVideoPreviewReady={
                         isPending
@@ -376,7 +396,36 @@ export default function MobilePost({
                 </div>
               ) : null}
             </>
-          ) : null}
+          ) : (
+            <div
+              className={`${styles.photoTrack} ${
+                transition?.isReady && transition.shouldAnimate
+                  ? transition.direction === 'next'
+                    ? styles.slideNext
+                    : styles.slidePrevious
+                  : ''
+              }`}
+              onAnimationEnd={handleSlideAnimationEnd}
+            >
+              {visibleImages.map((index) => {
+                const item = media[index];
+                const mediaId =
+                  item.type === 'image' ? item.imageId : item.fileId;
+                return (
+                  <MobilePostMedia
+                    key={mediaId}
+                    media={item}
+                    alt={`${labels.photoNews} ${index + 1} / ${media.length}`}
+                    onImageReady={
+                      transition?.to === index && !transition.isReady
+                        ? () => handleImageReady(index)
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
           {media.length > 1 ? (
             <div
               className={styles.imageIndicators}

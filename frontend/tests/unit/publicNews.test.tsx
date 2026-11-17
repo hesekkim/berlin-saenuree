@@ -253,6 +253,17 @@ describe('Saenuree News public pages', () => {
   it('shows a mobile vertical feed with swipeable photos instead of a dialog', async () => {
     cleanup();
     const originalMatchMedia = window.matchMedia;
+    const originalImageDecode = Object.getOwnPropertyDescriptor(
+      HTMLImageElement.prototype,
+      'decode',
+    );
+    let resolveImageDecode: (() => void) | null = null;
+    const decodeImage = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveImageDecode = resolve;
+        }),
+    );
     const addEventListener = vi.fn();
     const removeEventListener = vi.fn();
     Object.defineProperty(window, 'matchMedia', {
@@ -262,6 +273,10 @@ describe('Saenuree News public pages', () => {
         addEventListener,
         removeEventListener,
       })),
+    });
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+      configurable: true,
+      value: decodeImage,
     });
 
     const { unmount } = renderWithQueries(<PhotoNews />);
@@ -274,15 +289,49 @@ describe('Saenuree News public pages', () => {
       fireEvent.touchStart(photoGroup, {
         touches: [{ clientX: 200, clientY: 100 }],
       });
+      fireEvent.touchCancel(photoGroup);
       fireEvent.touchEnd(photoGroup, {
         changedTouches: [{ clientX: 100, clientY: 100 }],
       });
 
-      expect(screen.getByRole('group', { name: '2 / 2' })).toBeInTheDocument();
+      expect(decodeImage).not.toHaveBeenCalled();
+      expect(screen.getByRole('group', { name: '1 / 2' })).toBeInTheDocument();
+
+      fireEvent.touchStart(photoGroup, {
+        touches: [{ clientX: 200, clientY: 100 }],
+      });
+      fireEvent.touchEnd(photoGroup, {
+        changedTouches: [{ clientX: 100, clientY: 100 }],
+      });
+
+      expect(decodeImage).not.toHaveBeenCalled();
+      expect(screen.getByRole('group', { name: '1 / 2' })).toBeInTheDocument();
+      const photoTrack = document.querySelector('[class*="photoTrack"]');
+      expect(photoTrack).not.toBeNull();
+      expect(photoTrack?.className).not.toContain('slideNext');
+      const incomingImage = screen.getByRole('img', {
+        name: 'Photo News 2 / 2',
+      });
+      expect(incomingImage).toHaveAttribute('loading', 'eager');
+      fireEvent.load(incomingImage);
+
+      expect(decodeImage).toHaveBeenCalledOnce();
+      expect(screen.getByRole('group', { name: '1 / 2' })).toBeInTheDocument();
+
+      if (!resolveImageDecode) {
+        throw new Error('Expected the next image to be decoded');
+      }
+      resolveImageDecode();
+
+      await waitFor(() => {
+        expect(screen.getByRole('group', { name: '2 / 2' })).toBeInTheDocument();
+        expect(photoTrack?.className).toContain('slideNext');
+      });
       expect(screen.getByRole('button', { name: '2 / 2' })).toHaveAttribute(
         'aria-current',
         'true',
       );
+      expect(document.querySelector('[class*="photoTrack"]')).toBe(photoTrack);
     } finally {
       unmount();
       if (originalMatchMedia) {
@@ -292,6 +341,15 @@ describe('Saenuree News public pages', () => {
         });
       } else {
         Reflect.deleteProperty(window, 'matchMedia');
+      }
+      if (originalImageDecode) {
+        Object.defineProperty(
+          HTMLImageElement.prototype,
+          'decode',
+          originalImageDecode,
+        );
+      } else {
+        Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
       }
     }
   });

@@ -13,6 +13,7 @@
   margin-inline: auto;
   background: var(--color-bg-primary);
   touch-action: pan-y;
+  overscroll-behavior-x: none;
 }
 
 .photo {
