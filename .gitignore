@@ -2,7 +2,10 @@
 .venv
 __pycache__
 .env
-/backend/data/
+/backend/data/*
+!/backend/data/seed/
+/backend/data/seed/*
+!/backend/data/seed/church-history.json
 /backend/backups/
 
 # frontend
