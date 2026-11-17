@@ -40,8 +40,9 @@ SPA 라우팅은 `vercel.json` rewrite로 `index.html`에 넘긴다.
 
 `vercel.json`의 `Content-Security-Policy`에는 API 주소가 들어 있다. 빌드 환경변수를 읽을 수 없으므로 **배포하는 사이트마다 직접 바꿔야 한다.** `https://your-backend.example.com`을 Render backend origin으로 바꾼다.
 
-- 실제 backend origin(`VITE_API_BASE_URL`과 같은 값)을 `img-src`와 `connect-src` 두 곳에서 바꾼다.
+- 실제 backend origin(`VITE_API_BASE_URL`과 같은 값)을 `img-src`, `media-src`, `connect-src`에 설정한다.
 - 바꾸지 않으면 API 요청과 이미지가 CSP에 막힌다.
+- Posts 동영상 재생에는 `media-src`의 backend origin이 필요하다. 업로드 전 브라우저에서 동영상 메타데이터를 읽으므로 `blob:`도 허용한다.
 - Home의 YouTube 썸네일은 `i.ytimg.com`, 영상 재생은 `www.youtube-nocookie.com`을 허용해야 한다.
 - `style-src`/`font-src`는 현재 Google Fonts(`index.html`)를 허용한다. 폰트를 바꾸면 여기도 맞춘다.
 - 다른 헤더: `X-Frame-Options: DENY`, `frame-ancestors 'none'` (다른 사이트에 끼워 넣기 금지), `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`(카메라·마이크·위치 차단).
