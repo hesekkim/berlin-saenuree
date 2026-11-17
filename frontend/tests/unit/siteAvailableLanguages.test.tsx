@@ -22,15 +22,18 @@ describe('ConfigProvider available languages', () => {
     fetchSiteSettings.mockResolvedValue({
       availableLanguages: [Language.EN, Language.KO, Language.DE],
       adminLanguage: Language.EN,
+      defaultLanguage: Language.KO,
       pageAdminEnabled: false,
     });
     saveSiteSettings.mockImplementation(async (update: {
       availableLanguages?: string[];
       adminLanguage?: string;
+      defaultLanguage?: string;
     }) => ({
       availableLanguages:
         update.availableLanguages ?? [Language.EN, Language.KO, Language.DE],
       adminLanguage: update.adminLanguage ?? Language.EN,
+      defaultLanguage: update.defaultLanguage ?? Language.KO,
       pageAdminEnabled: false,
     }));
   });
@@ -49,7 +52,25 @@ describe('ConfigProvider available languages', () => {
     });
   });
 
-  it('adds a world language and falls back current language on remove', async () => {
+  it('uses the CMS default for first-time visitors', async () => {
+    fetchSiteSettings.mockResolvedValue({
+      availableLanguages: [Language.EN, Language.KO, Language.DE],
+      adminLanguage: Language.EN,
+      defaultLanguage: Language.DE,
+      pageAdminEnabled: false,
+    });
+
+    const { result } = renderHook(() => useConfig(), {
+      wrapper: ({ children }) => <ConfigProvider>{children}</ConfigProvider>,
+    });
+
+    await waitFor(() => {
+      expect(result.current.language).toBe(Language.DE);
+      expect(document.documentElement.lang).toBe(Language.DE);
+    });
+  });
+
+  it('adds a world language and falls back to the site default on remove', async () => {
     const { result } = renderHook(() => useConfig(), {
       wrapper: ({ children }) => <ConfigProvider>{children}</ConfigProvider>,
     });
@@ -73,7 +94,7 @@ describe('ConfigProvider available languages', () => {
     });
 
     expect(result.current.availableLanguages).not.toContain('ja');
-    expect(result.current.language).toBe(Language.EN);
+    expect(result.current.language).toBe(Language.KO);
   });
 
   it('keeps at least one available language', async () => {

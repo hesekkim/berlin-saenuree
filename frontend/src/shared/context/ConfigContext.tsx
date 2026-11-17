@@ -50,12 +50,19 @@ export const ConfigContext = createContext<{
   pageAdminEnabled: false,
 });
 
-function readStoredLanguage(available: string[]): string {
+function readStoredLanguage(
+  available: string[],
+  defaultLanguage: string,
+): string {
   const saved = localStorage.getItem('language');
-  if (saved && isWorldLanguageCode(saved)) {
-    return resolveLanguage(saved, available);
+  if (
+    saved &&
+    isWorldLanguageCode(saved) &&
+    available.includes(saved)
+  ) {
+    return saved;
   }
-  return resolveLanguage(Language.EN, available);
+  return resolveDefaultLanguage(available, defaultLanguage);
 }
 
 function applyAvailableLanguages(
@@ -63,16 +70,21 @@ function applyAvailableLanguages(
   availableLanguages: string[],
   defaultLanguage: string | null | undefined = prev.defaultLanguage,
 ): SiteLanguageState {
-  const language = resolveLanguage(prev.language, availableLanguages);
-  if (language !== prev.language) {
+  const resolvedDefaultLanguage = resolveDefaultLanguage(
+    availableLanguages,
+    defaultLanguage,
+  );
+  const language = readStoredLanguage(
+    availableLanguages,
+    resolvedDefaultLanguage,
+  );
+  const savedLanguage = localStorage.getItem('language');
+  if (savedLanguage && savedLanguage !== language) {
     localStorage.setItem('language', language);
   }
   return {
     availableLanguages,
-    defaultLanguage: resolveDefaultLanguage(
-      availableLanguages,
-      defaultLanguage,
-    ),
+    defaultLanguage: resolvedDefaultLanguage,
     language,
   };
 }
@@ -88,7 +100,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [siteLanguage, setSiteLanguage] = useState<SiteLanguageState>(() => ({
     availableLanguages: [...DEFAULT_SITE_LANGUAGES],
     defaultLanguage: resolveDefaultLanguage(DEFAULT_SITE_LANGUAGES, null),
-    language: readStoredLanguage(DEFAULT_SITE_LANGUAGES),
+    language: readStoredLanguage(
+      DEFAULT_SITE_LANGUAGES,
+      resolveDefaultLanguage(DEFAULT_SITE_LANGUAGES, null),
+    ),
   }));
   const [pageAdminEnabled, setPageAdminEnabled] = useState(false);
   const siteLanguageRef = useRef(siteLanguage);
@@ -119,6 +134,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = siteLanguage.language;
+  }, [siteLanguage.language]);
 
   const handleSetLanguage = (newLanguage: string) => {
     setSiteLanguage((prev) => {
