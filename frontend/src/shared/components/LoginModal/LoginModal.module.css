@@ -18,8 +18,7 @@
 }
 
 .error,
-.success,
-.warning {
+.success {
   padding: var(--cf-space-12, 0.75rem) var(--cf-space-16, 1rem);
   border-radius: var(--cf-radius-input, 8px);
   font-size: 0.875rem;
@@ -36,12 +35,6 @@
   background-color: var(--cf-green-13);
   border: 1px solid var(--cf-green-50);
   color: var(--cf-green-75);
-}
-
-.warning {
-  background-color: var(--cf-yellow-13);
-  border: 1px solid var(--cf-yellow-38);
-  color: var(--cf-yellow-63);
 }
 
 .footer {

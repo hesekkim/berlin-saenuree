@@ -7,8 +7,7 @@ type LoginStatus =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'success'; message: string }
-  | { kind: 'warning'; message: string };
+  | { kind: 'success'; message: string };
 
 const idleStatus: LoginStatus = { kind: 'idle' };
 
@@ -35,18 +34,11 @@ export function useLoginModal(onCancel?: () => void) {
     const result = await sendVerificationCode(email);
 
     if (result.success) {
-      if (result.data?.email_sent === false) {
-        setStatus({
-          kind: 'warning',
-          message:
-            'Email could not be sent. Check server logs for the verification code.',
-        });
-      } else {
-        setStatus({
-          kind: 'success',
-          message: 'Verification code sent! Check your email.',
-        });
-      }
+      setStatus({
+        kind: 'success',
+        message:
+          'If this email is authorized, a verification code has been sent.',
+      });
       setStep('code');
     } else {
       setStatus({

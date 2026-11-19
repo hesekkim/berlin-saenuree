@@ -60,8 +60,10 @@
 }
 
 .event {
-  position: relative;
+  display: flex;
   min-width: 0;
+  flex-direction: column;
+  gap: var(--cf-space-16);
   margin: 0;
   padding: var(--cf-space-16);
   border: 0;
@@ -69,12 +71,20 @@
   background: var(--cms-surface-muted, var(--cf-neutral-100));
 }
 
-.eventHeading {
-  position: absolute;
-  top: -1.125rem;
-  right: var(--cf-space-16);
-  padding: 0 var(--cf-space-4);
-  background: transparent;
+.event legend {
+  display: flex;
+  width: calc(100% + var(--cf-space-16));
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+  margin-right: calc(var(--cf-space-16) * -1);
+  padding: 0 0 0 var(--cf-space-8);
+  font-weight: 600;
+}
+
+.event legend span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .eventFields {
@@ -158,16 +168,6 @@
   position: absolute;
   top: var(--cf-space-8);
   right: var(--cf-space-8);
-}
-
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  clip-path: inset(50%);
 }
 
 .mediaHint {

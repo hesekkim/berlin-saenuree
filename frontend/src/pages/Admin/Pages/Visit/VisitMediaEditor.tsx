@@ -1,6 +1,8 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { FiTrash2 } from 'react-icons/fi';
+import Button from '../../../../shared/components/ui/Button/Button';
+import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
 import Upload, {
   type UploadLabels,
 } from '../../../../shared/components/ui/Upload/Upload';
@@ -24,6 +26,11 @@ type VisitMediaEditorProps = {
   disabled: boolean;
   uploadKey: string;
   removeImageLabel: string;
+  removeImageConfirmTitle: string;
+  removeImageConfirmMessage: string;
+  cancelLabel: string;
+  confirmRemoveImageLabel: string;
+  closeLabel: string;
   selectImageLabel: string;
   reorderHint: string;
   imageMovedLabel: string;
@@ -45,6 +52,11 @@ export default function VisitMediaEditor({
   disabled,
   uploadKey,
   removeImageLabel,
+  removeImageConfirmTitle,
+  removeImageConfirmMessage,
+  cancelLabel,
+  confirmRemoveImageLabel,
+  closeLabel,
   selectImageLabel,
   reorderHint,
   imageMovedLabel,
@@ -57,6 +69,10 @@ export default function VisitMediaEditor({
   const stripRef = useRef<HTMLOListElement>(null);
   const reorderHintId = useId();
   const [announcement, setAnnouncement] = useState('');
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    imageId: string;
+    index: number;
+  } | null>(null);
   const { draggingId, dragPoint, onPointerDown, dataAttribute } = usePointerReorder({
     items: images,
     getId: getImageId,
@@ -162,7 +178,9 @@ export default function VisitMediaEditor({
                       String(index + 1),
                     )}
                     disabled={disabled}
-                    onClick={() => onRemove(image.imageId)}
+                    onClick={() =>
+                      setPendingRemoval({ imageId: image.imageId, index })
+                    }
                   >
                     <FiTrash2 aria-hidden />
                   </button>
@@ -195,6 +213,45 @@ export default function VisitMediaEditor({
             document.body,
           )
         : null}
+      <Dialog
+        isOpen={pendingRemoval !== null}
+        title={removeImageConfirmTitle}
+        onClose={() => setPendingRemoval(null)}
+        closeLabel={closeLabel}
+        showFooterDivider={false}
+        footer={
+          <div className={styles.confirmActions}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setPendingRemoval(null)}
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                if (pendingRemoval) {
+                  onRemove(pendingRemoval.imageId);
+                  setPendingRemoval(null);
+                }
+              }}
+            >
+              {confirmRemoveImageLabel}
+            </Button>
+          </div>
+        }
+      >
+        <p>
+          {pendingRemoval
+            ? removeImageConfirmMessage.replace(
+                '{number}',
+                String(pendingRemoval.index + 1),
+              )
+            : null}
+        </p>
+      </Dialog>
     </section>
   );
 }

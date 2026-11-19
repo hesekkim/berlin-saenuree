@@ -72,11 +72,12 @@
 
 .goal legend {
   display: flex;
-  width: 100%;
+  width: calc(100% + var(--cf-space-16));
   align-items: center;
   justify-content: space-between;
   gap: var(--cf-space-16);
-  padding: 0 var(--cf-space-8);
+  margin-right: calc(var(--cf-space-16) * -1);
+  padding: 0 0 0 var(--cf-space-8);
   font-weight: 600;
 }
 

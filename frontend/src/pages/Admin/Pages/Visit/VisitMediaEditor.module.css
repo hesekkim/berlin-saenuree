@@ -4,6 +4,13 @@
   gap: var(--cf-space-8);
 }
 
+.mediaGroup,
+.mediaGroup * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .mediaGroup h3 {
   margin: 0;
   font-size: 1rem;
@@ -105,6 +112,24 @@
   top: var(--cf-space-4);
   right: var(--cf-space-4);
   z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  border-color: transparent;
+  background: transparent;
+  font-size: 1rem;
+}
+
+@media (hover: none) {
+  .mediaRemoveButton {
+    border-color: var(--cms-danger, var(--cf-red-63));
+    background: var(--cms-danger-soft, #fee2e2);
+  }
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cf-space-8);
 }
 
 .dragPreview {

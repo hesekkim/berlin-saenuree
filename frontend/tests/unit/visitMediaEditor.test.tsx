@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import VisitMediaEditor from '../../src/pages/Admin/Pages/Visit/VisitMediaEditor';
+
+afterEach(cleanup);
 
 vi.mock('../../src/shared/components/ui/Upload/Upload', () => ({
   default: () => null,
@@ -26,6 +28,11 @@ describe('VisitMediaEditor', () => {
         disabled={false}
         uploadKey="venue"
         removeImageLabel="Remove photo {number}"
+        removeImageConfirmTitle="Remove photo"
+        removeImageConfirmMessage="Remove photo {number}?"
+        cancelLabel="Cancel"
+        confirmRemoveImageLabel="Remove"
+        closeLabel="Close"
         selectImageLabel="Reorder photo {number}"
         reorderHint="Use arrows to reorder."
         imageMovedLabel="Photo {image} moved to position {position}."
@@ -61,5 +68,47 @@ describe('VisitMediaEditor', () => {
       images[2],
       images[1],
     ]);
+  });
+
+  it('requires confirmation before removing a photo', () => {
+    const onRemove = vi.fn();
+    render(
+      <VisitMediaEditor
+        title="Venue photos"
+        hint="Optional photos"
+        images={images}
+        disabled={false}
+        uploadKey="venue"
+        removeImageLabel="Remove photo {number}"
+        removeImageConfirmTitle="Remove photo"
+        removeImageConfirmMessage="Remove photo {number}?"
+        cancelLabel="Cancel"
+        confirmRemoveImageLabel="Remove"
+        closeLabel="Close"
+        selectImageLabel="Reorder photo {number}"
+        reorderHint="Use arrows to reorder."
+        imageMovedLabel="Photo {image} moved to position {position}."
+        uploadLabels={{}}
+        onUploaded={vi.fn()}
+        onItemsChange={vi.fn()}
+        onRemove={onRemove}
+        onReorder={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+
+    expect(screen.getByRole('dialog', { name: 'Remove photo' })).toBeVisible();
+    expect(screen.getByText('Remove photo 1?')).toBeVisible();
+    expect(onRemove).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onRemove).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove photo 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove', exact: true }));
+
+    expect(onRemove).toHaveBeenCalledOnce();
+    expect(onRemove).toHaveBeenCalledWith('one');
   });
 });

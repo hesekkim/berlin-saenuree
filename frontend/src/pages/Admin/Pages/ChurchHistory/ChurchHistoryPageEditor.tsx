@@ -108,10 +108,10 @@ export default function ChurchHistoryPageEditor() {
                       : '');
                   return (
                     <fieldset className={styles.event} key={event.id}>
-                      <legend className={styles.visuallyHidden}>
-                        {`${labels.events} ${index + 1}`}
-                      </legend>
-                      <div className={styles.eventHeading}>
+                      <legend>
+                        <span>
+                          {labels.events} {index + 1}
+                        </span>
                         <button
                           type="button"
                           className={`${styles.iconButton} ${styles.removeButton}`}
@@ -122,7 +122,7 @@ export default function ChurchHistoryPageEditor() {
                         >
                           <FiTrash2 aria-hidden />
                         </button>
-                      </div>
+                      </legend>
 
                       <div className={styles.eventFields}>
                         <InputField

@@ -394,6 +394,11 @@ export default function VisitPageEditor() {
               disabled={disabled}
               uploadKey={`${group}:${editor.uploadEpoch[group]}`}
               removeImageLabel={labels.removeImage}
+              removeImageConfirmTitle={labels.removeImageConfirmTitle}
+              removeImageConfirmMessage={labels.removeImageConfirmMessage}
+              cancelLabel={labels.cancel}
+              confirmRemoveImageLabel={labels.confirmRemoveImage}
+              closeLabel={labels.close}
               selectImageLabel={labels.reorderImage}
               reorderHint={labels.reorderHint}
               imageMovedLabel={labels.imageMoved}

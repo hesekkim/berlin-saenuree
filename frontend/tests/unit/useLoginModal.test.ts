@@ -40,11 +40,11 @@ describe('useLoginModal', () => {
     expect(result.current.step).toBe('code');
     expect(result.current.status).toEqual({
       kind: 'success',
-      message: 'Verification code sent! Check your email.',
+      message: 'If this email is authorized, a verification code has been sent.',
     });
   });
 
-  it('shows warning when email was not sent', async () => {
+  it('uses the same neutral message when email delivery is not confirmed', async () => {
     sendVerificationCode.mockResolvedValue({
       success: true,
       data: { email_sent: false },
@@ -57,7 +57,10 @@ describe('useLoginModal', () => {
     });
 
     expect(result.current.step).toBe('code');
-    expect(result.current.status.kind).toBe('warning');
+    expect(result.current.status).toEqual({
+      kind: 'success',
+      message: 'If this email is authorized, a verification code has been sent.',
+    });
   });
 
   it('stays on email step when send fails', async () => {

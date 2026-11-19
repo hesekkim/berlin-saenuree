@@ -25,9 +25,7 @@ export default function LoginModal({ isOpen, onCancel }: LoginModalProps) {
   } = useLoginModal(onCancel);
 
   const statusBanner =
-    status.kind === 'error' ||
-    status.kind === 'success' ||
-    status.kind === 'warning' ? (
+    status.kind === 'error' || status.kind === 'success' ? (
       <div className={styles[status.kind]}>{status.message}</div>
     ) : null;
 
