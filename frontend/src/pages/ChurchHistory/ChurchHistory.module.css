@@ -19,8 +19,10 @@
   width: 100vw;
   height: 100vh;
   height: 100svh;
+  height: 100dvh;
   margin-bottom: -100vh;
   margin-bottom: -100svh;
+  margin-bottom: -100dvh;
   background-color: rgb(99 99 99);
   background-position: center;
   background-repeat: no-repeat;
