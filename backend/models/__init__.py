@@ -1,5 +1,10 @@
 from models.auth import SendCodeRequest, VerifyCodeRequest, TokenResponse
 from models.cms import (
+    BirthdayEmailDeliveryStatus,
+    BirthdayEmailSettingsResponse,
+    BirthdayEmailSettingsUpdateRequest,
+    BirthdayEmailStatusDelivery,
+    BirthdayEmailStatusResponse,
     ChurchHistoryEventMedia,
     ChurchHistorySharedMedia,
     CmsMeResponse,
@@ -45,6 +50,11 @@ __all__ = [
     "ChurchMemberCreateRequest",
     "ChurchMemberResponse",
     "ChurchMemberUpdateRequest",
+    "BirthdayEmailDeliveryStatus",
+    "BirthdayEmailSettingsResponse",
+    "BirthdayEmailSettingsUpdateRequest",
+    "BirthdayEmailStatusDelivery",
+    "BirthdayEmailStatusResponse",
     "CmsMeResponse",
     "CmsMeUpdateRequest",
     "MediaFileResponse",

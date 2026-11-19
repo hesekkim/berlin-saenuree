@@ -1,3 +1,4 @@
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../shared/components/ui/Button/Button';
@@ -11,6 +12,7 @@ import { adminTranslations } from '../../translations';
 import { canAccessMembers, canManageMembers } from '../../adminNav';
 import BulkDeleteDialog from '../../components/BulkDeleteDialog';
 import PageSelectionControls from '../../components/PageSelectionControls';
+import BirthdayEmailSettings from './BirthdayEmailSettings';
 import useMembersPage from './useMembersPage';
 import styles from './Members.module.css';
 
@@ -20,6 +22,12 @@ export default function Members() {
   const labels = adminTranslations[language];
   const canView = canAccessMembers(role, effectivePages);
   const canManage = canManageMembers(role, effectivePages);
+  const canViewBirthdayEmail = role === 'site_admin' || role === 'page_admin';
+  const [activeTab, setActiveTab] = useState<'directory' | 'birthdays'>(
+    'directory',
+  );
+  const tabIdPrefix = useId();
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const {
     pageContainerRef,
     members,
@@ -59,6 +67,34 @@ export default function Members() {
     goToPage,
     formatBirthDate,
   } = useMembersPage(labels, language, canView);
+  const tabs: { id: 'directory' | 'birthdays'; label: string }[] = [
+    { id: 'directory' as const, label: labels.membersTab },
+    ...(canViewBirthdayEmail
+      ? [{ id: 'birthdays' as const, label: labels.birthdayEmailTab }]
+      : []),
+  ];
+
+  const handleTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowRight') {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = tabs.length - 1;
+    }
+    if (nextIndex === null) {
+      return;
+    }
+    event.preventDefault();
+    setActiveTab(tabs[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
 
   if (!canView) {
     return <Navigate to="/admin/settings" replace />;
@@ -70,13 +106,13 @@ export default function Members() {
         <div className={styles.sectionHeader}>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>{labels.membersTitle}</h1>
-            {!isLoading && !loadError ? (
+            {activeTab === 'directory' && !isLoading && !loadError ? (
               <p className={styles.total}>
                 {labels.membersTotal.replace('{count}', String(members.length))}
               </p>
             ) : null}
           </div>
-          {canManage ? (
+          {canManage && activeTab === 'directory' ? (
             <Button
               type="button"
               variant="primary"
@@ -88,18 +124,63 @@ export default function Members() {
             </Button>
           ) : null}
         </div>
-        <div className={styles.descriptionRow}>
-          <p className={styles.description}>{labels.membersDescription}</p>
-          {canManage && !isLoading && !loadError && members.length > 0 ? (
-            <PageSelectionControls
-              {...selectionControlsProps}
-              className={styles.memberBulkControls}
-            />
-          ) : null}
-        </div>
+        {activeTab === 'directory' ? (
+          <div className={styles.descriptionRow}>
+            <p className={styles.description}>{labels.membersDescription}</p>
+            {canManage && !isLoading && !loadError && members.length > 0 ? (
+              <PageSelectionControls
+                {...selectionControlsProps}
+                className={styles.memberBulkControls}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
-      {isLoading ? (
+      {canViewBirthdayEmail ? (
+        <div
+          className={`${styles.tabs} ${
+            activeTab === 'birthdays' ? styles.tabsConstrained : ''
+          }`}
+          role="tablist"
+          aria-label={labels.membersTitle}
+        >
+          {tabs.map((tab, index) => {
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                ref={(element) => {
+                  tabRefs.current[index] = element;
+                }}
+                id={`${tabIdPrefix}-${tab.id}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                aria-controls={`${tabIdPrefix}-${tab.id}-panel`}
+                tabIndex={isSelected ? 0 : -1}
+                className={`${styles.tab} ${isSelected ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <section
+        id={`${tabIdPrefix}-directory-panel`}
+        className={styles.tabPanel}
+        role={canViewBirthdayEmail ? 'tabpanel' : undefined}
+        aria-labelledby={
+          canViewBirthdayEmail ? `${tabIdPrefix}-directory-tab` : undefined
+        }
+        hidden={canViewBirthdayEmail && activeTab !== 'directory'}
+        tabIndex={canViewBirthdayEmail ? 0 : undefined}
+      >
+        {isLoading ? (
         <LoadingSpinner text={labels.membersLoading} />
       ) : loadError ? (
         <div className={styles.loadError} role="alert">
@@ -314,6 +395,25 @@ export default function Members() {
       ) : (
         <p className={styles.emptyMessage}>{labels.membersEmpty}</p>
       )}
+      </section>
+
+      {canViewBirthdayEmail ? (
+        <section
+          id={`${tabIdPrefix}-birthdays-panel`}
+          className={styles.tabPanel}
+          role="tabpanel"
+          aria-labelledby={`${tabIdPrefix}-birthdays-tab`}
+          hidden={activeTab !== 'birthdays'}
+        >
+          {activeTab === 'birthdays' ? (
+            <BirthdayEmailSettings
+              labels={labels}
+              language={language}
+              canManage={role === 'site_admin'}
+            />
+          ) : null}
+        </section>
+      ) : null}
 
       <Dialog
         isOpen={isMemberDialogOpen}

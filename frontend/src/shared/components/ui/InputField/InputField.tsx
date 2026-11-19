@@ -118,6 +118,7 @@ const InputField = forwardRef<
     maxLength,
     autoComplete,
     'aria-invalid': error,
+    'aria-label': hideLabel ? label : undefined,
     onFocus: handleFocus,
     onBlur: handleBlur,
     autoFocus,

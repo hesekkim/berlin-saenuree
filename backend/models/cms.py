@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from services.cms_users_service import (
+    is_valid_email,
     normalize_email,
     require_assignable_pages,
     require_file_role,
@@ -239,6 +240,66 @@ class ChurchMemberCreateRequest(BaseModel):
 
 class ChurchMemberUpdateRequest(ChurchMemberCreateRequest):
     pass
+
+
+class BirthdayEmailSettingsUpdateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    enabled: bool
+    recipients: list[str]
+
+    @field_validator("recipients")
+    @classmethod
+    def normalize_recipients(cls, values: list[str]) -> list[str]:
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            email = normalize_email(value)
+            if not email:
+                continue
+            if len(email) > 254 or not is_valid_email(email):
+                raise ValueError(f"Invalid email address: {value}")
+            if email not in seen:
+                seen.add(email)
+                normalized.append(email)
+        return normalized
+
+
+class BirthdayEmailDeliveryStatus(BaseModel):
+    month: str
+    status: Literal["sending", "sent", "failed"]
+    attemptedAt: str
+    recipientCount: int = 0
+    failedRecipientCount: int = 0
+    recipients: list[str] = Field(default_factory=list)
+    sentRecipients: list[str] = Field(default_factory=list)
+    failedRecipients: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class BirthdayEmailSettingsResponse(BaseModel):
+    enabled: bool
+    recipients: list[str]
+    lastDelivery: BirthdayEmailDeliveryStatus | None = None
+    deliveryHistory: list[BirthdayEmailDeliveryStatus] = Field(default_factory=list)
+
+
+class BirthdayEmailStatusDelivery(BaseModel):
+    month: str
+    status: Literal["sending", "sent", "failed"]
+    attemptedAt: str
+    recipientCount: int = 0
+    failedRecipientCount: int = 0
+    recipients: list[str] = Field(default_factory=list)
+    sentRecipients: list[str] = Field(default_factory=list)
+    failedRecipients: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class BirthdayEmailStatusResponse(BaseModel):
+    enabled: bool
+    lastDelivery: BirthdayEmailStatusDelivery | None = None
+    deliveryHistory: list[BirthdayEmailStatusDelivery] = Field(default_factory=list)
 
 
 class CmsUserCreateRequest(BaseModel):

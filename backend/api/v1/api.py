@@ -3,6 +3,7 @@ from api.v1.endpoints import (
     auth,
     backups,
     blogger,
+    birthday_email,
     church_members,
     cms_users,
     media_files,
@@ -18,6 +19,11 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(
     backups.router, prefix="/admin/backups", tags=["admin-backups"]
+)
+api_router.include_router(
+    birthday_email.router,
+    prefix="/admin/members/birthday-email",
+    tags=["admin-members"],
 )
 api_router.include_router(
     church_members.router, prefix="/admin/members", tags=["admin-members"]

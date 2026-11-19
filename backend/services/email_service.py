@@ -111,7 +111,13 @@ async def _send_email(
     html_content: str,
     text_content: str,
 ) -> bool:
-    if not settings.smtp_username or not settings.smtp_password or not settings.smtp_from_email:
+    if (
+        not settings.smtp_host
+        or not settings.smtp_port
+        or not settings.smtp_username
+        or not settings.smtp_password
+        or not settings.smtp_from_email
+    ):
         logger.error("SMTP credentials not configured. Email will not be sent.")
         return False
 
@@ -179,5 +185,20 @@ async def send_verification_email(to_email: str, verification_code: str) -> bool
         to_email=to_email,
         subject="Your Admin Login Code",
         html_content=_create_email_html(content_html),
+        text_content=text_content,
+    )
+
+
+async def send_birthday_email(
+    *,
+    to_email: str,
+    subject: str,
+    html_content: str,
+    text_content: str,
+) -> bool:
+    return await _send_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
         text_content=text_content,
     )
