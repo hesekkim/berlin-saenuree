@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any, Literal
 import re
 from urllib.parse import parse_qs, urlparse
@@ -175,6 +176,69 @@ class CmsUserResponse(BaseModel):
     role: CmsFileRole
     pages: list[str]
     darkMode: bool | None = None
+
+
+class ChurchMemberResponse(BaseModel):
+    id: str
+    name: str
+    email: str | None = None
+    birthDate: date
+    phone: str | None = None
+
+
+class ChurchMemberCreateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    name: str = Field(min_length=1, max_length=120)
+    email: str | None = Field(default=None, max_length=254)
+    birthDate: date
+    phone: str | None = Field(default=None, max_length=40)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_member_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Name is required")
+        return normalized
+
+    @field_validator("email")
+    @classmethod
+    def normalize_member_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", normalized):
+            raise ValueError("Invalid email address")
+        return normalized
+
+    @field_validator("phone")
+    @classmethod
+    def normalize_member_phone(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if not re.fullmatch(r"\+?[0-9(). -]+", normalized):
+            raise ValueError("Invalid phone number")
+        digits = sum("0" <= character <= "9" for character in normalized)
+        if not 5 <= digits <= 15:
+            raise ValueError("Phone number must contain 5 to 15 digits")
+        return normalized
+
+    @field_validator("birthDate")
+    @classmethod
+    def validate_birth_date(cls, value: date) -> date:
+        if value > date.today():
+            raise ValueError("Birth date cannot be in the future")
+        return value
+
+
+class ChurchMemberUpdateRequest(ChurchMemberCreateRequest):
+    pass
 
 
 class CmsUserCreateRequest(BaseModel):

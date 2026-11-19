@@ -24,6 +24,7 @@ import Visit from '../pages/Visit/Visit';
 import VisitPageEditor from '../pages/Admin/Pages/Visit/VisitPageEditor';
 import ChurchHistoryPageEditor from '../pages/Admin/Pages/ChurchHistory/ChurchHistoryPageEditor';
 import ChurchVisionPageEditor from '../pages/Admin/Pages/ChurchVision/ChurchVisionPageEditor';
+import Members from '../pages/Admin/Pages/Members/Members';
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +83,10 @@ export const router = createBrowserRouter([
           {
             path: 'pages/trash',
             element: <TrashPage />,
+          },
+          {
+            path: 'members',
+            element: <Members />,
           },
           {
             path: 'settings',

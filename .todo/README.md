@@ -48,5 +48,8 @@
 - [013-post-video-upload-size.md](./done/013-post-video-upload-size.md): Posts MP4 용량 상향 및 동영상 업로드·미리보기 UX 개선
 - [014-post-video-upload-stability.md](./done/014-post-video-upload-stability.md): Posts 원본 동영상 업로드 안정화 및 200MiB 지원
 - [015-backup-cancellation-progress.md](./done/015-backup-cancellation-progress.md): 백업 생성 진행 표시 및 취소 기능
+- [016-church-member-directory.md](./done/016-church-member-directory.md): 권한·회원 CRUD·일괄 삭제·페이지네이션·반응형 UX를 포함한 비공개 명부 관리
 
 ## 진행 중인 티켓
+
+- [017-monthly-birthday-email.md](./017-monthly-birthday-email.md): 다중 수신 주소와 발송 설정이 포함된 월간 생일 안내 메일

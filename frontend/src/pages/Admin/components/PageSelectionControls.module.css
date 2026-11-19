@@ -10,6 +10,14 @@
   color: var(--cms-text-secondary, var(--cf-neutral-500));
 }
 
+.selectedCountEmpty {
+  opacity: var(--cf-disabled-opacity);
+}
+
+.alwaysVisible {
+  display: flex;
+}
+
 .delete {
   display: inline-grid;
   width: 2rem;
@@ -23,6 +31,11 @@
   background: transparent;
   color: var(--cms-danger, #b42318);
   cursor: pointer;
+}
+
+.delete:disabled {
+  opacity: var(--cf-disabled-opacity);
+  cursor: not-allowed;
 }
 
 .delete:hover,
@@ -41,7 +54,7 @@
 }
 
 @media (max-width: 700px) {
-  .selectionToolbar {
+  .selectionToolbar:not(.alwaysVisible) {
     display: none;
   }
 }

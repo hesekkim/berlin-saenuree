@@ -10,6 +10,7 @@ import {
   FiMapPin,
   FiTrash2,
   FiArchive,
+  FiUsers,
 } from 'react-icons/fi';
 import type { CmsRole } from '../../shared/api/authApi';
 
@@ -23,7 +24,8 @@ export type AdminNavIcon =
   | 'visit'
   | 'popups'
   | 'backups'
-  | 'trash';
+  | 'trash'
+  | 'members';
 
 export type AdminNavItem = {
   id: string;
@@ -38,7 +40,8 @@ export type AdminNavItem = {
     | 'settings'
     | 'popups'
     | 'backups'
-    | 'trash';
+    | 'trash'
+    | 'members';
   icon: AdminNavIcon;
   end?: boolean;
 };
@@ -57,7 +60,8 @@ export type AdminPageNode = {
     | 'churchVision'
     | 'visit'
     | 'posts'
-    | 'blogger';
+    | 'blogger'
+    | 'members';
   to: string;
   icon: AdminNavIcon;
   end?: boolean;
@@ -113,6 +117,14 @@ export const adminPageTree: AdminPageNode[] = [
     labelKey: 'visit',
     to: '/admin/pages/visit',
     icon: 'visit',
+    end: true,
+    children: [],
+  },
+  {
+    slug: 'members',
+    labelKey: 'members',
+    to: '/admin/members',
+    icon: 'members',
     end: true,
     children: [],
   },
@@ -186,6 +198,27 @@ export function canAccessTrash(
   );
 }
 
+export function canAccessMembers(
+  role: CmsRole | null,
+  effectivePages: string[] = [],
+): boolean {
+  return (
+    role === 'site_admin' ||
+    ((role === 'page_admin' || role === 'page_manager') &&
+      effectivePages.includes('members'))
+  );
+}
+
+export function canManageMembers(
+  role: CmsRole | null,
+  effectivePages: string[] = [],
+): boolean {
+  return (
+    (role === 'site_admin' || role === 'page_admin') &&
+    canAccessMembers(role, effectivePages)
+  );
+}
+
 function pagesSectionItems(
   effectivePages: string[],
   role: CmsRole | null,
@@ -197,13 +230,15 @@ function pagesSectionItems(
         )
       : adminPageTree;
 
-  const items: AdminNavItem[] = navNodes.map((node) => ({
-    id: node.slug,
-    to: node.to,
-    labelKey: node.labelKey,
-    icon: node.icon,
-    end: node.end,
-  }));
+  const items: AdminNavItem[] = navNodes
+    .filter((node) => node.slug !== 'members')
+    .map((node) => ({
+      id: node.slug,
+      to: node.to,
+      labelKey: node.labelKey,
+      icon: node.icon,
+      end: node.end,
+    }));
 
   if (canAccessTrash(role, effectivePages)) {
     items.push({
@@ -242,6 +277,15 @@ export function buildAdminNavSections(
       end: true,
     },
   ];
+  if (canAccessMembers(role, effectivePages)) {
+    settingsItems.push({
+      id: 'members',
+      to: '/admin/members',
+      labelKey: 'members',
+      icon: 'members',
+      end: true,
+    });
+  }
   if (role === 'site_admin') {
     settingsItems.push({
       id: 'popups',
@@ -284,4 +328,5 @@ export const adminNavIcons: Record<AdminNavIcon, IconType> = {
   popups: FiLayout,
   backups: FiArchive,
   trash: FiTrash2,
+  members: FiUsers,
 };

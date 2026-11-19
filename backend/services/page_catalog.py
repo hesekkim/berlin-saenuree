@@ -16,6 +16,7 @@ from dataclasses import dataclass
 class PageNode:
     slug: str
     children: tuple[PageNode, ...] = ()
+    has_content: bool = True
 
 
 # Top-level nodes are the only assignable pages in Settings.
@@ -26,6 +27,7 @@ PAGE_TREE: tuple[PageNode, ...] = (
     PageNode("church-vision"),
     PageNode("posts"),
     PageNode("blogger"),
+    PageNode("members", has_content=False),
 )
 
 
@@ -37,6 +39,10 @@ def _walk(nodes: tuple[PageNode, ...]):
 
 def all_slugs() -> frozenset[str]:
     return frozenset(node.slug for node in _walk(PAGE_TREE))
+
+
+def content_slugs() -> frozenset[str]:
+    return frozenset(node.slug for node in _walk(PAGE_TREE) if node.has_content)
 
 
 def assignable_slugs() -> list[str]:
@@ -73,4 +79,4 @@ def can_access_page(assigned_pages: list[str], slug: str) -> bool:
 
 
 def is_known_slug(slug: str) -> bool:
-    return slug in all_slugs()
+    return slug in content_slugs()

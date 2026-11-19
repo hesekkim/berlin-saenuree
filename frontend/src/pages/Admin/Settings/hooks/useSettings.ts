@@ -56,6 +56,9 @@ function pageLabel(slug: string, labels: AdminTranslations): string {
   if (node?.labelKey === 'blogger') {
     return labels.pageLabelBlogger;
   }
+  if (node?.labelKey === 'members') {
+    return labels.membersTitle;
+  }
   return slug;
 }
 

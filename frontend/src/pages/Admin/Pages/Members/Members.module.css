@@ -1,0 +1,444 @@
+.page {
+  width: 100%;
+}
+
+.header {
+  margin-bottom: var(--cf-space-24);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.titleRow {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cf-space-8);
+  min-width: 0;
+}
+
+.headerAction {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.title {
+  margin: 0;
+  color: var(--cms-text, var(--cf-neutral-700));
+  font-size: 1.75rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.total {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+}
+
+.description {
+  margin: var(--cf-space-8) 0 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  line-height: 1.5;
+}
+
+.descriptionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-16);
+}
+
+.memberBulkControls {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.memberColumnHeader .memberBulkControlsMobile {
+  display: none;
+  margin: 0;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cf-space-12);
+  margin-top: var(--cf-space-24);
+}
+
+.paginationLabel {
+  min-width: 5rem;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  text-align: center;
+}
+
+.memberList {
+  overflow: hidden;
+  border: 1px solid var(--cms-border, var(--cf-neutral-300));
+  border-radius: var(--cf-radius-8, 8px);
+}
+
+.memberListBody {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.memberColumnHeader {
+  display: none;
+}
+
+.memberColumnHeaderSelection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.memberActionsColumnSizer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--cf-space-4);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.memberActionsColumnSizer > span {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: var(--cf-space-8) var(--cf-space-16);
+  border: 1px solid transparent;
+  font-family: var(--cf-font-family, inherit);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.memberRow {
+  display: grid;
+  grid-template-areas:
+    'header'
+    'details';
+  gap: var(--cf-space-8);
+  padding: var(--cf-space-16);
+  background-color: var(--cms-surface, var(--cf-white));
+}
+
+.memberRow:nth-child(even) {
+  background-color: color-mix(
+    in srgb,
+    var(--cms-text, var(--cf-neutral-700)) 6%,
+    var(--cms-surface, var(--cf-white))
+  );
+}
+
+.memberRowTop {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-8);
+  min-width: 0;
+}
+
+.memberSelection {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.memberExpandToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: var(--cf-space-8);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.memberIdentity {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--cf-space-8);
+  min-width: 0;
+}
+
+.memberName {
+  min-width: 0;
+  color: var(--cms-text, var(--cf-neutral-700));
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.memberNameDesktop {
+  display: none;
+}
+
+.memberDateMobile,
+.memberDateDesktop {
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.memberDateDesktop {
+  display: none;
+}
+
+.memberChevron {
+  flex-shrink: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+}
+
+.memberDetails {
+  grid-area: details;
+  display: none;
+  flex-direction: column;
+  gap: var(--cf-space-8);
+  padding-left: var(--cf-space-4, 4px);
+}
+
+.memberRowExpanded .memberDetails {
+  display: flex;
+}
+
+.memberCell {
+  min-width: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.memberCell::before {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  content: attr(data-label);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.memberActions {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-4);
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.memberActionText {
+  display: none;
+}
+
+.memberActionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.emptyMessage,
+.loadError p {
+  margin: 0;
+  color: var(--cms-text-secondary, var(--cf-neutral-500));
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.loadError {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cf-space-12);
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-16);
+}
+
+.confirmMessage {
+  margin: 0;
+  color: var(--cms-text, var(--cf-neutral-700));
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+@media (min-width: 768px) {
+  .memberColumnHeader {
+    display: grid;
+    box-sizing: border-box;
+    grid-template-columns:
+      minmax(7rem, 1fr)
+      minmax(8rem, 1.2fr)
+      minmax(7rem, 1fr)
+      minmax(7rem, 1fr)
+      minmax(6rem, auto);
+    align-items: center;
+    min-height: 3.5rem;
+    column-gap: var(--cf-space-16);
+    padding: var(--cf-space-12) var(--cf-space-16);
+    border-bottom: 1px solid var(--cms-border, var(--cf-neutral-200));
+    background: var(--cms-surface-muted, var(--cf-neutral-50, #f8f9fa));
+    color: var(--cms-text-secondary, var(--cf-neutral-500));
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .memberColumnHeaderSelectable {
+    grid-template-columns:
+      2rem
+      minmax(7rem, 1fr)
+      minmax(8rem, 1.2fr)
+      minmax(7rem, 1fr)
+      minmax(7rem, 1fr)
+      minmax(6rem, auto);
+  }
+
+  .memberRow {
+    grid-template-areas: 'name email date phone actions';
+    grid-template-columns:
+      minmax(7rem, 1fr)
+      minmax(8rem, 1.2fr)
+      minmax(7rem, 1fr)
+      minmax(7rem, 1fr)
+      minmax(6rem, auto);
+    align-items: center;
+    column-gap: var(--cf-space-16);
+    row-gap: 0;
+  }
+
+  .memberRowSelectable {
+    grid-template-areas: 'selection name email date phone actions';
+    grid-template-columns:
+      2rem
+      minmax(7rem, 1fr)
+      minmax(8rem, 1.2fr)
+      minmax(7rem, 1fr)
+      minmax(7rem, 1fr)
+      minmax(6rem, auto);
+  }
+
+  .memberRowTop,
+  .memberDetails,
+  .memberRowExpanded .memberDetails {
+    display: contents;
+  }
+
+  .memberExpandToggle {
+    display: none;
+  }
+
+  .memberNameDesktop {
+    display: block;
+    grid-area: name;
+  }
+
+  .memberSelection {
+    grid-area: selection;
+  }
+
+  .memberDateMobile {
+    display: none;
+  }
+
+  .memberDateDesktop {
+    display: block;
+    grid-area: date;
+  }
+
+  .memberEmail {
+    grid-area: email;
+  }
+
+  .memberPhone {
+    grid-area: phone;
+  }
+
+  .memberCell::before {
+    display: none;
+  }
+
+  .memberActions {
+    grid-area: actions;
+  }
+
+  .memberActionText {
+    display: inline-flex;
+  }
+
+  .memberActionIcon {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionHeader {
+    align-items: center;
+    gap: var(--cf-space-8);
+  }
+}
+
+@media (max-width: 767px) {
+  .descriptionRow {
+    display: block;
+  }
+
+  .page .memberBulkControls {
+    display: none;
+  }
+
+  .memberColumnHeaderSelectable {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 3rem;
+    padding: var(--cf-space-8) var(--cf-space-16);
+    border-bottom: 1px solid var(--cms-border, var(--cf-neutral-200));
+    background: var(--cms-surface-muted, var(--cf-neutral-50, #f8f9fa));
+    color: var(--cms-text-secondary, var(--cf-neutral-500));
+    font-size: 0.875rem;
+  }
+
+  .memberColumnHeader > span {
+    display: none;
+  }
+
+  .memberColumnHeaderSelection {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  .memberColumnHeader .memberBulkControlsMobile {
+    display: flex;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+}

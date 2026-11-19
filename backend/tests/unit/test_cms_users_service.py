@@ -271,6 +271,16 @@ def test_assignable_slugs_are_top_level_only(monkeypatch):
     assert "lunch-menu" not in page_catalog.assignable_slugs()
 
 
+def test_member_directory_is_assignable_but_not_page_content():
+    from services.page_content_service import is_allowed_slug
+
+    assert "members" in page_catalog.assignable_slugs()
+    assert is_allowed_slug("members") is False
+    assert "members" in cms_users_service.assignable_pages_for_actor(
+        {"role": "site_admin"}
+    )
+
+
 def _menu_tree_with_lunch():
     from services.page_catalog import PageNode
 

@@ -157,6 +157,11 @@ class Settings(BaseSettings):
         return self.data_dir / "cms_users.json"
 
     @property
+    def church_members_file(self) -> Path:
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        return self.data_dir / "church_members.json"
+
+    @property
     def pages_dir(self) -> Path:
         path = self.data_dir / "pages"
         path.mkdir(parents=True, exist_ok=True)

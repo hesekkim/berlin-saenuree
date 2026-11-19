@@ -8,12 +8,12 @@ from typing import Any
 from core.config import settings
 from core.json_store import JsonStoreCorruptError, read_json_store, write_json_store
 from core.store_lock import STORE_LOCK
-from services.page_catalog import all_slugs, is_known_slug
+from services.page_catalog import content_slugs, is_known_slug
 
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_PAGE_SLUGS = all_slugs()
+ALLOWED_PAGE_SLUGS = content_slugs()
 
 _LANGUAGE_CODE_RE = re.compile(r"^[a-z]{2,3}(-[a-zA-Z0-9]+)*$")
 _REVISION_KEY = "contentRevision"
