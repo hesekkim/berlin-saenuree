@@ -80,6 +80,7 @@ export default function VisitMediaEditor({
     disabled,
     holdMs: 450,
     axis: 'x',
+    scrollOnHoldCancel: true,
     scrollContainerRef: stripRef,
   });
 

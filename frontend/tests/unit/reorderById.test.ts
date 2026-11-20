@@ -111,4 +111,53 @@ describe('usePointerReorder', () => {
     unmount();
     targetRow.remove();
   });
+
+  it('scrolls a horizontal strip when touch movement cancels the hold', () => {
+    vi.useFakeTimers();
+    const strip = document.createElement('ol');
+    Object.defineProperties(strip, {
+      scrollWidth: { configurable: true, value: 300 },
+      clientWidth: { configurable: true, value: 100 },
+    });
+    strip.scrollLeft = 50;
+    const scrollContainerRef = { current: strip };
+    const { result, unmount } = renderHook(() =>
+      usePointerReorder({
+        items: rows('ab'),
+        getId,
+        onReorder: vi.fn(),
+        holdMs: 450,
+        axis: 'x',
+        scrollOnHoldCancel: true,
+        scrollContainerRef,
+      }),
+    );
+    const handle = document.createElement('button');
+    const pointerDown = {
+      button: 0,
+      pointerType: 'touch',
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+      currentTarget: handle,
+      preventDefault: vi.fn(),
+    } as unknown as ReactPointerEvent<HTMLElement>;
+
+    act(() => result.current.onPointerDown('a', pointerDown));
+    act(() => {
+      const pointerMove = new Event('pointermove', { cancelable: true });
+      Object.assign(pointerMove, {
+        pointerId: 1,
+        clientX: 30,
+        clientY: 10,
+      });
+      window.dispatchEvent(pointerMove);
+    });
+    act(() => vi.advanceTimersByTime(450));
+
+    expect(strip.scrollLeft).toBe(30);
+    expect(result.current.draggingId).toBeNull();
+
+    unmount();
+  });
 });

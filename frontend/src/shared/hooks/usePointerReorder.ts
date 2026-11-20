@@ -32,6 +32,7 @@ export type UsePointerReorderOptions<T> = {
    * Lets horizontal scroll win on short swipes.
    */
   holdMs?: number;
+  scrollOnHoldCancel?: boolean;
   /**
    * Restrict hit-testing to one axis. With `x` the cross-axis position is
    * taken from the dragged row, so the pointer may wander up and down
@@ -116,6 +117,7 @@ export function usePointerReorder<T>({
   dataAttribute = DEFAULT_DATA_ATTRIBUTE,
   activationPx = DEFAULT_ACTIVATION_PX,
   holdMs = DEFAULT_HOLD_MS,
+  scrollOnHoldCancel = false,
   axis = 'both',
   scrollContainerRef,
 }: UsePointerReorderOptions<T>) {
@@ -317,6 +319,7 @@ export function usePointerReorder<T>({
           return;
         }
 
+        const previousPoint = lastPoint;
         lastPoint = { x: moveEvent.clientX, y: moveEvent.clientY };
         const dx = moveEvent.clientX - origin.x;
         const dy = moveEvent.clientY - origin.y;
@@ -328,6 +331,15 @@ export function usePointerReorder<T>({
               // Treat as scroll / pan — abandon hold-to-drag.
               origin.cancelled = true;
               clearHoldTimer();
+              const container = scrollContainerRef?.current;
+              if (
+                scrollOnHoldCancel &&
+                axis === 'x' &&
+                container &&
+                container.scrollWidth > container.clientWidth
+              ) {
+                container.scrollLeft -= moveEvent.clientX - previousPoint.x;
+              }
             }
             return;
           }
@@ -386,6 +398,7 @@ export function usePointerReorder<T>({
       dataAttribute,
       holdMs,
       queueDragPoint,
+      scrollOnHoldCancel,
       scrollContainerRef,
     ]
   );
