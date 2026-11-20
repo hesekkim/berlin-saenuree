@@ -1,3 +1,4 @@
+import re
 import sys
 from pathlib import Path
 
@@ -28,6 +29,20 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _relay_origin_suffix_regex() -> str | None:
+    suffixes = sorted(
+        {
+            suffix.strip().lower().lstrip(".").rstrip(".")
+            for suffix in settings.relay_allowed_origin_suffixes
+            if suffix.strip()
+        }
+    )
+    if not suffixes:
+        return None
+    alternatives = "|".join(re.escape(suffix) for suffix in suffixes)
+    return rf"^https://(?:[a-z0-9-]+\.)*(?:{alternatives})(?::\d+)?$"
 
 
 def _validate_security_settings() -> None:
@@ -96,7 +111,12 @@ def create_application() -> FastAPI:
 
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
+        allow_origins=list(
+            dict.fromkeys(
+                [*settings.allowed_origins, *settings.relay_allowed_origins]
+            )
+        ),
+        allow_origin_regex=_relay_origin_suffix_regex(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

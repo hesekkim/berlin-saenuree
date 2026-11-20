@@ -76,6 +76,26 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 30
 
+    relay_publisher_credential: str = ""
+    relay_listener_token_secret: str = ""
+    relay_listener_token_minutes: int = Field(default=90, gt=0, le=90)
+    relay_allowed_origins: Annotated[list[str], NoDecode] = []
+    relay_allowed_origin_suffixes: Annotated[list[str], NoDecode] = []
+
+    @field_validator("relay_allowed_origins", "relay_allowed_origin_suffixes", mode="before")
+    @classmethod
+    def parse_relay_origin_lists(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            import json
+            try:
+                parsed = json.loads(v)
+            except json.JSONDecodeError:
+                parsed = [part.strip() for part in v.split(",")]
+            return parsed if isinstance(parsed, list) else []
+        return v
+
     smtp_host: str = ""
     smtp_port: int = 0
     smtp_username: str = ""

@@ -47,6 +47,15 @@ APP_DEBUG=True
 - `APP_SITE_ID`는 토큰의 `iss` 값이다. 비우면 `APP_NAME`을 slug로 바꾼 값을 쓴다 (예: `Berlin Saenuree` → `berlin-saenuree`). 여러 사이트가 같은 secret을 써도 `APP_SITE_ID`가 다르면 서로의 토큰을 거절한다. 값을 바꾸면 기존 로그인은 모두 무효가 된다.
 - 토큰 형식을 바꾸는 배포 뒤에는 기존 토큰이 무효다. 관리자는 다시 로그인해야 한다.
 
+## Sermon Live relay
+
+- `APP_RELAY_PUBLISHER_CREDENTIAL`은 Local PC backend와 공유하는 32자 이상의 무작위 service credential이다. CMS/JWT 비밀과 재사용하지 않는다.
+- `APP_RELAY_LISTENER_TOKEN_SECRET`은 Listener JWT 전용 32자 이상의 무작위 서명 키다. Publisher credential 및 CMS JWT 키와 분리한다.
+- `APP_RELAY_LISTENER_TOKEN_MINUTES`는 기본 90분이며 1~90분으로 제한된다. 만료 시 연결된 Listener WebSocket도 닫힌다. 현재 자동 갱신은 없으므로 만료 후에는 다시 인증해야 한다. 세션 종료나 비밀번호 변경 시에도 기존 Listener 연결을 닫는다.
+- `APP_RELAY_ALLOWED_ORIGINS`에는 Listener의 production origin과 필요한 개발 origin만 정확히 지정한다. Preview를 허용할 때는 해당 배포 origin을 명시적으로 추가한다. `APP_RELAY_ALLOWED_ORIGIN_SUFFIXES`도 설정하면 해당 HTTPS suffix의 Preview가 WebSocket 및 token 발급 CORS에서 모두 허용된다. 이는 suffix 전체를 신뢰하는 것이므로 팀이 통제하는 suffix만 설정한다.
+- relay 세션·rate-limit 상태와 worker 간 임시 relay 이벤트는 `APP_DATA_ROOT/data/relay_auth.sqlite3`에 저장된다. relay 이벤트(자막·Opus frame)는 worker 간 fan-out을 위해 최대 120초 보관되며, 비밀번호는 해시로만 저장된다. `APP_DATA_ROOT`는 영구 디스크로 지정해야 한다. 여러 worker는 동일한 로컬 SQLite 파일을 공유할 수 있지만, 서로 다른 디스크를 사용하는 별도 인스턴스 간 relay fan-out은 지원하지 않으므로 relay를 여러 인스턴스로 분리하지 않는다.
+- Listener 비밀번호는 HTTPS session-upsert 요청으로 전달되고 relay에는 PBKDF2 해시만 저장한다. 비밀번호·token·Publisher credential은 URL이나 응답에 포함하지 않는다.
+
 ## 이메일
 
 - `APP_SEND_REAL_EMAIL=False`면 실제 메일을 보내지 않는다 (`email_sent: false`)

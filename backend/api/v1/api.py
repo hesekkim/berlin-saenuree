@@ -12,11 +12,13 @@ from api.v1.endpoints import (
     popups,
     posts,
     site_settings,
+    relay,
 )
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(relay.router, prefix="/relay", tags=["relay"])
 api_router.include_router(
     backups.router, prefix="/admin/backups", tags=["admin-backups"]
 )
