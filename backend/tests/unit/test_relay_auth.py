@@ -217,6 +217,43 @@ def test_end_and_failed_password_use_generic_responses():
     assert denied.status_code == 401
 
 
+def test_session_status_reports_the_authoritative_relay_state():
+    client = TestClient(app)
+    session_id = "relay_session_123456"
+    create_session(client, session_id)
+    headers = {
+        "X-Publisher-Credential": "test-publisher-credential-with-32-chars"
+    }
+
+    created = client.get(
+        f"/api/v1/relay/sessions/{session_id}/status",
+        headers=headers,
+    )
+    assert created.status_code == 200
+    assert created.json() == {
+        "session_id": session_id,
+        "status": "created",
+        "listener_count": 0,
+    }
+
+    ended = client.post(
+        f"/api/v1/relay/sessions/{session_id}/end",
+        headers=headers,
+    )
+    assert ended.status_code == 200
+
+    status = client.get(
+        f"/api/v1/relay/sessions/{session_id}/status",
+        headers=headers,
+    )
+    assert status.status_code == 200
+    assert status.json() == {
+        "session_id": session_id,
+        "status": "ended",
+        "listener_count": 0,
+    }
+
+
 def test_password_and_websocket_attempts_are_rate_limited():
     client = TestClient(app)
     create_session(client)

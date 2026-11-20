@@ -77,6 +77,30 @@ async def end_session(
     return {"status": "ended"}
 
 
+@router.get("/sessions/{session_id}/status")
+async def session_status(
+    session_id: str,
+    x_publisher_credential: str | None = Header(
+        default=None, alias="X-Publisher-Credential"
+    ),
+) -> dict[str, object]:
+    try:
+        relay_auth.validate_publisher_credential(x_publisher_credential)
+        relay_session = relay_auth.get_session(session_id)
+        listener_count = (
+            await relay_stream.listener_count(session_id)
+            if relay_session.status == "live"
+            else 0
+        )
+    except RelayAuthError as error:
+        raise HTTPException(status_code=401, detail=str(error)) from error
+    return {
+        "session_id": session_id,
+        "status": relay_session.status,
+        "listener_count": listener_count,
+    }
+
+
 @router.post(
     "/sessions/{session_id}/listener-token",
     response_model=RelayListenerTokenResponse,

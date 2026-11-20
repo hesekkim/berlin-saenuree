@@ -113,6 +113,10 @@ class RelayStreamService:
             raise RelayAuthError("Session unavailable")
         return metadata
 
+    async def listener_count(self, session_id: str) -> int:
+        async with self._lock:
+            return len(self._listeners.get(session_id, set()))
+
     async def register_listener(
         self, session_id: str, websocket: WebSocket
     ) -> ListenerConnection:
