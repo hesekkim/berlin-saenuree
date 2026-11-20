@@ -1,10 +1,17 @@
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { Navigate } from 'react-router-dom';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Button from '../../../../shared/components/ui/Button/Button';
 import Checkbox from '../../../../shared/components/ui/Checkbox/Checkbox';
 import Dialog from '../../../../shared/components/ui/Dialog/Dialog';
 import InputField from '../../../../shared/components/ui/InputField/InputField';
+import Select from '../../../../shared/components/ui/Select/Select';
 import LoadingSpinner from '../../../../shared/components/LoadingSpinner/LoadingSpinner';
 import { useAuth } from '../../../../shared/context/AuthContext';
 import { useCmsConfig } from '../../../../shared/context/CmsConfigContext';
@@ -31,11 +38,13 @@ export default function Members() {
   const {
     pageContainerRef,
     members,
+    filteredMembers,
     isLoading,
     loadError,
     isMutating,
     loadMembers,
     selectedIds,
+    selectedCount,
     toggleSelection,
     isBulkDeleteOpen,
     isMemberDialogOpen,
@@ -45,6 +54,12 @@ export default function Members() {
     pageCount,
     currentPage,
     pageMembers,
+    birthMonth,
+    searchTerm,
+    hasActiveFilters,
+    printRequest,
+    isExportDialogOpen,
+    exportScope,
     allSelected,
     indeterminate,
     form,
@@ -65,8 +80,55 @@ export default function Members() {
     toggleExpanded,
     toggleAllMembers,
     goToPage,
+    updateBirthMonth,
+    updateSearchTerm,
+    clearPrintRequest,
+    openExportDialog,
+    closeExportDialog,
+    setExportScope,
+    confirmExport,
     formatBirthDate,
   } = useMembersPage(labels, language, canView);
+  useEffect(() => {
+    if (!printRequest) {
+      return;
+    }
+
+    const handleAfterPrint = () => clearPrintRequest();
+    window.addEventListener('afterprint', handleAfterPrint);
+    window.print();
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, [clearPrintRequest, printRequest]);
+
+  const monthNames = Array.from({ length: 12 }, (_, index) =>
+    new Intl.DateTimeFormat(language, {
+      month: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(2020, index, 1))),
+  );
+  const monthOptions = [
+    { value: '', label: labels.membersAllMonths },
+    ...monthNames.map((monthName, index) => ({
+      value: String(index + 1).padStart(2, '0'),
+      label: monthName,
+    })),
+  ];
+  const printFilterSummary =
+    printRequest?.scope === 'filtered'
+      ? [
+          birthMonth
+            ? `${labels.membersBirthMonthFilter}: ${monthNames[Number(birthMonth) - 1]}`
+            : '',
+          searchTerm.trim()
+            ? `${labels.membersSearchLabel}: ${searchTerm.trim()}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' · ') || labels.membersPrintNoFilters
+      : labels.membersPrintNoFilters;
+  const printDate = new Intl.DateTimeFormat(language, {
+    dateStyle: 'medium',
+  }).format(new Date());
   const tabs: { id: 'directory' | 'birthdays'; label: string }[] = [
     { id: 'directory' as const, label: labels.membersTab },
     ...(canViewBirthdayEmail
@@ -127,12 +189,6 @@ export default function Members() {
         {activeTab === 'directory' ? (
           <div className={styles.descriptionRow}>
             <p className={styles.description}>{labels.membersDescription}</p>
-            {canManage && !isLoading && !loadError && members.length > 0 ? (
-              <PageSelectionControls
-                {...selectionControlsProps}
-                className={styles.memberBulkControls}
-              />
-            ) : null}
           </div>
         ) : null}
       </header>
@@ -180,221 +236,276 @@ export default function Members() {
         hidden={canViewBirthdayEmail && activeTab !== 'directory'}
         tabIndex={canViewBirthdayEmail ? 0 : undefined}
       >
-        {isLoading ? (
-        <LoadingSpinner text={labels.membersLoading} />
-      ) : loadError ? (
-        <div className={styles.loadError} role="alert">
-          <p>{loadError}</p>
-          <Button type="button" variant="secondary" onClick={loadMembers}>
-            {labels.membersRetry}
-          </Button>
-        </div>
-      ) : members.length > 0 ? (
-        <>
-          <div className={styles.memberList}>
-            <ul className={styles.memberListBody}>
-              <li
-                className={[
-                  styles.memberColumnHeader,
-                  canManage ? styles.memberColumnHeaderSelectable : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {canManage ? (
-                  <div className={styles.memberColumnHeaderSelection}>
-                    <Checkbox
-                      checked={allSelected}
-                      indeterminate={indeterminate}
-                      disabled={isMutating}
-                      ariaLabel={labels.membersBulkSelectAll}
-                      onChange={toggleAllMembers}
-                    />
-                  </div>
-                ) : null}
-                {canManage ? (
-                  <PageSelectionControls
-                    {...selectionControlsProps}
-                    className={styles.memberBulkControlsMobile}
-                  />
-                ) : null}
-                <span>{labels.membersName}</span>
-                <span>{labels.membersEmailColumn}</span>
-                <span>{labels.membersBirthDate}</span>
-                <span>{labels.membersPhoneColumn}</span>
-                {canManage ? (
-                  <span
-                    className={styles.memberActionsColumnSizer}
-                    aria-hidden="true"
-                  >
-                    <span>{labels.membersEdit}</span>
-                    <span>{labels.membersDeleteAction}</span>
-                  </span>
-                ) : null}
-              </li>
-              {pageMembers.map((member) => {
-                const expanded = expandedIds.includes(member.id);
-                const detailsId = `member-details-${member.id}`;
-                const formattedBirthDate = formatBirthDate(member.birthDate);
-
-                return (
-                  <li
-                    key={member.id}
-                    className={[
-                      styles.memberRow,
-                      canManage ? styles.memberRowSelectable : '',
-                      expanded ? styles.memberRowExpanded : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    <div className={styles.memberRowTop}>
-                      {canManage ? (
-                        <div className={styles.memberSelection}>
-                          <Checkbox
-                            checked={selectedIds.has(member.id)}
-                            disabled={isMutating}
-                            ariaLabel={labels.membersBulkSelectItem.replace(
-                              '{name}',
-                              member.name,
-                            )}
-                            onChange={(checked) =>
-                              toggleSelection(member.id, checked)
-                            }
-                          />
-                        </div>
-                      ) : null}
-                      <button
-                        type="button"
-                        className={styles.memberExpandToggle}
-                        aria-expanded={expanded}
-                        aria-controls={detailsId}
-                        aria-label={`${member.name}, ${labels.membersBirthDate}: ${formattedBirthDate}, ${
-                          expanded
-                            ? labels.membersCollapseRow
-                            : labels.membersExpandRow
-                        }`}
-                        onClick={() => toggleExpanded(member.id)}
-                      >
-                        <span className={styles.memberIdentity}>
-                          <span className={styles.memberName}>
-                            {member.name}
-                          </span>
-                          <span
-                            className={styles.memberDateMobile}
-                            aria-label={`${labels.membersBirthDate}: ${formattedBirthDate}`}
-                          >
-                            {formattedBirthDate}
-                          </span>
-                        </span>
-                        <span className={styles.memberChevron} aria-hidden>
-                          {expanded ? '▾' : '▸'}
-                        </span>
-                      </button>
-                      <span
-                        className={`${styles.memberName} ${styles.memberNameDesktop}`}
-                      >
-                        {member.name}
-                      </span>
-                      <span
-                        className={styles.memberDateDesktop}
-                        aria-label={`${labels.membersBirthDate}: ${formattedBirthDate}`}
-                      >
-                        {formattedBirthDate}
-                      </span>
-                      {canManage ? (
-                        <div className={styles.memberActions}>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            className={styles.memberActionText}
-                            onClick={() => openEditDialog(member)}
-                            disabled={isMutating}
-                          >
-                            {labels.membersEdit}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            className={styles.memberActionText}
-                            onClick={() => requestMemberDelete(member)}
-                            disabled={isMutating}
-                          >
-                            {labels.membersDeleteAction}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            className={styles.memberActionIcon}
-                            icon={<FiEdit2 />}
-                            aria-label={labels.membersEdit}
-                            title={labels.membersEdit}
-                            onClick={() => openEditDialog(member)}
-                            disabled={isMutating}
-                          />
-                          <Button
-                            type="button"
-                            variant="danger"
-                            className={styles.memberActionIcon}
-                            icon={<FiTrash2 />}
-                            aria-label={labels.membersDeleteAction}
-                            title={labels.membersDeleteAction}
-                            onClick={() => requestMemberDelete(member)}
-                            disabled={isMutating}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div id={detailsId} className={styles.memberDetails}>
-                      <span
-                        className={`${styles.memberCell} ${styles.memberEmail}`}
-                        data-label={labels.membersEmailColumn}
-                      >
-                        {member.email || '—'}
-                      </span>
-                      <span
-                        className={`${styles.memberCell} ${styles.memberPhone}`}
-                        data-label={labels.membersPhoneColumn}
-                      >
-                        {member.phone || '—'}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+        <div
+          className={styles.filterToolbar}
+          role="group"
+          aria-label={labels.membersFilterLabel}
+        >
+          <div className={styles.filters}>
+            <InputField
+              label={labels.membersSearchLabel}
+              type="search"
+              value={searchTerm}
+              onChange={updateSearchTerm}
+              className={styles.filterSearch}
+            />
+            <Select
+              label={labels.membersBirthMonthFilter}
+              options={monthOptions}
+              value={birthMonth}
+              onChange={updateBirthMonth}
+              className={styles.filterSelect}
+            />
           </div>
-          <nav
-            className={styles.pagination}
-            aria-label={labels.membersPaginationLabel}
-          >
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage <= 1 || isLoading || isMutating}
-            >
-              {labels.membersPagePrevious}
-            </Button>
-            <span className={styles.paginationLabel}>
-              {currentPage} / {pageCount}
+          <div className={styles.filterActions}>
+            <span className={styles.filterResultCount}>
+              {labels.membersFilterResults.replace(
+                '{count}',
+                String(filteredMembers.length),
+              )}
             </span>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={
-                currentPage >= pageCount || isLoading || isMutating
-              }
-            >
-              {labels.membersPageNext}
+            {canManage && !isLoading && !loadError && members.length > 0 ? (
+              <PageSelectionControls
+                {...selectionControlsProps}
+                className={styles.memberBulkControls}
+              />
+            ) : null}
+            {canView ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={openExportDialog}
+                disabled={
+                  isLoading ||
+                  Boolean(loadError) ||
+                  members.length === 0 ||
+                  (selectedCount === 0 && filteredMembers.length === 0)
+                }
+              >
+                {labels.membersExportButton}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        {isLoading ? (
+          <LoadingSpinner text={labels.membersLoading} />
+        ) : loadError ? (
+          <div className={styles.loadError} role="alert">
+            <p>{loadError}</p>
+            <Button type="button" variant="secondary" onClick={loadMembers}>
+              {labels.membersRetry}
             </Button>
-          </nav>
-        </>
-      ) : (
-        <p className={styles.emptyMessage}>{labels.membersEmpty}</p>
-      )}
+          </div>
+        ) : filteredMembers.length > 0 ? (
+          <>
+            <div className={styles.memberList}>
+              <ul className={styles.memberListBody}>
+                <li
+                  className={[
+                    styles.memberColumnHeader,
+                    canView ? styles.memberColumnHeaderSelectable : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {canView ? (
+                    <div className={styles.memberColumnHeaderSelection}>
+                      <Checkbox
+                        checked={allSelected}
+                        indeterminate={indeterminate}
+                        disabled={isMutating}
+                        ariaLabel={labels.membersBulkSelectAll}
+                        onChange={toggleAllMembers}
+                      />
+                    </div>
+                  ) : null}
+                  {canManage ? (
+                    <PageSelectionControls
+                      {...selectionControlsProps}
+                      className={styles.memberBulkControlsMobile}
+                    />
+                  ) : null}
+                  <span>{labels.membersName}</span>
+                  <span>{labels.membersEmailColumn}</span>
+                  <span>{labels.membersBirthDate}</span>
+                  <span>{labels.membersPhoneColumn}</span>
+                  {canManage ? (
+                    <span
+                      className={styles.memberActionsColumnSizer}
+                      aria-hidden="true"
+                    >
+                      <span>{labels.membersEdit}</span>
+                      <span>{labels.membersDeleteAction}</span>
+                    </span>
+                  ) : null}
+                </li>
+                {pageMembers.map((member) => {
+                  const expanded = expandedIds.includes(member.id);
+                  const detailsId = `member-details-${member.id}`;
+                  const formattedBirthDate = formatBirthDate(member.birthDate);
+
+                  return (
+                    <li
+                      key={member.id}
+                      className={[
+                        styles.memberRow,
+                        canView ? styles.memberRowSelectable : '',
+                        expanded ? styles.memberRowExpanded : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      <div className={styles.memberRowTop}>
+                        {canView ? (
+                          <div className={styles.memberSelection}>
+                            <Checkbox
+                              checked={selectedIds.has(member.id)}
+                              disabled={isMutating}
+                              ariaLabel={labels.membersBulkSelectItem.replace(
+                                '{name}',
+                                member.name,
+                              )}
+                              onChange={(checked) =>
+                                toggleSelection(member.id, checked)
+                              }
+                            />
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={styles.memberExpandToggle}
+                          aria-expanded={expanded}
+                          aria-controls={detailsId}
+                          aria-label={`${member.name}, ${labels.membersBirthDate}: ${formattedBirthDate}, ${
+                            expanded
+                              ? labels.membersCollapseRow
+                              : labels.membersExpandRow
+                          }`}
+                          onClick={() => toggleExpanded(member.id)}
+                        >
+                          <span className={styles.memberIdentity}>
+                            <span className={styles.memberName}>
+                              {member.name}
+                            </span>
+                            <span
+                              className={styles.memberDateMobile}
+                              aria-label={`${labels.membersBirthDate}: ${formattedBirthDate}`}
+                            >
+                              {formattedBirthDate}
+                            </span>
+                          </span>
+                          <span className={styles.memberChevron} aria-hidden>
+                            {expanded ? '▾' : '▸'}
+                          </span>
+                        </button>
+                        <span
+                          className={`${styles.memberName} ${styles.memberNameDesktop}`}
+                        >
+                          {member.name}
+                        </span>
+                        <span
+                          className={styles.memberDateDesktop}
+                          aria-label={`${labels.membersBirthDate}: ${formattedBirthDate}`}
+                        >
+                          {formattedBirthDate}
+                        </span>
+                        {canManage ? (
+                          <div className={styles.memberActions}>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className={styles.memberActionText}
+                              onClick={() => openEditDialog(member)}
+                              disabled={isMutating}
+                            >
+                              {labels.membersEdit}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              className={styles.memberActionText}
+                              onClick={() => requestMemberDelete(member)}
+                              disabled={isMutating}
+                            >
+                              {labels.membersDeleteAction}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className={styles.memberActionIcon}
+                              icon={<FiEdit2 />}
+                              aria-label={labels.membersEdit}
+                              title={labels.membersEdit}
+                              onClick={() => openEditDialog(member)}
+                              disabled={isMutating}
+                            />
+                            <Button
+                              type="button"
+                              variant="danger"
+                              className={styles.memberActionIcon}
+                              icon={<FiTrash2 />}
+                              aria-label={labels.membersDeleteAction}
+                              title={labels.membersDeleteAction}
+                              onClick={() => requestMemberDelete(member)}
+                              disabled={isMutating}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div id={detailsId} className={styles.memberDetails}>
+                        <span
+                          className={`${styles.memberCell} ${styles.memberEmail}`}
+                          data-label={labels.membersEmailColumn}
+                        >
+                          {member.email || '—'}
+                        </span>
+                        <span
+                          className={`${styles.memberCell} ${styles.memberPhone}`}
+                          data-label={labels.membersPhoneColumn}
+                        >
+                          {member.phone || '—'}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <nav
+              className={styles.pagination}
+              aria-label={labels.membersPaginationLabel}
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1 || isLoading || isMutating}
+              >
+                {labels.membersPagePrevious}
+              </Button>
+              <span className={styles.paginationLabel}>
+                {currentPage} / {pageCount}
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={
+                  currentPage >= pageCount || isLoading || isMutating
+                }
+              >
+                {labels.membersPageNext}
+              </Button>
+            </nav>
+          </>
+        ) : (
+          <p className={styles.emptyMessage}>
+            {members.length === 0
+              ? labels.membersEmpty
+              : labels.membersFilterEmpty}
+          </p>
+        )}
       </section>
 
       {canViewBirthdayEmail ? (
@@ -502,6 +613,70 @@ export default function Members() {
       />
 
       <Dialog
+        isOpen={isExportDialogOpen}
+        title={labels.membersExportDialogTitle}
+        onClose={closeExportDialog}
+        closeLabel={labels.dialogCloseLabel}
+        className="cms-theme"
+        showFooterDivider={false}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeExportDialog}
+            >
+              {labels.membersCancel}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={confirmExport}
+              disabled={exportScope === null}
+            >
+              {labels.membersExportConfirm}
+            </Button>
+          </>
+        }
+      >
+        <fieldset className={styles.exportOptions}>
+          <legend>{labels.membersExportDialogDescription}</legend>
+          <label className={styles.exportOption}>
+            <input
+              type="radio"
+              name="member-export-scope"
+              value="selected"
+              checked={exportScope === 'selected'}
+              disabled={selectedCount === 0}
+              onChange={() => setExportScope('selected')}
+            />
+            <span>
+              {labels.membersExportSelectedCount.replace(
+                '{count}',
+                String(selectedCount),
+              )}
+            </span>
+          </label>
+          <label className={styles.exportOption}>
+            <input
+              type="radio"
+              name="member-export-scope"
+              value="filtered"
+              checked={exportScope === 'filtered'}
+              disabled={filteredMembers.length === 0}
+              onChange={() => setExportScope('filtered')}
+            />
+            <span>
+              {(hasActiveFilters
+                ? labels.membersExportFilteredCount
+                : labels.membersExportAllCount
+              ).replace('{count}', String(filteredMembers.length))}
+            </span>
+          </label>
+        </fieldset>
+      </Dialog>
+
+      <Dialog
         isOpen={pendingDelete !== null}
         title={labels.membersDeleteTitle}
         onClose={closePendingDelete}
@@ -537,6 +712,49 @@ export default function Members() {
           )}
         </p>
       </Dialog>
+      {printRequest ? (
+        <div className={styles.printDocument} aria-hidden="true">
+          <h1>{labels.membersPrintTitle}</h1>
+          <p>
+            {(printRequest.scope === 'selected'
+              ? labels.membersPrintSelected
+              : labels.membersPrintFiltered
+            ).replace('{count}', String(printRequest.members.length))}
+          </p>
+          <p>
+            {labels.membersPrintGenerated.replace('{date}', printDate)}
+          </p>
+          <p>
+            {labels.membersPrintFilters}: {printFilterSummary}
+          </p>
+          <table>
+            <colgroup>
+              <col className={styles.printNameColumn} />
+              <col className={styles.printBirthDateColumn} />
+              <col className={styles.printEmailColumn} />
+              <col className={styles.printPhoneColumn} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>{labels.membersName}</th>
+                <th>{labels.membersBirthDate}</th>
+                <th>{labels.membersEmailColumn}</th>
+                <th>{labels.membersPhoneColumn}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printRequest.members.map((member) => (
+                <tr key={member.id}>
+                  <td>{member.name}</td>
+                  <td>{formatBirthDate(member.birthDate)}</td>
+                  <td>{member.email || '—'}</td>
+                  <td>{member.phone || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </div>
   );
 }

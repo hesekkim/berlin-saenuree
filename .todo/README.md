@@ -49,6 +49,7 @@
 - [014-post-video-upload-stability.md](./done/014-post-video-upload-stability.md): Posts 원본 동영상 업로드 안정화 및 200MiB 지원
 - [015-backup-cancellation-progress.md](./done/015-backup-cancellation-progress.md): 백업 생성 진행 표시 및 취소 기능
 - [016-church-member-directory.md](./done/016-church-member-directory.md): 권한·회원 CRUD·일괄 삭제·페이지네이션·반응형 UX를 포함한 비공개 명부 관리
+- [018-church-directory-filters-pdf.md](./done/018-church-directory-filters-pdf.md): 생일 월 필터, 선택·전체 PDF 출력 및 출력 범위 선택 Dialog
 
 ## 진행 중인 티켓
 

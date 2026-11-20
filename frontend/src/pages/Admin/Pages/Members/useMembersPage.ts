@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   ChurchMember,
   CreateChurchMemberPayload,
@@ -10,9 +10,17 @@ import {
   type MemberFormErrors,
   type MemberFormValues,
 } from './memberValidation';
+import { filterChurchMembers } from './memberFilters';
 import useChurchMembers from './useChurchMembers';
 
 const MEMBERS_PAGE_SIZE = 10;
+
+type PrintRequest = {
+  scope: 'selected' | 'filtered';
+  members: ChurchMember[];
+};
+
+type ExportScope = PrintRequest['scope'];
 
 export default function useMembersPage(
   labels: AdminTranslations,
@@ -28,7 +36,17 @@ export default function useMembersPage(
   } = usePageSelection();
   const membersState = useChurchMembers(labels, canView);
   const { members, isMutating, removeMember, removeMembers } = membersState;
-  const pageCount = Math.max(1, Math.ceil(members.length / MEMBERS_PAGE_SIZE));
+  const [birthMonth, setBirthMonth] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const filteredMembers = filterChurchMembers(
+    members,
+    { birthMonth, searchTerm },
+    language,
+  );
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredMembers.length / MEMBERS_PAGE_SIZE),
+  );
 
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
@@ -36,6 +54,9 @@ export default function useMembersPage(
   const [pendingDelete, setPendingDelete] = useState<ChurchMember | null>(null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [printRequest, setPrintRequest] = useState<PrintRequest | null>(null);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportScope, setExportScope] = useState<ExportScope | null>(null);
   const [form, setForm] = useState<MemberFormValues>({
     name: '',
     email: '',
@@ -142,6 +163,25 @@ export default function useMembersPage(
     });
   };
 
+  const updateBirthMonth = (value: string) => {
+    setBirthMonth(value);
+    setPage(1);
+  };
+  const updateSearchTerm = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+  const requestPrint = (scope: PrintRequest['scope']) => {
+    const printMembers =
+      scope === 'selected'
+        ? members.filter((member) => selectedIds.has(member.id))
+        : filteredMembers;
+    if (printMembers.length > 0) {
+      setPrintRequest({ scope, members: printMembers });
+    }
+  };
+  const clearPrintRequest = useCallback(() => setPrintRequest(null), []);
+
   const formatBirthDate = (value: string) =>
     new Intl.DateTimeFormat(language, {
       dateStyle: 'medium',
@@ -164,8 +204,21 @@ export default function useMembersPage(
   const selectedCount = members.filter((member) =>
     selectedIds.has(member.id),
   ).length;
+  const openExportDialog = () => {
+    setExportScope(
+      selectedCount === 0 && filteredMembers.length > 0 ? 'filtered' : null,
+    );
+    setIsExportDialogOpen(true);
+  };
+  const closeExportDialog = () => setIsExportDialogOpen(false);
+  const confirmExport = () => {
+    if (exportScope) {
+      requestPrint(exportScope);
+      setIsExportDialogOpen(false);
+    }
+  };
   const currentPage = Math.min(page, pageCount);
-  const pageMembers = members.slice(
+  const pageMembers = filteredMembers.slice(
     (currentPage - 1) * MEMBERS_PAGE_SIZE,
     currentPage * MEMBERS_PAGE_SIZE,
   );
@@ -198,6 +251,7 @@ export default function useMembersPage(
 
   return {
     members,
+    filteredMembers,
     isLoading: membersState.isLoading,
     loadError: membersState.loadError,
     isMutating,
@@ -213,6 +267,14 @@ export default function useMembersPage(
     pageCount,
     currentPage,
     pageMembers,
+    birthMonth,
+    searchTerm,
+    hasActiveFilters:
+      Boolean(birthMonth) ||
+      Boolean(searchTerm.trim()),
+    printRequest,
+    isExportDialogOpen,
+    exportScope,
     allSelected,
     indeterminate,
     selectedCount,
@@ -237,6 +299,14 @@ export default function useMembersPage(
     toggleExpanded,
     toggleAllMembers,
     goToPage,
+    updateBirthMonth,
+    updateSearchTerm,
+    requestPrint,
+    clearPrintRequest,
+    openExportDialog,
+    closeExportDialog,
+    setExportScope,
+    confirmExport,
     formatBirthDate,
   };
 }
