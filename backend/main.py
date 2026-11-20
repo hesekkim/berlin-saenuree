@@ -18,6 +18,7 @@ from core.json_store import JsonStoreCorruptError
 from services.rich_text import RichHtmlTooLongError
 from services.cms_users_service import migrate_site_admin_preferences
 from services.maintenance_service import maintenance_loop
+from services.relay_stream_service import relay_stream
 from api.v1.api import api_router
 from middleware.body_size_limit import BodySizeLimitMiddleware
 from middleware.rate_limiter import RateLimitMiddleware
@@ -76,6 +77,7 @@ async def lifespan(app: FastAPI):
         maintenance_task.cancel()
         with suppress(asyncio.CancelledError):
             await maintenance_task
+    await relay_stream.shutdown("server_shutdown")
     logger.info("Application shutdown")
 
 

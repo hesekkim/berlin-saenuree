@@ -12,7 +12,7 @@ from models.relay import (
     RelaySessionResponse,
     RelaySessionUpsertRequest,
 )
-from services.relay_auth_service import RelayAuthError, relay_auth
+from services.relay_auth_service import RelayAuthError, RelayLimitError, relay_auth
 from services.relay_stream_service import (
     PROTOCOL,
     RelayProtocolError,
@@ -52,6 +52,11 @@ async def upsert_session(
         if existed:
             await relay_stream.close_listeners(session_id, "Listener access changed")
     except RelayAuthError as error:
+        if isinstance(error, RelayLimitError):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Relay session limit reached",
+            ) from error
         raise HTTPException(status_code=401, detail=str(error)) from error
     return RelaySessionResponse(session_id=session.session_id, status=session.status)
 
@@ -126,6 +131,8 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
     await websocket.accept()
     heartbeat_task: asyncio.Task[None] | None = None
     generation: int | None = None
+    session_active = False
+    explicitly_closed = False
     try:
         hello_text = await asyncio.wait_for(websocket.receive_text(), timeout=10)
         if len(hello_text.encode("utf-8")) > 16 * 1024:
@@ -137,6 +144,7 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
         metadata = relay_stream.validate_publisher_hello(hello, session_id)
         generation = relay_auth.claim_publisher_session(session_id)
         await relay_stream.register_publisher(session_id, websocket, metadata)
+        session_active = True
         relay_auth.set_session_metadata(session_id, metadata)
         heartbeat_task = asyncio.create_task(
             _publisher_heartbeat(websocket, session_id, generation),
@@ -152,7 +160,9 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
         )
 
         while True:
-            message = await websocket.receive()
+            message = await asyncio.wait_for(
+                websocket.receive(), timeout=settings.relay_idle_timeout_seconds
+            )
             if message["type"] == "websocket.disconnect":
                 break
             if not relay_auth.touch_publisher_session(session_id, generation):
@@ -194,6 +204,7 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
                         raise RelayProtocolError("Invalid publisher close event")
                     relay_auth.end_session(session_id)
                     await relay_stream.end_session(session_id, payload["reason"])
+                    explicitly_closed = True
                     return
                 else:
                     await relay_stream.forward_control(session_id, payload)
@@ -204,7 +215,12 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
             else:
                 raise RelayProtocolError("Unsupported publisher frame")
     except asyncio.TimeoutError:
-        await _send_publisher_error(websocket, "Publisher handshake timed out")
+        if session_active:
+            relay_auth.end_session(session_id)
+            await relay_stream.end_session(session_id, "idle_timeout")
+            explicitly_closed = True
+        else:
+            await _send_publisher_error(websocket, "Publisher handshake timed out")
     except (RelayAuthError, RelayProtocolError, WebSocketDisconnect):
         await _send_publisher_error(websocket, "Invalid publisher message")
     finally:
@@ -214,6 +230,12 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
         await relay_stream.unregister_publisher(session_id, websocket)
         if generation is not None:
             relay_auth.release_publisher_session(session_id, generation)
+        if session_active and not explicitly_closed:
+            try:
+                relay_auth.end_session(session_id)
+                await relay_stream.end_session(session_id, "publisher_closed")
+            except RelayAuthError:
+                pass
 
 
 @router.websocket("/ws/listener/{session_id}")
@@ -253,7 +275,11 @@ async def listener_socket(websocket: WebSocket, session_id: str) -> None:
         await websocket.close(code=1008, reason="Authentication failed")
         return
 
-    listener = await relay_stream.register_listener(session_id, websocket)
+    try:
+        listener = await relay_stream.register_listener(session_id, websocket)
+    except RelayProtocolError:
+        await websocket.close(code=1013, reason="Relay listener limit reached")
+        return
     expiry_task = asyncio.create_task(
         _expire_listener_token(websocket, token_expiration),
         name=f"relay-listener-token-expiry-{session_id}",
@@ -269,7 +295,9 @@ async def listener_socket(websocket: WebSocket, session_id: str) -> None:
         )
         await relay_stream.activate_listener(listener)
         while True:
-            message = await websocket.receive()
+            message = await asyncio.wait_for(
+                websocket.receive(), timeout=settings.relay_idle_timeout_seconds
+            )
             if message["type"] == "websocket.disconnect":
                 return
             text = message.get("text")
@@ -279,6 +307,9 @@ async def listener_socket(websocket: WebSocket, session_id: str) -> None:
                 raise RelayProtocolError("Listener message is too large")
             await relay_stream.handle_listener_message(listener, text)
     except WebSocketDisconnect:
+        return
+    except asyncio.TimeoutError:
+        await websocket.close(code=1001, reason="Listener heartbeat timeout")
         return
     except RelayProtocolError:
         await websocket.close(code=1008, reason="Invalid listener message")

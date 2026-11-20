@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     relay_listener_token_minutes: int = Field(default=90, gt=0, le=90)
     relay_allowed_origins: Annotated[list[str], NoDecode] = []
     relay_allowed_origin_suffixes: Annotated[list[str], NoDecode] = []
+    relay_max_sessions: int = Field(default=100, gt=0)
+    relay_max_publishers: int = Field(default=100, gt=0)
+    relay_max_listeners: int = Field(default=1000, gt=0)
+    relay_idle_timeout_seconds: float = Field(default=60, gt=0)
 
     @field_validator("relay_allowed_origins", "relay_allowed_origin_suffixes", mode="before")
     @classmethod

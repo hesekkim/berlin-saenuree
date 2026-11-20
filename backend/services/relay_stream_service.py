@@ -9,6 +9,7 @@ from typing import Any
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
+from core.config import settings
 from services.relay_auth_service import RelayAuthError, relay_auth
 
 
@@ -44,6 +45,7 @@ class ListenerConnection:
     audio_enabled: bool = False
     ready: bool = False
     pending: deque[tuple[str, Any]] = field(default_factory=deque)
+    queued_audio_bytes: int = 0
     send_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
@@ -56,6 +58,7 @@ class RelayStreamService:
     _poll_task: asyncio.Task[None] | None = None
     send_timeout_seconds: float = 5.0
     max_pending_listener_messages: int = 256
+    max_pending_audio_bytes: int = 144_000
 
     @staticmethod
     def validate_publisher_hello(
@@ -86,6 +89,11 @@ class RelayStreamService:
         self, session_id: str, websocket: WebSocket, metadata: dict[str, Any]
     ) -> None:
         async with self._lock:
+            if (
+                len(self._publishers) >= settings.relay_max_publishers
+                and session_id not in self._publishers
+            ):
+                raise RelayProtocolError("Relay publisher limit reached")
             previous = self._publishers.get(session_id)
             self._publishers[session_id] = PublisherConnection(websocket, metadata)
         if previous is not None and previous.websocket is not websocket:
@@ -110,6 +118,9 @@ class RelayStreamService:
     ) -> ListenerConnection:
         listener = ListenerConnection(websocket)
         async with self._lock:
+            listener_count = sum(len(entries) for entries in self._listeners.values())
+            if listener_count >= settings.relay_max_listeners:
+                raise RelayProtocolError("Relay listener limit reached")
             self._listeners.setdefault(session_id, set()).add(listener)
             if self._poll_task is None or self._poll_task.done():
                 self._event_cursor = relay_auth.latest_event_id()
@@ -141,9 +152,55 @@ class RelayStreamService:
             async with self._lock:
                 pending = list(listener.pending)
                 listener.pending.clear()
+                listener.queued_audio_bytes = 0
                 listener.ready = True
             for kind, payload in pending:
                 await self._send_raw(listener.websocket, kind, payload)
+
+    async def shutdown(self, reason: str = "server_shutdown") -> None:
+        async with self._lock:
+            session_ids = set(self._publishers) | set(self._listeners)
+            publishers = list(self._publishers.values())
+            listeners = [
+                listener
+                for entries in self._listeners.values()
+                for listener in entries
+            ]
+            self._publishers.clear()
+            self._listeners.clear()
+            poll_task = self._poll_task
+            self._poll_task = None
+        if poll_task is not None:
+            poll_task.cancel()
+            await asyncio.gather(poll_task, return_exceptions=True)
+        for session_id in session_ids:
+            try:
+                relay_auth.end_session(session_id)
+            except RelayAuthError:
+                pass
+            relay_auth.publish_event(
+                session_id,
+                "close",
+                json.dumps({
+                    "type": "status",
+                    "session_id": session_id,
+                    "sequence": 0,
+                    "timestamp_ms": 0,
+                    "status": "ended",
+                    "reason": reason,
+                }).encode("utf-8"),
+            )
+        await asyncio.gather(
+            *(
+                self._close(listener.websocket, 1001, "Server shutting down")
+                for listener in listeners
+            ),
+            *(
+                self._close(publisher.websocket, 1001, "Server shutting down")
+                for publisher in publishers
+            ),
+            return_exceptions=True,
+        )
 
     async def close_listeners(self, session_id: str, reason: str) -> None:
         async with self._lock:
@@ -384,10 +441,41 @@ class RelayStreamService:
             for listener in targets:
                 if listener.ready:
                     ready_targets.append(listener)
-                elif len(listener.pending) < self.max_pending_listener_messages:
-                    listener.pending.append((kind, payload))
                 else:
-                    stale.append(listener)
+                    can_queue = True
+                    if kind == "bytes":
+                        if len(payload) > self.max_pending_audio_bytes:
+                            can_queue = False
+                        while (
+                            can_queue
+                            and listener.queued_audio_bytes + len(payload)
+                            > self.max_pending_audio_bytes
+                        ):
+                            oldest = next(
+                                (
+                                    index
+                                    for index, item in enumerate(listener.pending)
+                                    if item[0] == "bytes"
+                                ),
+                                None,
+                            )
+                            if oldest is None:
+                                break
+                            _, dropped = listener.pending[oldest]
+                            del listener.pending[oldest]
+                            listener.queued_audio_bytes -= len(dropped)
+                        if (
+                            len(payload) <= self.max_pending_audio_bytes
+                            and listener.queued_audio_bytes + len(payload)
+                            <= self.max_pending_audio_bytes
+                        ):
+                            listener.queued_audio_bytes += len(payload)
+                        elif kind == "bytes":
+                            can_queue = False
+                    if can_queue and len(listener.pending) < self.max_pending_listener_messages:
+                        listener.pending.append((kind, payload))
+                    else:
+                        stale.append(listener)
         results = await asyncio.gather(
             *(
                 self._send_one(listener, kind, payload)

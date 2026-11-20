@@ -34,6 +34,10 @@ class RelayAuthError(Exception):
     pass
 
 
+class RelayLimitError(RelayAuthError):
+    pass
+
+
 @dataclass
 class RelaySession:
     session_id: str
@@ -226,6 +230,12 @@ class RelayAuthService:
                 "SELECT password_version FROM relay_sessions WHERE session_id = ?",
                 (session_id,),
             ).fetchone()
+            if row is None:
+                count_row = connection.execute(
+                    "SELECT COUNT(*) AS count FROM relay_sessions WHERE status != 'ended'"
+                ).fetchone()
+                if count_row["count"] >= settings.relay_max_sessions:
+                    raise RelayLimitError("Relay session limit reached")
             version = 1 if row is None else row["password_version"] + 1
             connection.execute(
                 """

@@ -340,6 +340,43 @@ async def test_expired_listener_token_closes_existing_websocket():
     assert websocket.closed == [(1008, "Listener token expired")]
 
 
+@pytest.mark.asyncio
+async def test_relay_listener_queue_drops_oldest_audio_before_activation():
+    service = RelayStreamService()
+    service.max_pending_listener_messages = 256
+    service.max_pending_audio_bytes = 2
+    websocket = FakeWebSocket()
+    listener = await service.register_listener("relay_session_123456", websocket)
+    listener.audio_enabled = True
+
+    await service._send_to_listeners(
+        [listener], "bytes", b"a1", subscribed_audio_only=True
+    )
+    await service._send_to_listeners(
+        [listener], "bytes", b"a2", subscribed_audio_only=True
+    )
+    await service._send_to_listeners(
+        [listener], "json",
+        {"type": "status", "session_id": "relay_session_123456"},
+        subscribed_audio_only=False,
+    )
+
+    assert [kind for kind, _ in listener.pending] == ["bytes", "json"]
+    assert listener.pending[-1][1]["type"] == "status"
+    assert listener.pending[0][1] == b"a2"
+    assert listener.queued_audio_bytes == 2
+    await service.unregister_listener("relay_session_123456", listener)
+
+
+def test_relay_session_limit_is_explicit(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "relay_max_sessions", 1)
+    auth = RelayAuthService(tmp_path / "limits.sqlite3")
+    auth.upsert_session("relay_session_123456", "audience-pass")
+
+    with pytest.raises(RelayAuthError, match="Relay session limit reached"):
+        auth.upsert_session("relay_session_654321", "audience-pass")
+
+
 def test_publisher_and_listener_websockets_forward_control_and_audio():
     client = TestClient(app)
     session_id = "relay_session_123456"
