@@ -180,7 +180,9 @@ class RelayStreamService:
                 raise RelayProtocolError("Relay listener limit reached")
             self._listeners.setdefault(session_id, set()).add(listener)
             if self._poll_task is None or self._poll_task.done():
-                self._event_cursor = relay_auth.latest_event_id()
+                self._event_cursor = await asyncio.to_thread(
+                    relay_auth.latest_event_id
+                )
                 self._poll_task = asyncio.create_task(
                     self._poll_events(), name="relay-event-poller"
                 )
@@ -236,7 +238,7 @@ class RelayStreamService:
                 relay_auth.end_session(session_id)
             except RelayAuthError:
                 pass
-            relay_auth.publish_event(
+            await self._publish_event(
                 session_id,
                 "close",
                 json.dumps({
@@ -263,7 +265,7 @@ class RelayStreamService:
     async def close_listeners(self, session_id: str, reason: str) -> None:
         async with self._lock:
             listeners = list(self._listeners.pop(session_id, ()))
-        relay_auth.publish_event(
+        await self._publish_event(
             session_id, "revoke", reason.encode("utf-8")
         )
         await asyncio.gather(
@@ -369,7 +371,7 @@ class RelayStreamService:
             publisher.last_control_sequences[message_type] = sequence
             if message_type == "status":
                 publisher.current_status = payload["status"]
-        relay_auth.publish_event(
+        await self._publish_event(
             session_id, "json", json.dumps(payload).encode("utf-8")
         )
         encoded = json.dumps(payload).encode("utf-8")
@@ -398,7 +400,7 @@ class RelayStreamService:
             )
             publisher.last_audio_sequence = sequence
         if sequence_gap:
-            relay_auth.publish_event(
+            await self._publish_event(
                 session_id,
                 "json",
                 json.dumps({
@@ -407,7 +409,7 @@ class RelayStreamService:
                     "sequence": sequence,
                 }).encode("utf-8"),
             )
-        relay_auth.publish_event(session_id, "audio", frame)
+        await self._publish_event(session_id, "audio", frame)
         async with self._metrics_lock:
             self.metrics.audio_frames_received += 1
             self.metrics.audio_frame_bytes_received += len(frame)
@@ -446,7 +448,7 @@ class RelayStreamService:
             "status": "ended",
             "reason": reason,
         }
-        relay_auth.publish_event(
+        await self._publish_event(
             session_id, "close", json.dumps(ended).encode("utf-8")
         )
         await self._send_to_listeners(
@@ -471,7 +473,9 @@ class RelayStreamService:
                 async with self._lock:
                     if not self._listeners:
                         return
-                events = relay_auth.read_events_after(self._event_cursor)
+                events = await asyncio.to_thread(
+                    relay_auth.read_events_after, self._event_cursor
+                )
                 if not events:
                     await asyncio.sleep(0.05)
                     continue
@@ -616,6 +620,13 @@ class RelayStreamService:
         async with listener.send_lock:
             await self._send_raw(listener.websocket, kind, payload)
             await self._record_sent(kind, payload)
+
+    async def _publish_event(
+        self, session_id: str, kind: str, payload: bytes
+    ) -> None:
+        await asyncio.to_thread(
+            relay_auth.publish_event, session_id, kind, payload
+        )
 
     async def _record_sent(self, kind: str, payload: Any) -> None:
         async with self._metrics_lock:

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import threading
 import time
 from contextlib import contextmanager
 
@@ -9,6 +10,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from core.config import Settings, settings
 from api.v1.endpoints.relay import _expire_listener_token
+from services import relay_stream_service as relay_stream_module
 from main import app, create_application
 from services.relay_auth_service import RelayAuthError, RelayAuthService, relay_auth
 from services.relay_stream_service import RelayStreamService, relay_stream
@@ -105,6 +107,48 @@ class FakeWebSocket:
 
     async def close(self, code, reason):
         self.closed.append((code, reason))
+
+
+@pytest.mark.asyncio
+async def test_forward_audio_does_not_block_event_loop_on_database_write(monkeypatch):
+    session_id = "relay_session_123456"
+    service = RelayStreamService()
+    metadata = {
+        "codec": "opus",
+        "sample_rate": 24000,
+        "channels": 1,
+        "packet_duration_ms": 20,
+    }
+    await service.register_publisher(session_id, FakeWebSocket(), metadata)
+    write_started = threading.Event()
+    allow_write_to_finish = threading.Event()
+
+    def slow_publish_event(*_args):
+        write_started.set()
+        allow_write_to_finish.wait(timeout=2)
+
+    monkeypatch.setattr(
+        relay_stream_module.relay_auth, "publish_event", slow_publish_event
+    )
+    payload = b"\x11" * 80
+    frame = (
+        b"SL1A"
+        + bytes((1, 0))
+        + len(payload).to_bytes(2, "little")
+        + (0).to_bytes(8, "big")
+        + (0).to_bytes(4, "big")
+        + payload
+    )
+    task = asyncio.create_task(service.forward_audio(session_id, frame))
+    try:
+        assert await asyncio.wait_for(
+            asyncio.to_thread(write_started.wait, 1), timeout=2
+        )
+        await asyncio.sleep(0)
+        assert not task.done()
+    finally:
+        allow_write_to_finish.set()
+    await task
 
 
 def test_publisher_credential_and_password_hash_are_required():
