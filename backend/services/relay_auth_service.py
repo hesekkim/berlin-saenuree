@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import hmac
 import json
 import re
-import secrets
 import sqlite3
 import threading
 import time
@@ -21,11 +19,11 @@ from core.config import settings
 
 
 SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
-PBKDF2_ITERATIONS = 300_000
 LISTENER_TOKEN_AUDIENCE = "sermon-live-listener"
 PUBLISHER_TOKEN_AUDIENCE = "sermon-live-publisher"
 RATE_WINDOW_SECONDS = 60
-PASSWORD_FAILURE_LIMIT = 8
+LISTENER_TOKEN_SESSION_REQUEST_LIMIT = 100
+LISTENER_TOKEN_IP_REQUEST_LIMIT = 500
 WEBSOCKET_ATTEMPT_LIMIT = 20
 WEBSOCKET_IP_ATTEMPT_LIMIT = 100
 
@@ -41,9 +39,7 @@ class RelayLimitError(RelayAuthError):
 @dataclass
 class RelaySession:
     session_id: str
-    password_salt: bytes
-    password_digest: bytes
-    password_version: int
+    session_version: int
     status: str = "created"
 
 
@@ -66,9 +62,7 @@ class RelayAuthService:
                         """
                         CREATE TABLE IF NOT EXISTS relay_sessions (
                             session_id TEXT PRIMARY KEY,
-                            password_salt TEXT NOT NULL,
-                            password_digest TEXT NOT NULL,
-                            password_version INTEGER NOT NULL,
+                            session_version INTEGER NOT NULL DEFAULT 0,
                             status TEXT NOT NULL,
                             metadata TEXT,
                             updated_at REAL NOT NULL DEFAULT 0,
@@ -124,6 +118,52 @@ class RelayAuthService:
                         except sqlite3.OperationalError as error:
                             if "duplicate column name" not in str(error).lower():
                                 raise
+                    if "session_version" not in columns:
+                        connection.execute(
+                            "ALTER TABLE relay_sessions ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0"
+                        )
+                        if "password_version" in columns:
+                            connection.execute(
+                                "UPDATE relay_sessions SET session_version = password_version"
+                            )
+                    legacy_password_columns = {
+                        "password_salt",
+                        "password_digest",
+                        "password_version",
+                    }.intersection(columns)
+                    if legacy_password_columns:
+                        connection.commit()
+                        connection.execute("BEGIN IMMEDIATE")
+                        connection.execute(
+                            """
+                            CREATE TABLE relay_sessions_migration (
+                                session_id TEXT PRIMARY KEY,
+                                session_version INTEGER NOT NULL DEFAULT 0,
+                                status TEXT NOT NULL,
+                                metadata TEXT,
+                                updated_at REAL NOT NULL DEFAULT 0,
+                                publisher_generation INTEGER NOT NULL DEFAULT 0
+                            )
+                            """
+                        )
+                        connection.execute(
+                            """
+                            INSERT INTO relay_sessions_migration
+                                (session_id, session_version, status, metadata,
+                                 updated_at, publisher_generation)
+                            SELECT session_id, session_version, status, metadata,
+                                   updated_at, publisher_generation
+                            FROM relay_sessions
+                            """
+                        )
+                        connection.execute("DROP TABLE relay_sessions")
+                        connection.execute(
+                            "ALTER TABLE relay_sessions_migration RENAME TO relay_sessions"
+                        )
+                        connection.execute(
+                            "DELETE FROM relay_attempts WHERE kind = 'password'"
+                        )
+                        connection.commit()
                     self._initialized = True
         return connection
 
@@ -205,29 +245,20 @@ class RelayAuthService:
             if suffix.strip()
         )
 
-    def _hash_password(self, password: str, salt: bytes) -> bytes:
-        return hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS
-        )
-
     @staticmethod
     def _to_session(row: sqlite3.Row) -> RelaySession:
         return RelaySession(
             session_id=row["session_id"],
-            password_salt=bytes.fromhex(row["password_salt"]),
-            password_digest=bytes.fromhex(row["password_digest"]),
-            password_version=row["password_version"],
+            session_version=row["session_version"],
             status=row["status"],
         )
 
-    def upsert_session(self, session_id: str, password: str) -> RelaySession:
+    def upsert_session(self, session_id: str) -> RelaySession:
         session_id = self.validate_session_id(session_id)
-        salt = secrets.token_bytes(16)
-        digest = self._hash_password(password, salt)
         with self._connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT password_version FROM relay_sessions WHERE session_id = ?",
+                "SELECT session_version FROM relay_sessions WHERE session_id = ?",
                 (session_id,),
             ).fetchone()
             if row is None:
@@ -236,28 +267,22 @@ class RelayAuthService:
                 ).fetchone()
                 if count_row["count"] >= settings.relay_max_sessions:
                     raise RelayLimitError("Relay session limit reached")
-            version = 1 if row is None else row["password_version"] + 1
+            version = 1 if row is None else row["session_version"] + 1
             connection.execute(
                 """
                 INSERT INTO relay_sessions
-                    (session_id, password_salt, password_digest, password_version, status, updated_at, publisher_generation)
-                VALUES (?, ?, ?, ?, 'created', ?, 0)
+                    (session_id, session_version, status, updated_at, publisher_generation)
+                VALUES (?, ?, 'created', ?, 0)
                 ON CONFLICT(session_id) DO UPDATE SET
-                    password_salt = excluded.password_salt,
-                    password_digest = excluded.password_digest,
-                    password_version = excluded.password_version,
+                    session_version = excluded.session_version,
                     status = excluded.status,
                     updated_at = excluded.updated_at,
                     publisher_generation = relay_sessions.publisher_generation + 1,
                     metadata = NULL
                 """,
-                (session_id, salt.hex(), digest.hex(), version, time.time()),
+                (session_id, version, time.time()),
             )
-            connection.execute(
-                "DELETE FROM relay_attempts WHERE kind = 'password' AND session_id = ?",
-                (session_id,),
-            )
-        return RelaySession(session_id, salt, digest, version)
+        return RelaySession(session_id, version)
 
     def set_session_status(self, session_id: str, status: str) -> None:
         session_id = self.validate_session_id(session_id)
@@ -356,8 +381,8 @@ class RelayAuthService:
             cursor = connection.execute(
                 """
                 UPDATE relay_sessions
-                SET status = 'ended', password_salt = '', password_digest = '',
-                    updated_at = ?, publisher_generation = publisher_generation + 1,
+                SET status = 'ended', updated_at = ?,
+                    publisher_generation = publisher_generation + 1,
                     metadata = NULL
                 WHERE session_id = ?
                 """,
@@ -377,33 +402,43 @@ class RelayAuthService:
             raise RelayAuthError("Session not found")
         return self._to_session(row)
 
-    def _is_password_attempt_blocked(self, ip: str, session_id: str) -> bool:
+    def allow_listener_token_request(self, client_ip: str, session_id: str) -> bool:
         now = time.time()
-        session_id = session_id[:128]
+        session_id = self.validate_session_id(session_id)
         with self._connection() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 "DELETE FROM relay_attempts WHERE attempted_at <= ?",
                 (now - RATE_WINDOW_SECONDS,),
             )
-            row = connection.execute(
+            per_session = connection.execute(
                 """
                 SELECT COUNT(*) AS count FROM relay_attempts
-                WHERE kind = 'password' AND client_ip = ? AND session_id = ?
+                WHERE kind = 'listener_token' AND client_ip = ? AND session_id = ?
                     AND attempted_at > ?
                 """,
-                (ip, session_id, now - RATE_WINDOW_SECONDS),
-            ).fetchone()
-        return row["count"] >= PASSWORD_FAILURE_LIMIT
-
-    def _record_password_failure(self, ip: str, session_id: str) -> None:
-        with self._connection() as connection:
+                (client_ip, session_id, now - RATE_WINDOW_SECONDS),
+            ).fetchone()["count"]
+            per_ip = connection.execute(
+                """
+                SELECT COUNT(*) AS count FROM relay_attempts
+                WHERE kind = 'listener_token' AND client_ip = ? AND attempted_at > ?
+                """,
+                (client_ip, now - RATE_WINDOW_SECONDS),
+            ).fetchone()["count"]
+            if (
+                per_session >= LISTENER_TOKEN_SESSION_REQUEST_LIMIT
+                or per_ip >= LISTENER_TOKEN_IP_REQUEST_LIMIT
+            ):
+                return False
             connection.execute(
                 """
                 INSERT INTO relay_attempts(kind, client_ip, session_id, attempted_at)
-                VALUES ('password', ?, ?, ?)
+                VALUES ('listener_token', ?, ?, ?)
                 """,
-                (ip, session_id[:128], time.time()),
+                (client_ip, session_id, now),
             )
+        return True
 
     def allow_ws_connection(self, client_ip: str, session_id: str) -> bool:
         now = time.time()
@@ -476,26 +511,10 @@ class RelayAuthService:
             for row in rows
         ]
 
-    def verify_listener_password(
-        self, session_id: str, password: str, client_ip: str
-    ) -> str:
-        if not self._is_password_attempt_blocked(client_ip, session_id):
-            session = None
-            try:
-                session = self.get_session(session_id)
-            except RelayAuthError:
-                pass
-            if session is not None and session.status in {"created", "live"}:
-                candidate = self._hash_password(password, session.password_salt)
-                if hmac.compare_digest(candidate, session.password_digest):
-                    return self.issue_listener_token(session)
-                self._record_password_failure(client_ip, session_id)
-            else:
-                self._hash_password(password, b"relay-auth-dummy-salt")
-                self._record_password_failure(client_ip, session_id)
-        raise RelayAuthError("Invalid session or listener password")
-
-    def issue_listener_token(self, session: RelaySession) -> str:
+    def issue_listener_token(self, session_id: str) -> str:
+        session = self.get_session(session_id)
+        if session.status not in {"created", "live"}:
+            raise RelayAuthError("Session unavailable")
         secret = settings.relay_listener_token_secret
         if len(secret) < 32:
             raise RelayAuthError("Relay listener token secret is not configured")
@@ -508,7 +527,7 @@ class RelayAuthService:
             "iss": "sermon-live-relay",
             "iat": now,
             "exp": now + timedelta(minutes=minutes),
-            "password_version": session.password_version,
+            "session_version": session.session_version,
         }
         return jwt.encode(claims, secret, algorithm="HS256")
 
@@ -535,7 +554,7 @@ class RelayAuthService:
                         "aud",
                         "iss",
                         "typ",
-                        "password_version",
+                        "session_version",
                     ]
                 },
             )
@@ -544,7 +563,7 @@ class RelayAuthService:
         if (
             payload.get("sub") != session_id
             or payload.get("typ") != "relay_listener"
-            or payload.get("password_version") != session.password_version
+            or payload.get("session_version") != session.session_version
         ):
             raise RelayAuthError("Listener authentication failed")
         expiration = payload.get("exp")

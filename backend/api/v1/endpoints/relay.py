@@ -8,9 +8,7 @@ from core.config import settings
 from middleware.rate_limiter import resolve_client_ip
 from models.relay import (
     RelayListenerTokenResponse,
-    RelaySessionPasswordRequest,
     RelaySessionResponse,
-    RelaySessionUpsertRequest,
 )
 from services.relay_auth_service import RelayAuthError, RelayLimitError, relay_auth
 from services.relay_stream_service import (
@@ -34,7 +32,6 @@ def _check_websocket_admission(websocket: WebSocket, session_id: str) -> bool:
 @router.post("/sessions/{session_id}", response_model=RelaySessionResponse)
 async def upsert_session(
     session_id: str,
-    body: RelaySessionUpsertRequest,
     x_publisher_credential: str | None = Header(
         default=None, alias="X-Publisher-Credential"
     ),
@@ -46,11 +43,9 @@ async def upsert_session(
             relay_auth.get_session(session_id)
         except RelayAuthError:
             existed = False
-        session = relay_auth.upsert_session(
-            session_id, body.listener_password.get_secret_value()
-        )
+        session = relay_auth.upsert_session(session_id)
         if existed:
-            await relay_stream.close_listeners(session_id, "Listener access changed")
+            await relay_stream.close_listeners(session_id, "Session renewed")
     except RelayAuthError as error:
         if isinstance(error, RelayLimitError):
             raise HTTPException(
@@ -121,18 +116,13 @@ async def relay_metrics(
 async def listener_token(
     request: Request,
     session_id: str,
-    body: RelaySessionPasswordRequest,
 ) -> RelayListenerTokenResponse:
     try:
-        token = relay_auth.verify_listener_password(
-            session_id,
-            body.listener_password.get_secret_value(),
-            _client_ip(request),
-        )
+        relay_auth.get_session(session_id)
     except RelayAuthError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid session or listener password",
+            detail="Invalid session",
         ) from error
     if not relay_auth.publisher_session_is_active(
         session_id
@@ -141,6 +131,18 @@ async def listener_token(
             status_code=status.HTTP_409_CONFLICT,
             detail="Broadcast is not currently live",
         )
+    if not relay_auth.allow_listener_token_request(_client_ip(request), session_id):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many listener admission requests",
+        )
+    try:
+        token = relay_auth.issue_listener_token(session_id)
+    except RelayAuthError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session",
+        ) from error
     return RelayListenerTokenResponse(
         listener_token=token,
         expires_in_seconds=max(1, settings.relay_listener_token_minutes) * 60,

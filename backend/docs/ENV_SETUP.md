@@ -51,10 +51,10 @@ APP_DEBUG=True
 
 - `APP_RELAY_PUBLISHER_CREDENTIAL`은 Local PC backend와 공유하는 32자 이상의 무작위 service credential이다. CMS/JWT 비밀과 재사용하지 않는다.
 - `APP_RELAY_LISTENER_TOKEN_SECRET`은 Listener JWT 전용 32자 이상의 무작위 서명 키다. Publisher credential 및 CMS JWT 키와 분리한다.
-- `APP_RELAY_LISTENER_TOKEN_MINUTES`는 기본 90분이며 1~90분으로 제한된다. 만료 시 연결된 Listener WebSocket도 닫힌다. 현재 자동 갱신은 없으므로 만료 후에는 다시 인증해야 한다. 세션 종료나 비밀번호 변경 시에도 기존 Listener 연결을 닫는다.
+- `APP_RELAY_LISTENER_TOKEN_MINUTES`는 기본 90분이며 1~90분으로 제한된다. 만료 시 연결된 Listener WebSocket도 닫힌다. 현재 자동 갱신은 없으므로 만료 후에는 공유 session link로 다시 접속해야 한다. 세션 종료나 갱신 시 기존 Listener 권한은 무효화된다.
 - `APP_RELAY_ALLOWED_ORIGINS`에는 Listener의 production origin과 필요한 개발 origin만 정확히 지정한다. Preview를 허용할 때는 해당 배포 origin을 명시적으로 추가한다. `APP_RELAY_ALLOWED_ORIGIN_SUFFIXES`도 설정하면 해당 HTTPS suffix의 Preview가 WebSocket 및 token 발급 CORS에서 모두 허용된다. 이는 suffix 전체를 신뢰하는 것이므로 팀이 통제하는 suffix만 설정한다.
-- relay 세션·rate-limit 상태와 worker 간 임시 relay 이벤트는 `APP_DATA_ROOT/data/relay_auth.sqlite3`에 저장된다. relay 이벤트(자막·Opus frame)는 worker 간 fan-out을 위해 최대 120초 보관되며, 비밀번호는 해시로만 저장된다. `APP_DATA_ROOT`는 영구 디스크로 지정해야 한다. 여러 worker는 동일한 로컬 SQLite 파일을 공유할 수 있지만, 서로 다른 디스크를 사용하는 별도 인스턴스 간 relay fan-out은 지원하지 않으므로 relay를 여러 인스턴스로 분리하지 않는다.
-- Listener 비밀번호는 HTTPS session-upsert 요청으로 전달되고 relay에는 PBKDF2 해시만 저장한다. 비밀번호·token·Publisher credential은 URL이나 응답에 포함하지 않는다.
+- relay 세션·rate-limit 상태와 worker 간 임시 relay 이벤트는 SQLite DB `APP_DATA_ROOT/data/relay_auth.sqlite3`에 저장된다. relay 이벤트(자막·Opus frame)는 worker 간 fan-out을 위해 최대 120초 보관된다. Listener 접근은 공유 session ID로 하며, 별도 Listener 비밀번호는 사용하지 않는다. `APP_DATA_ROOT`는 영구 디스크로 지정해야 한다. 여러 worker는 동일한 로컬 SQLite 파일을 공유할 수 있지만, 서로 다른 디스크를 사용하는 별도 인스턴스 간 relay fan-out은 지원하지 않으므로 relay를 여러 인스턴스로 분리하지 않는다.
+- session ID는 공유 링크에 포함되는 bearer access이므로 의도된 청중에게만 전달한다. 단기 Listener token과 Publisher credential은 URL이나 응답에 노출하지 않는다.
 - relay는 단일 Render worker / 단일 instance 메모리 상태를 전제로 한다. 수평 확장 시 relay session과 listener 상태를 공유하는 Redis 또는 유사 공유 relay가 필요하며, 로컬 SQLite만으로 instance 간 fan-out을 활성화하지 않는다.
 - `APP_RELAY_MAX_SESSIONS`(기본 100), `APP_RELAY_MAX_PUBLISHERS`(기본 100), `APP_RELAY_MAX_LISTENERS`(기본 1000)는 동시 세션 및 연결 상한이다. 초과 시 명시적인 503 또는 1013 종료를 사용하며 기존 CMS HTTP 요청은 독립적으로 처리한다.
 - `APP_RELAY_IDLE_TIMEOUT_SECONDS`(기본 60초) 동안 Publisher 또는 Listener WebSocket 활동이 없으면 해당 연결과 session 자원을 정리하고 복구 가능한 종료 상태를 전달한다. Listener에는 최대 256개 제어/대기 메시지와 세션당 144KB 오디오 backlog를 적용하며 초과되면 오래된 오디오를 버리거나 느린 Listener를 닫는다.

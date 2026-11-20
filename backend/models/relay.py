@@ -1,12 +1,4 @@
-from pydantic import BaseModel, Field, SecretStr
-
-
-class RelaySessionUpsertRequest(BaseModel):
-    listener_password: SecretStr = Field(min_length=8, max_length=128)
-
-
-class RelaySessionPasswordRequest(BaseModel):
-    listener_password: SecretStr = Field(min_length=8, max_length=128)
+from pydantic import BaseModel
 
 
 class RelaySessionResponse(BaseModel):

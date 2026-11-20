@@ -48,6 +48,9 @@ class ListenerConnection:
     pending: deque[tuple[str, Any]] = field(default_factory=deque)
     queued_audio_bytes: int = 0
     send_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    pending_event: asyncio.Event = field(default_factory=asyncio.Event)
+    sender_task: asyncio.Task[None] | None = None
+    closed: bool = False
 
 
 @dataclass
@@ -191,6 +194,7 @@ class RelayStreamService:
     async def unregister_listener(
         self, session_id: str, listener: ListenerConnection
     ) -> None:
+        sender_task: asyncio.Task[None] | None = None
         poll_task: asyncio.Task[None] | None = None
         async with self._lock:
             listeners = self._listeners.get(session_id)
@@ -198,21 +202,39 @@ class RelayStreamService:
                 listeners.discard(listener)
                 if not listeners:
                     self._listeners.pop(session_id, None)
+            listener.closed = True
+            listener.pending.clear()
+            listener.queued_audio_bytes = 0
+            listener.pending_event.set()
+            sender_task = listener.sender_task
+            listener.sender_task = None
             if not self._listeners and self._poll_task is not None:
                 poll_task = self._poll_task
                 self._poll_task = None
                 if poll_task is not asyncio.current_task():
                     poll_task.cancel()
+        if (
+            sender_task is not None
+            and sender_task is not asyncio.current_task()
+        ):
+            sender_task.cancel()
+            await asyncio.gather(sender_task, return_exceptions=True)
         if poll_task is not None and poll_task is not asyncio.current_task():
             await asyncio.gather(poll_task, return_exceptions=True)
 
     async def activate_listener(self, listener: ListenerConnection) -> None:
         async with listener.send_lock:
             async with self._lock:
+                if listener.closed:
+                    return
                 pending = list(listener.pending)
                 listener.pending.clear()
                 listener.queued_audio_bytes = 0
                 listener.ready = True
+                listener.sender_task = asyncio.create_task(
+                    self._run_listener_sender(listener),
+                    name="relay-listener-sender",
+                )
             for kind, payload in pending:
                 await self._send_raw(listener.websocket, kind, payload)
                 await self._record_sent(kind, payload)
@@ -540,86 +562,123 @@ class RelayStreamService:
             listener for listener in listeners
             if not subscribed_audio_only or listener.audio_enabled
         ]
-        ready_targets: list[ListenerConnection] = []
         stale: list[ListenerConnection] = []
         async with self._lock:
             for listener in targets:
-                if listener.ready:
-                    ready_targets.append(listener)
-                else:
-                    can_queue = True
+                if listener.closed:
+                    continue
+                if not await self._enqueue_listener_message(listener, kind, payload):
                     if kind == "bytes":
-                        if len(payload) > self.max_pending_audio_bytes:
-                            can_queue = False
-                        while (
-                            can_queue
-                            and listener.queued_audio_bytes + len(payload)
-                            > self.max_pending_audio_bytes
-                        ):
-                            oldest = next(
-                                (
-                                    index
-                                    for index, item in enumerate(listener.pending)
-                                    if item[0] == "bytes"
-                                ),
-                                None,
-                            )
-                            if oldest is None:
-                                break
-                            _, dropped = listener.pending[oldest]
-                            del listener.pending[oldest]
-                            listener.queued_audio_bytes -= len(dropped)
-                            async with self._metrics_lock:
-                                self.metrics.dropped_audio_frames += 1
-                        if (
-                            len(payload) <= self.max_pending_audio_bytes
-                            and listener.queued_audio_bytes + len(payload)
-                            <= self.max_pending_audio_bytes
-                        ):
-                            listener.queued_audio_bytes += len(payload)
-                        elif kind == "bytes":
-                            can_queue = False
-                    if can_queue and len(listener.pending) < self.max_pending_listener_messages:
-                        listener.pending.append((kind, payload))
-                    else:
-                        stale.append(listener)
                         async with self._metrics_lock:
-                            if kind == "bytes":
-                                self.metrics.listener_queue_rejections += 1
-        results = await asyncio.gather(
+                            self.metrics.listener_queue_rejections += 1
+                        stale.append(listener)
+        if stale:
+            await self._disconnect_slow_listeners(stale)
+
+    async def _enqueue_listener_message(
+        self, listener: ListenerConnection, kind: str, payload: Any
+    ) -> bool:
+        if kind == "bytes":
+            payload_size = len(payload)
+            while (
+                payload_size <= self.max_pending_audio_bytes
+                and listener.queued_audio_bytes + payload_size
+                > self.max_pending_audio_bytes
+            ):
+                if not self._drop_oldest_queued_audio(listener):
+                    break
+                async with self._metrics_lock:
+                    self.metrics.dropped_audio_frames += 1
+
+            while len(listener.pending) >= self.max_pending_listener_messages:
+                if not self._drop_oldest_queued_audio(listener):
+                    break
+                async with self._metrics_lock:
+                    self.metrics.dropped_audio_frames += 1
+
+            if (
+                payload_size > self.max_pending_audio_bytes
+                or listener.queued_audio_bytes + payload_size
+                > self.max_pending_audio_bytes
+                or len(listener.pending) >= self.max_pending_listener_messages
+            ):
+                async with self._metrics_lock:
+                    self.metrics.dropped_audio_frames += 1
+                return True
+            listener.queued_audio_bytes += payload_size
+        elif len(listener.pending) >= self.max_pending_listener_messages:
+            return False
+
+        listener.pending.append((kind, payload))
+        if listener.ready:
+            listener.pending_event.set()
+        return True
+
+    @staticmethod
+    def _drop_oldest_queued_audio(listener: ListenerConnection) -> bool:
+        oldest = next(
+            (
+                index
+                for index, item in enumerate(listener.pending)
+                if item[0] == "bytes"
+            ),
+            None,
+        )
+        if oldest is None:
+            return False
+        _, dropped = listener.pending[oldest]
+        del listener.pending[oldest]
+        listener.queued_audio_bytes -= len(dropped)
+        return True
+
+    async def _run_listener_sender(
+        self, listener: ListenerConnection
+    ) -> None:
+        try:
+            while True:
+                await listener.pending_event.wait()
+                while True:
+                    async with self._lock:
+                        if listener.closed:
+                            return
+                        if not listener.pending:
+                            listener.pending_event.clear()
+                            break
+                        kind, payload = listener.pending.popleft()
+                        if kind == "bytes":
+                            listener.queued_audio_bytes -= len(payload)
+                    async with listener.send_lock:
+                        await self._send_raw(listener.websocket, kind, payload)
+                    await self._record_sent(kind, payload)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            await self._disconnect_slow_listeners([listener])
+
+    async def _disconnect_slow_listeners(
+        self, listeners: list[ListenerConnection]
+    ) -> None:
+        async with self._metrics_lock:
+            self.metrics.slow_listener_disconnects += len(listeners)
+        for listener in listeners:
+            async with self._lock:
+                session_id = next(
+                    (
+                        session_id
+                        for session_id, entries in self._listeners.items()
+                        if listener in entries
+                    ),
+                    None,
+                )
+            if session_id is not None:
+                await self.unregister_listener(session_id, listener)
+        await asyncio.gather(
             *(
-                self._send_one(listener, kind, payload)
-                for listener in ready_targets
+                self._close(listener.websocket, 1013, "Listener is too slow")
+                for listener in listeners
             ),
             return_exceptions=True,
         )
-        stale.extend([
-            listener
-            for listener, result in zip(ready_targets, results)
-            if isinstance(result, Exception)
-        ])
-        if stale:
-            async with self._metrics_lock:
-                self.metrics.slow_listener_disconnects += len(stale)
-            async with self._lock:
-                for session_id, entries in list(self._listeners.items()):
-                    entries.difference_update(stale)
-                    if not entries:
-                        self._listeners.pop(session_id, None)
-            await asyncio.gather(
-                *(
-                    self._close(listener.websocket, 1013, "Listener is too slow")
-                    for listener in stale
-                ),
-                return_exceptions=True,
-            )
-
-    async def _send_one(
-        self, listener: ListenerConnection, kind: str, payload: Any
-    ) -> None:
-        async with listener.send_lock:
-            await self._send_raw(listener.websocket, kind, payload)
-            await self._record_sent(kind, payload)
 
     async def _publish_event(
         self, session_id: str, kind: str, payload: bytes
