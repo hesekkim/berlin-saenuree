@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { mediaFileAbsoluteUrl } from '../../shared/api/mediaApi';
 import { seekVideoToPreviewFrame } from '../../shared/lib/videoPreview';
 
@@ -17,10 +17,26 @@ export default function PostVideo({
   onPreviewReady,
   onError,
 }: PostVideoProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isSeekingRef = useRef(false);
   const isReadyRef = useRef(false);
   const onPreviewReadyRef = useRef(onPreviewReady);
   onPreviewReadyRef.current = onPreviewReady;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry && !entry.isIntersecting) {
+        video.pause();
+      }
+    });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
 
   const reportReady = useCallback((video: HTMLVideoElement) => {
     if (isReadyRef.current) {
@@ -36,6 +52,7 @@ export default function PostVideo({
 
   return (
     <video
+      ref={videoRef}
       className={className}
       src={mediaFileAbsoluteUrl(`/api/v1/media/files/${fileId}`)}
       autoPlay
