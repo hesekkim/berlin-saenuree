@@ -35,6 +35,7 @@ class RelayProtocolError(Exception):
 class PublisherConnection:
     websocket: WebSocket
     metadata: dict[str, Any]
+    current_status: str = "starting"
     last_audio_sequence: int = -1
     last_control_sequences: dict[str, int] = field(default_factory=dict)
 
@@ -112,6 +113,21 @@ class RelayStreamService:
         if metadata is None or not relay_auth.publisher_session_is_active(session_id):
             raise RelayAuthError("Session unavailable")
         return metadata
+
+    async def publisher_status(self, session_id: str) -> str:
+        async with self._lock:
+            publisher = self._publishers.get(session_id)
+            if publisher is None:
+                raise RelayProtocolError("Publisher unavailable")
+            return publisher.current_status
+
+    async def listener_admission_is_open(self, session_id: str) -> bool:
+        async with self._lock:
+            publisher = self._publishers.get(session_id)
+            return publisher is not None and publisher.current_status in {
+                "live",
+                "live_recovered",
+            }
 
     async def listener_count(self, session_id: str) -> int:
         async with self._lock:
@@ -269,6 +285,40 @@ class RelayStreamService:
                 or payload.get("status") not in STATUS_VALUES
             ):
                 raise RelayProtocolError("Invalid status event")
+        elif message_type == "scripture":
+            if set(payload) != {
+                "type",
+                "session_id",
+                "sequence",
+                "timestamp_ms",
+                "reference",
+                "version",
+                "verses",
+            }:
+                raise RelayProtocolError("Invalid scripture event")
+            verses = payload.get("verses")
+            if (
+                not _is_nonnegative_int(payload.get("sequence"))
+                or not _is_nonnegative_int(payload.get("timestamp_ms"))
+                or not isinstance(payload.get("reference"), str)
+                or not 1 <= len(payload["reference"]) <= 160
+                or not isinstance(payload.get("version"), str)
+                or not 1 <= len(payload["version"]) <= 80
+                or not isinstance(verses, list)
+                or not 1 <= len(verses) <= 100
+                or any(
+                    not isinstance(verse, dict)
+                    or set(verse) != {"verse", "text"}
+                    or not _is_positive_int(verse.get("verse"))
+                    or not isinstance(verse.get("text"), str)
+                    or not verse["text"]
+                    or len(verse["text"]) > 1000
+                    for verse in verses
+                )
+                or len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+                > 8 * 1024
+            ):
+                raise RelayProtocolError("Invalid scripture event")
         else:
             raise RelayProtocolError("Unsupported publisher event")
         async with self._lock:
@@ -279,6 +329,8 @@ class RelayStreamService:
             if sequence <= publisher.last_control_sequences.get(message_type, -1):
                 raise RelayProtocolError("Control event sequence must increase")
             publisher.last_control_sequences[message_type] = sequence
+            if message_type == "status":
+                publisher.current_status = payload["status"]
         relay_auth.publish_event(
             session_id, "json", json.dumps(payload).encode("utf-8")
         )
@@ -535,6 +587,10 @@ class RelayStreamService:
 
 def _is_nonnegative_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _is_positive_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
 relay_stream = RelayStreamService()

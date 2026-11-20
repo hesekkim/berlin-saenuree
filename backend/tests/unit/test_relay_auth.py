@@ -1,5 +1,6 @@
 import asyncio
 import time
+from contextlib import contextmanager
 
 import pytest
 from fastapi.testclient import TestClient
@@ -66,6 +67,28 @@ def publisher_hello(session_id: str) -> dict[str, object]:
         "packet_duration_ms": 20,
         "target_bitrate": 48000,
     }
+
+@contextmanager
+def live_publisher(client: TestClient, session_id: str):
+    with client.websocket_connect(
+        f"/api/v1/relay/ws/publisher/{session_id}",
+        headers={
+            "Origin": "",
+            "X-Publisher-Credential": "test-publisher-credential-with-32-chars",
+        },
+    ) as publisher:
+        publisher.send_json(publisher_hello(session_id))
+        assert publisher.receive_json()["type"] == "publisher_ready"
+        publisher.send_json(
+            {
+                "type": "status",
+                "session_id": session_id,
+                "sequence": 1,
+                "timestamp_ms": 1000,
+                "status": "live",
+            }
+        )
+        yield publisher
 
 
 class FakeWebSocket:
@@ -162,27 +185,91 @@ async def test_worker_event_bus_forwards_control_events_between_services():
 def test_listener_token_is_session_bound_and_password_change_revokes_it():
     client = TestClient(app)
     create_session(client)
-    admitted = client.post(
-        "/api/v1/relay/sessions/relay_session_123456/listener-token",
-        json={"listener_password": "audience-pass"},
-    )
-    assert admitted.status_code == 200
-    token = admitted.json()["listener_token"]
+    with live_publisher(client, "relay_session_123456"):
+        admitted = client.post(
+            "/api/v1/relay/sessions/relay_session_123456/listener-token",
+            json={"listener_password": "audience-pass"},
+        )
+        assert admitted.status_code == 200
+        token = admitted.json()["listener_token"]
 
-    relay_auth.verify_listener_token(token, "relay_session_123456")
-    with pytest.raises(RelayAuthError):
-        relay_auth.verify_listener_token(token, "relay_session_654321")
-
-    changed = client.post(
-        "/api/v1/relay/sessions/relay_session_123456",
-        headers={
-            "X-Publisher-Credential": "test-publisher-credential-with-32-chars"
-        },
-        json={"listener_password": "replacement-pass"},
-    )
-    assert changed.status_code == 200
-    with pytest.raises(RelayAuthError):
         relay_auth.verify_listener_token(token, "relay_session_123456")
+        with pytest.raises(RelayAuthError):
+            relay_auth.verify_listener_token(token, "relay_session_654321")
+
+        changed = client.post(
+            "/api/v1/relay/sessions/relay_session_123456",
+            headers={
+                "X-Publisher-Credential": "test-publisher-credential-with-32-chars"
+            },
+            json={"listener_password": "replacement-pass"},
+        )
+        assert changed.status_code == 200
+        with pytest.raises(RelayAuthError):
+            relay_auth.verify_listener_token(token, "relay_session_123456")
+
+
+def test_listener_token_is_issued_only_while_publisher_is_live():
+    client = TestClient(app)
+    session_id = "relay_session_123456"
+    create_session(client, session_id)
+    token_url = f"/api/v1/relay/sessions/{session_id}/listener-token"
+
+    unavailable = client.post(
+        token_url, json={"listener_password": "audience-pass"}
+    )
+    assert unavailable.status_code == 409
+    assert unavailable.json()["detail"] == "Broadcast is not currently live"
+
+    wrong_password = client.post(
+        token_url, json={"listener_password": "incorrect-password"}
+    )
+    assert wrong_password.status_code == 401
+    assert wrong_password.json()["detail"] == "Invalid session or listener password"
+
+    with client.websocket_connect(
+        f"/api/v1/relay/ws/publisher/{session_id}",
+        headers={
+            "Origin": "",
+            "X-Publisher-Credential": "test-publisher-credential-with-32-chars",
+        },
+    ) as publisher:
+        publisher.send_json(publisher_hello(session_id))
+        assert publisher.receive_json()["type"] == "publisher_ready"
+        starting = client.post(
+            token_url, json={"listener_password": "audience-pass"}
+        )
+        assert starting.status_code == 409
+
+        publisher.send_json(
+            {
+                "type": "status",
+                "session_id": session_id,
+                "sequence": 1,
+                "timestamp_ms": 1000,
+                "status": "live",
+            }
+        )
+        admitted = client.post(
+            token_url, json={"listener_password": "audience-pass"}
+        )
+        publisher.send_json(
+            {
+                "type": "status",
+                "session_id": session_id,
+                "sequence": 2,
+                "timestamp_ms": 1020,
+                "status": "live_recovered",
+            }
+        )
+        recovered = client.post(
+            token_url, json={"listener_password": "audience-pass"}
+        )
+
+    assert admitted.status_code == 200
+    assert admitted.json()["listener_token"]
+    assert recovered.status_code == 200
+    assert recovered.json()["listener_token"]
 
 
 def test_end_and_failed_password_use_generic_responses():
@@ -418,25 +505,16 @@ def test_publisher_and_listener_websockets_forward_control_and_audio():
     client = TestClient(app)
     session_id = "relay_session_123456"
     create_session(client, session_id)
-    admitted = client.post(
-        f"/api/v1/relay/sessions/{session_id}/listener-token",
-        json={"listener_password": "audience-pass"},
-    )
-    token = admitted.json()["listener_token"]
 
-    publisher_path = f"/api/v1/relay/ws/publisher/{session_id}"
     listener_path = f"/api/v1/relay/ws/listener/{session_id}"
     headers = {"X-Forwarded-For": "203.0.113.20"}
-    with client.websocket_connect(
-        publisher_path,
-        headers={
-            **headers,
-            "Origin": "",
-            "X-Publisher-Credential": "test-publisher-credential-with-32-chars",
-        },
-    ) as publisher:
-        publisher.send_json(publisher_hello(session_id))
-        assert publisher.receive_json()["type"] == "publisher_ready"
+    with live_publisher(client, session_id) as publisher:
+        admitted = client.post(
+            f"/api/v1/relay/sessions/{session_id}/listener-token",
+            json={"listener_password": "audience-pass"},
+        )
+        assert admitted.status_code == 200
+        token = admitted.json()["listener_token"]
         with client.websocket_connect(
             listener_path,
             headers={
@@ -453,6 +531,7 @@ def test_publisher_and_listener_websockets_forward_control_and_audio():
             )
             ready = listener.receive_json()
             assert ready["type"] == "listener_ready"
+            assert ready["status"] == "live"
             listener.send_json({"type": "audio", "enabled": True})
 
             subtitle = {
@@ -465,6 +544,18 @@ def test_publisher_and_listener_websockets_forward_control_and_audio():
             }
             publisher.send_json(subtitle)
             assert listener.receive_json() == subtitle
+
+            scripture = {
+                "type": "scripture",
+                "session_id": session_id,
+                "sequence": 2,
+                "timestamp_ms": 1020,
+                "reference": "Psalm 23:1",
+                "version": "Lutherbibel 1912",
+                "verses": [{"verse": 1, "text": "Der HERR ist mein Hirte."}],
+            }
+            publisher.send_json(scripture)
+            assert listener.receive_json() == scripture
 
             audio_frame = (
                 b"SL1A"

@@ -105,7 +105,7 @@ async def session_status(
     "/sessions/{session_id}/listener-token",
     response_model=RelayListenerTokenResponse,
 )
-def listener_token(
+async def listener_token(
     request: Request,
     session_id: str,
     body: RelaySessionPasswordRequest,
@@ -121,6 +121,13 @@ def listener_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid session or listener password",
         ) from error
+    if not relay_auth.publisher_session_is_active(
+        session_id
+    ) or not await relay_stream.listener_admission_is_open(session_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Broadcast is not currently live",
+        )
     return RelayListenerTokenResponse(
         listener_token=token,
         expires_in_seconds=max(1, settings.relay_listener_token_minutes) * 60,
@@ -293,6 +300,7 @@ async def listener_socket(websocket: WebSocket, session_id: str) -> None:
             hello["listener_token"], session_id
         )
         metadata = await relay_stream.publisher_metadata(session_id)
+        publisher_status = await relay_stream.publisher_status(session_id)
     except WebSocketDisconnect:
         return
     except (asyncio.TimeoutError, RelayAuthError, RelayProtocolError):
@@ -314,6 +322,7 @@ async def listener_socket(websocket: WebSocket, session_id: str) -> None:
                 "type": "listener_ready",
                 "protocol": PROTOCOL,
                 "session_id": session_id,
+                "status": publisher_status,
                 **metadata,
             }
         )
