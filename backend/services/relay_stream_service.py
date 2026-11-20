@@ -51,6 +51,21 @@ class ListenerConnection:
 
 
 @dataclass
+class RelayMetrics:
+    audio_frames_received: int = 0
+    audio_frame_bytes_received: int = 0
+    control_events_received: int = 0
+    control_event_bytes_received: int = 0
+    audio_frames_sent: int = 0
+    audio_bytes_sent: int = 0
+    control_events_sent: int = 0
+    control_event_bytes_sent: int = 0
+    dropped_audio_frames: int = 0
+    slow_listener_disconnects: int = 0
+    listener_queue_rejections: int = 0
+
+
+@dataclass
 class RelayStreamService:
     _publishers: dict[str, PublisherConnection] = field(default_factory=dict)
     _listeners: dict[str, set[ListenerConnection]] = field(default_factory=dict)
@@ -60,6 +75,8 @@ class RelayStreamService:
     send_timeout_seconds: float = 5.0
     max_pending_listener_messages: int = 256
     max_pending_audio_bytes: int = 144_000
+    metrics: RelayMetrics = field(default_factory=RelayMetrics)
+    _metrics_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     @staticmethod
     def validate_publisher_hello(
@@ -133,6 +150,26 @@ class RelayStreamService:
         async with self._lock:
             return len(self._listeners.get(session_id, set()))
 
+    async def metrics_snapshot(self) -> dict[str, int]:
+        async with self._lock:
+            publisher_count = len(self._publishers)
+            listener_count = sum(len(entries) for entries in self._listeners.values())
+            session_count = len(set(self._publishers) | set(self._listeners))
+        async with self._metrics_lock:
+            values = vars(self.metrics).copy()
+        values.update(
+            {
+                "active_publishers": publisher_count,
+                "active_listeners": listener_count,
+                "active_sessions": session_count,
+            }
+        )
+        return values
+
+    async def reset_metrics(self) -> None:
+        async with self._metrics_lock:
+            self.metrics = RelayMetrics()
+
     async def register_listener(
         self, session_id: str, websocket: WebSocket
     ) -> ListenerConnection:
@@ -176,6 +213,7 @@ class RelayStreamService:
                 listener.ready = True
             for kind, payload in pending:
                 await self._send_raw(listener.websocket, kind, payload)
+                await self._record_sent(kind, payload)
 
     async def shutdown(self, reason: str = "server_shutdown") -> None:
         async with self._lock:
@@ -334,6 +372,10 @@ class RelayStreamService:
         relay_auth.publish_event(
             session_id, "json", json.dumps(payload).encode("utf-8")
         )
+        encoded = json.dumps(payload).encode("utf-8")
+        async with self._metrics_lock:
+            self.metrics.control_events_received += 1
+            self.metrics.control_event_bytes_received += len(encoded)
 
     async def forward_audio(self, session_id: str, frame: bytes) -> None:
         if len(frame) < 20 or frame[:4] != b"SL1A" or frame[4] != 1 or frame[5] != 0:
@@ -366,6 +408,9 @@ class RelayStreamService:
                 }).encode("utf-8"),
             )
         relay_auth.publish_event(session_id, "audio", frame)
+        async with self._metrics_lock:
+            self.metrics.audio_frames_received += 1
+            self.metrics.audio_frame_bytes_received += len(frame)
 
     async def handle_listener_message(
         self, listener: ListenerConnection, message: Any
@@ -520,6 +565,8 @@ class RelayStreamService:
                             _, dropped = listener.pending[oldest]
                             del listener.pending[oldest]
                             listener.queued_audio_bytes -= len(dropped)
+                            async with self._metrics_lock:
+                                self.metrics.dropped_audio_frames += 1
                         if (
                             len(payload) <= self.max_pending_audio_bytes
                             and listener.queued_audio_bytes + len(payload)
@@ -532,6 +579,9 @@ class RelayStreamService:
                         listener.pending.append((kind, payload))
                     else:
                         stale.append(listener)
+                        async with self._metrics_lock:
+                            if kind == "bytes":
+                                self.metrics.listener_queue_rejections += 1
         results = await asyncio.gather(
             *(
                 self._send_one(listener, kind, payload)
@@ -545,6 +595,8 @@ class RelayStreamService:
             if isinstance(result, Exception)
         ])
         if stale:
+            async with self._metrics_lock:
+                self.metrics.slow_listener_disconnects += len(stale)
             async with self._lock:
                 for session_id, entries in list(self._listeners.items()):
                     entries.difference_update(stale)
@@ -563,6 +615,18 @@ class RelayStreamService:
     ) -> None:
         async with listener.send_lock:
             await self._send_raw(listener.websocket, kind, payload)
+            await self._record_sent(kind, payload)
+
+    async def _record_sent(self, kind: str, payload: Any) -> None:
+        async with self._metrics_lock:
+            if kind == "bytes":
+                self.metrics.audio_frames_sent += 1
+                self.metrics.audio_bytes_sent += len(payload)
+            else:
+                self.metrics.control_events_sent += 1
+                self.metrics.control_event_bytes_sent += len(
+                    json.dumps(payload).encode("utf-8")
+                )
 
     async def _send_raw(self, websocket: WebSocket, kind: str, payload: Any) -> None:
         if kind == "bytes":

@@ -42,3 +42,34 @@ Render는 앞단 프록시를 사용하며, 이 프로젝트의 `APP_TRUSTED_PRO
 - `APP_DATA_ROOT` 아래에 JSON 데이터와 업로드 파일을 저장하므로, 운영에서는 영구 디스크를 사용하고 백업도 별도 위치에 보관한다.
 - 실제 이메일 OTP를 보내려면 SMTP 환경 변수와 이메일 제공자 설정이 필요하다.
 - JSON 저장소와 유지보수 작업은 단일 워커를 전제로 한다. 여러 워커로 실행하지 않는다. 자세한 배포 설정과 백업 절차는 [DEPLOY.md](./DEPLOY.md)를 참고한다.
+
+## Sermon Live Relay 부하 및 비용 검증
+
+CI는 실제 서비스나 유료 리소스를 사용하지 않는다. 다음 bounded fake-load 검증만 실행한다.
+
+```powershell
+cd berlin-saenuree/backend
+python scripts/relay_load_validation.py
+```
+
+스크립트는 합성 Opus 크기 프레임과 in-process FakeWebSocket만 사용하며, 네트워크 접속과 유료 Render 리소스를 생성하지 않는다.
+listener-hour 출력은 20 ms 프레임의 relay framing을 포함하며 WebSocket 전송 오버헤드는 포함하지 않는 추정치다.
+
+실제 Render 검증 전에는 목표 동시 청중 수, 동시 방송 수, 최대 실행 시간과 예상 GB를 운영 기록에 남긴 뒤 명시적으로 승인받아야 한다.
+
+- PCM 기준: 24 kHz mono 16-bit, 384 kbit/s
+- Opus 목표: 48 kbit/s
+- PCM 대비 이론 절감률: `(1 - 48/384) * 100 = 87.5%`
+- Listener-hour GB: `평균 Opus bytes/s × 3600 / 1,000,000,000`
+- 전체 egress GB: `listener-hour GB × 청중 수 × 방송 시간`
+
+실측에는 WebSocket 헤더와 재접속이 포함되므로 이론치보다 높을 수 있다. 실제 청중 상한은 추정치가 아니라 Render Dashboard의 측정치로 결정한다.
+
+Render Dashboard에서 대상 Web Service를 열고 다음을 확인한다.
+
+- **Metrics > CPU/Memory**: 0.5 CPU/512 MB 근처의 지연과 재시작 여부
+- **Metrics > Bandwidth**: 테스트 기간의 outbound transfer
+- **Account/Workspace usage**: included egress와 잔여량
+- 청구 설정: included amount 소진 후 overage 요금 적용 방식
+
+실제 부하 검증을 허가받지 않은 경우 실행하지 않는다. 과부하가 예상되면 `APP_RELAY_MAX_LISTENERS`, `APP_RELAY_MAX_SESSIONS`, `APP_RELAY_IDLE_TIMEOUT_SECONDS`로 명시적으로 거부하고 기존 CMS 응답성을 유지한다.

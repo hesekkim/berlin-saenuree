@@ -101,6 +101,19 @@ async def session_status(
     }
 
 
+@router.get("/metrics")
+async def relay_metrics(
+    x_publisher_credential: str | None = Header(
+        default=None, alias="X-Publisher-Credential"
+    ),
+) -> dict[str, object]:
+    try:
+        relay_auth.validate_publisher_credential(x_publisher_credential)
+    except RelayAuthError as error:
+        raise HTTPException(status_code=401, detail=str(error)) from error
+    return await relay_stream.metrics_snapshot()
+
+
 @router.post(
     "/sessions/{session_id}/listener-token",
     response_model=RelayListenerTokenResponse,

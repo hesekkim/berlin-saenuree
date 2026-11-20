@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from contextlib import contextmanager
 
@@ -182,6 +183,39 @@ async def test_worker_event_bus_forwards_control_events_between_services():
     await listener_service.unregister_listener(session_id, listener)
 
 
+@pytest.mark.asyncio
+async def test_listener_activation_counts_queued_audio_and_control_sends():
+    service = RelayStreamService()
+    socket = FakeWebSocket()
+    listener = await service.register_listener("relay_session_123456", socket)
+    listener.audio_enabled = True
+    audio_frame = b"synthetic-audio-frame"
+    control_event = {"type": "subtitle", "text": "Test"}
+
+    await service._send_to_listeners(
+        [listener], "bytes", audio_frame, subscribed_audio_only=True
+    )
+    await service._send_to_listeners(
+        [listener], "json", control_event, subscribed_audio_only=False
+    )
+    try:
+        queued_metrics = await service.metrics_snapshot()
+        assert queued_metrics["audio_bytes_sent"] == 0
+        assert queued_metrics["control_events_sent"] == 0
+
+        await service.activate_listener(listener)
+
+        metrics = await service.metrics_snapshot()
+        assert metrics["audio_frames_sent"] == 1
+        assert metrics["audio_bytes_sent"] == len(audio_frame)
+        assert metrics["control_events_sent"] == 1
+        assert metrics["control_event_bytes_sent"] == len(
+            json.dumps(control_event).encode("utf-8")
+        )
+    finally:
+        await service.unregister_listener("relay_session_123456", listener)
+
+
 def test_listener_token_is_session_bound_and_password_change_revokes_it():
     client = TestClient(app)
     create_session(client)
@@ -302,6 +336,26 @@ def test_end_and_failed_password_use_generic_responses():
         json={"listener_password": "audience-pass"},
     )
     assert denied.status_code == 401
+
+
+def test_relay_metrics_require_publisher_auth_and_return_aggregate_metadata():
+    client = TestClient(app)
+
+    denied = client.get("/api/v1/relay/metrics")
+    assert denied.status_code == 401
+
+    response = client.get(
+        "/api/v1/relay/metrics",
+        headers={
+            "X-Publisher-Credential": "test-publisher-credential-with-32-chars"
+        },
+    )
+    assert response.status_code == 200
+    metrics = response.json()
+    assert "audio_bytes_sent" in metrics
+    assert "slow_listener_disconnects" in metrics
+    assert "active_listeners" in metrics
+    assert "test-only-password" not in str(metrics)
 
 
 def test_session_status_reports_the_authoritative_relay_state():
