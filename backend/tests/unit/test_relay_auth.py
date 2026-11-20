@@ -94,6 +94,42 @@ def live_publisher(client: TestClient, session_id: str):
         yield publisher
 
 
+def test_publisher_audio_frames_do_not_touch_the_session_store_per_frame(
+    monkeypatch,
+):
+    client = TestClient(app)
+    session_id = "relay_session_123456"
+    assert create_session(client, session_id).status_code == 200
+    touches = []
+    original_touch = relay_auth.touch_publisher_session
+
+    def counting_touch(*args):
+        touches.append(args)
+        return original_touch(*args)
+
+    monkeypatch.setattr(relay_auth, "touch_publisher_session", counting_touch)
+
+    with live_publisher(client, session_id) as publisher:
+        for sequence in range(50):
+            publisher.send_bytes(
+                b"SL1A"
+                + bytes((1, 0))
+                + (1).to_bytes(2, "little")
+                + (sequence * 20_000).to_bytes(8, "big")
+                + sequence.to_bytes(4, "big")
+                + b"x"
+            )
+        deadline = time.monotonic() + 5
+        while (
+            relay_stream.metrics.audio_frames_received < 50
+            and time.monotonic() < deadline
+        ):
+            time.sleep(0.01)
+
+    assert relay_stream.metrics.audio_frames_received >= 50
+    assert len(touches) <= 1
+
+
 class FakeWebSocket:
     def __init__(self):
         self.sent = []

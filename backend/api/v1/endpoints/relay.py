@@ -20,6 +20,8 @@ from services.relay_stream_service import (
 
 router = APIRouter()
 
+PUBLISHER_TOUCH_INTERVAL_SECONDS = 5.0
+
 
 def _client_ip(request: Request) -> str:
     return resolve_client_ip(request, settings.effective_trusted_proxy_hops)
@@ -205,15 +207,21 @@ async def publisher_socket(websocket: WebSocket, session_id: str) -> None:
             }
         )
 
+        last_touch = time.monotonic()
         while True:
             message = await asyncio.wait_for(
                 websocket.receive(), timeout=settings.relay_idle_timeout_seconds
             )
             if message["type"] == "websocket.disconnect":
                 break
-            if not relay_auth.touch_publisher_session(session_id, generation):
-                await websocket.close(code=1008, reason="Session ended")
-                return
+            now = time.monotonic()
+            if now - last_touch >= PUBLISHER_TOUCH_INTERVAL_SECONDS:
+                last_touch = now
+                if not await asyncio.to_thread(
+                    relay_auth.touch_publisher_session, session_id, generation
+                ):
+                    await websocket.close(code=1008, reason="Session ended")
+                    return
             text = message.get("text")
             binary = message.get("bytes")
             if text is not None:
